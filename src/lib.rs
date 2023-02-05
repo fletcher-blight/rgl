@@ -233,7 +233,7 @@ pub enum ErrorBindVertexArray {
 
 /// delete named buffer objects
 ///
-/// glDeleteBuffers deletes all buffer objects named by `buffers`. After a buffer object is deleted,
+/// [delete_buffers] deletes all buffer objects named by `buffers`. After a buffer object is deleted,
 /// it has no contents, and its name is free for reuse (for example by [gen_buffers]). If a buffer
 /// object that is currently bound is deleted, the binding reverts to 0 (the absence of any buffer object).
 ///
@@ -245,6 +245,22 @@ pub fn delete_buffers(buffers: &[Buffer]) -> () {
     let n = buffers.len() as GLsizei;
     let buffers = buffers.as_ptr() as *const GLuint;
     unsafe { gl::DeleteBuffers(n, buffers) }
+}
+
+/// delete vertex array objects
+///
+/// [delete_vertex_arrays] deletes all vertex array objects whose names are stored in the array
+/// addressed by `arrays`. Once a vertex array object is deleted it has no contents and its name is
+/// again unused. If a vertex array object that is currently bound is deleted, the binding for that
+/// object reverts to zero and the default vertex array becomes current. Unused names in `arrays`
+/// are silently ignored, as is the value zero.
+///
+/// # Arguments
+/// * `arrays` - Specifies an array of vertex array objects to be deleted
+pub fn delete_vertex_arrays(arrays: &[VertexArray]) -> () {
+    let n = arrays.len() as GLsizei;
+    let arrays = arrays.as_ptr() as *const GLuint;
+    unsafe { gl::DeleteVertexArrays(n, arrays) }
 }
 
 /// render primitives from array data
@@ -372,12 +388,29 @@ pub fn draw_elements_instanced(
 /// # Arguments
 /// * `buffers` - Specifies an array in which the generated buffer object names are stored
 pub fn gen_buffers(buffers: &mut [Buffer]) -> () {
-    unsafe {
-        gl::GenBuffers(
-            buffers.len() as GLsizei,
-            buffers.as_mut_ptr() as *mut GLuint,
-        )
-    }
+    let n = buffers.len() as GLsizei;
+    let buffers = buffers.as_mut_ptr() as *mut GLuint;
+    unsafe { gl::GenBuffers(n, buffers) }
+}
+
+/// generate vertex array object names
+///
+/// [gen_vertex_arrays] fills all vertex array object names in `arrays`. There is no guarantee that
+/// the names form a contiguous set of integers; however, it is guaranteed that none of the returned
+/// names was in use immediately before the call to [gen_vertex_arrays].
+///
+/// Vertex array object names returned by a call to [gen_vertex_arrays] are not returned by subsequent
+/// calls, unless they are first deleted with [delete_vertex_arrays].
+///
+/// The names returned in `arrays` are marked as used, for the purposes of [gen_vertex_arrays] only,
+/// but they acquire state and type only when they are first bound.
+///
+/// # Arguments
+/// * `arrays` - Specifies an array in which the generated vertex array object names are stored
+pub fn gen_vertex_arrays(arrays: &mut [VertexArray]) -> () {
+    let n = arrays.len() as GLsizei;
+    let arrays = arrays.as_mut_ptr() as *mut GLuint;
+    unsafe { gl::GenVertexArrays(n, arrays) }
 }
 
 /// return error information
