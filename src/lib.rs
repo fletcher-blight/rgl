@@ -258,91 +258,58 @@ pub fn delete_buffers(buffers: &[Buffer]) -> () {
     unsafe { gl::DeleteBuffers(n, buffers) }
 }
 
+/// Possible errors of [draw_elements]
+#[derive(Debug, Clone, Copy)]
+pub enum Error {
+    /// a geometry shader is active and `mode` is incompatible with the input primitive type of the
+    /// geometry shader in the currently installed program object
+    IncompatibleGeometryShaderInputMode,
+
+    BufferObjectBoundToEnabledArray,
+
+    ElementArrayAndBufferObjectDataCurrentlyMapped,
+}
+
 /// render primitives from array data
 ///
-/// Either [direct](draw_elements::direct) or [indirect](draw_elements::indirect) specifies multiple
-/// geometric primitives with very few subroutine calls. Instead of calling a GL function to pass each
-/// individual vertex, normal, texture coordinate, edge flag, or color, you can pre-specify separate
-/// arrays of vertices, normals, and so on, and use them to construct a sequence of primitives
-/// with a single call.
+/// [draw_elements] specifies multiple geometric primitives with very few subroutine calls.
+/// Instead of calling a GL function to pass each individual vertex, normal, texture coordinate,
+/// edge flag, or color, you can pre-specify separate arrays of vertices, normals, and so on,
+/// and use them to construct a sequence of primitives with a single call to [draw_elements].
 ///
-/// [DrawMode] specifies what kind of primitives are constructed and how the array elements
-/// construct these primitives. If more than one array is enabled, each is used.
+/// When [draw_elements] is called, it uses `count` sequential elements from an enabled array,
+/// starting at `offset` to construct a sequence of geometric primitives. `mode` specifies what kind
+/// of primitives are constructed and how the array elements construct these primitives.
+/// If more than one array is enabled, each is used.
 ///
-/// Vertex attributes that are modified have an unspecified value after the call returns.
-/// Attributes that aren't modified maintain their previous values.
-pub mod draw_elements {
-    use super::{internal_get_error, DrawMode, ErrorOpenGL, Indices, IndicesType};
-    use gl::types::*;
-
-    /// Possible errors of [draw_elements]
-    #[derive(Debug, Clone, Copy)]
-    pub enum Error {
-        /// a geometry shader is active and `mode` is incompatible with the input primitive type of the
-        /// geometry shader in the currently installed program object
-        IncompatibleGeometryShaderInputMode,
-
-        BufferObjectBoundToEnabledArray,
-
-        ElementArrayAndBufferObjectDataCurrentlyMapped,
-    }
-
-    fn internal_return_draw_elements_error() -> Result<(), Error> {
-        match internal_get_error() {
-            ErrorOpenGL::NoError => Ok(()),
-            ErrorOpenGL::InvalidOperation => todo!(),
-            _ => unreachable!(),
-        }
-    }
-
-    /// render primitives from array data already in hardware
-    ///
-    /// When [direct] is called, it uses `count` sequential elements of `indices_type` type from an
-    /// enabled element array buffer, starting at `offset` to construct a sequence of geometric primitives.
-    ///
-    /// # Arguments
-    /// * `mode` - Specifies what kind of primitives to render
-    /// * `count` - Specifies the number of elements to be rendered
-    /// * `indices_type` - Specifies the type of the values in the element array buffer
-    /// * `offset` - offset from buffer data to start reading for elements
-    ///
-    /// # Note
-    /// - see the [Draw Elements](self) module for more details
-    pub fn direct(
-        mode: DrawMode,
-        count: usize,
-        indices_type: IndicesType,
-        offset: isize,
-    ) -> Result<(), Error> {
-        let mode: GLenum = mode.into();
-        let count = count as GLsizei;
-        let indices_type: GLenum = indices_type.into();
-        let indices = offset as *const std::os::raw::c_void;
-        unsafe { gl::DrawElements(mode, count, indices_type, indices) };
-        internal_return_draw_elements_error()
-    }
-
-    /// render primitives from array data in cpu memory
-    ///
-    /// When [indirect] is called, it uses `indices` as an element array buffer of indexes,
-    /// to construct a sequence of geometric primitives.
-    ///
-    /// # Arguments
-    /// * `mode` - Specifies what kind of primitives to render
-    /// * `indices` - Index data to upload and use
-    ///
-    /// # Note
-    /// - see the [Draw Elements](self) module for more details
-    pub fn indirect<IndexType>(mode: DrawMode, indices: &[IndexType]) -> Result<(), Error>
-    where
-        IndexType: Indices<IndexType>,
-    {
-        let mode: GLenum = mode.into();
-        let count = indices.len() as GLsizei;
-        let indices_type: GLenum = IndexType::indices_type().into();
-        let indices = indices.as_ptr() as *const std::os::raw::c_void;
-        unsafe { gl::DrawElements(mode, count, indices_type, indices) };
-        internal_return_draw_elements_error()
+/// Vertex attributes that are modified by [draw_elements] have an unspecified value after
+/// [draw_elements] returns. Attributes that aren't modified maintain their previous values.
+///
+/// # Arguments
+/// * `mode` - Specifies what kind of primitives to render
+/// * `count` - Specifies the number of elements to be rendered
+/// * `indices_type` - Specifies the type of the values in the element array buffer
+/// * `offset` - Specifies the starting offset from the enabled array
+///
+/// # Compatability
+/// - 3.2 or greater is required for: [LineStripAdjacency](DrawMode::LineStripAdjacency),
+/// [LinesAdjacency](DrawMode::LinesAdjacency), [TriangleStripAdjacency](DrawMode::TriangleStripAdjacency)
+/// and [TrianglesAdjacency](DrawMode::TrianglesAdjacency)
+pub fn draw_elements(
+    mode: DrawMode,
+    count: usize,
+    indices_type: IndicesType,
+    offset: usize,
+) -> Result<(), Error> {
+    let mode: GLenum = mode.into();
+    let count = count as GLsizei;
+    let type_: GLenum = indices_type.into();
+    let indices = offset as *const std::os::raw::c_void;
+    unsafe { gl::DrawElements(mode, count, type_, indices) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidOperation => todo!(),
+        _ => unreachable!(),
     }
 }
 
