@@ -5,6 +5,11 @@ use gl::types::*;
 #[derive(Debug, Clone, Copy)]
 pub struct Buffer(GLuint);
 
+/// Framebuffer Name Object
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy)]
+pub struct Framebuffer(GLuint);
+
 /// Vertex Array Name Object
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
@@ -73,6 +78,24 @@ impl From<BufferBindingTarget> for GLenum {
             BufferBindingTarget::Texture => gl::TEXTURE_BUFFER,
             BufferBindingTarget::TransformFeedbackBuffer => gl::TRANSFORM_FEEDBACK_BUFFER,
             BufferBindingTarget::Uniform => gl::UNIFORM_BUFFER,
+        }
+    }
+}
+
+/// Framebuffer Name Target Type
+#[derive(Debug, Clone, Copy)]
+pub enum FramebufferBindingTarget {
+    Draw,
+    Read,
+    ReadDraw,
+}
+
+impl From<FramebufferBindingTarget> for GLenum {
+    fn from(value: FramebufferBindingTarget) -> Self {
+        match value {
+            FramebufferBindingTarget::Draw => gl::DRAW_FRAMEBUFFER,
+            FramebufferBindingTarget::Read => gl::READ_FRAMEBUFFER,
+            FramebufferBindingTarget::ReadDraw => gl::FRAMEBUFFER,
         }
     }
 }
@@ -203,6 +226,40 @@ pub enum ErrorBindBuffer {
     InvalidBuffer(Buffer),
 }
 
+/// bind a framebuffer to a framebuffer target
+///
+/// [bind_framebuffer] binds the framebuffer object with name `framebuffer` to the framebuffer target
+/// specified by `target`. If a framebuffer object is bound to [Draw](FramebufferBindingTarget::Draw)
+/// or [Read](FramebufferBindingTarget::Read), it becomes the target for rendering or readback
+/// operations, respectively, until it is deleted or another framebuffer is bound to the corresponding
+/// bind point. Calling [bind_framebuffer] with target set to [ReadDraw](FramebufferBindingTarget::ReadDraw)
+/// binds `framebuffer` to both the read and draw framebuffer targets. `framebuffer` is the name of
+/// a framebuffer object previously returned from a call to [gen_frame_buffers], or zero to break the
+/// existing binding of a framebuffer object to target.
+///
+/// # Arguments
+/// * `target` - Specifies the framebuffer target of the binding operation
+/// * `framebuffer` - Specifies the name of the framebuffer object to bind
+pub fn bind_framebuffer(
+    target: FramebufferBindingTarget,
+    framebuffer: Framebuffer,
+) -> Result<(), ErrorBindFramebuffer> {
+    let target: GLenum = target.into();
+    unsafe { gl::BindFramebuffer(target, framebuffer.0) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidOperation => Err(ErrorBindFramebuffer::InvalidFramebuffer(framebuffer)),
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [bind_framebuffer]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorBindFramebuffer {
+    /// `framebuffer` is not zero or the name of a framebuffer previously returned from a call to [gen_frame_buffers]
+    InvalidFramebuffer(Framebuffer),
+}
+
 /// bind a vertex array object
 ///
 /// Binds the vertex array object with name `array`. `array` is the name of a vertex array object
@@ -245,6 +302,24 @@ pub fn delete_buffers(buffers: &[Buffer]) -> () {
     let n = buffers.len() as GLsizei;
     let buffers = buffers.as_ptr() as *const GLuint;
     unsafe { gl::DeleteBuffers(n, buffers) }
+}
+
+/// delete framebuffer objects
+///
+/// [delete_frame_buffers] deletes all framebuffer objects whose names are stored in the array
+/// addressed by `frame_buffers`. The name zero is reserved by the GL and is silently ignored,
+/// should it occur in `frame_buffers`, as are other unused names. Once a framebuffer object is deleted,
+/// its name is again unused and it has no attachments. If a framebuffer that is currently bound to
+/// one or more of the targets [Draw](FramebufferBindingTarget::Draw) or [Read](FramebufferBindingTarget::Read)
+/// is deleted, it is as though [bind_framebuffer] had been executed with the corresponding target
+/// and framebuffer zero.
+///
+/// # Arguments
+/// * `frame_buffers` - Specifies an array of framebuffer objects to be deleted
+pub fn delete_frame_buffers(frame_buffers: &[Framebuffer]) -> () {
+    let n = frame_buffers.len() as GLsizei;
+    let framebuffers = frame_buffers.as_ptr() as *const GLuint;
+    unsafe { gl::DeleteFramebuffers(n, framebuffers) }
 }
 
 /// delete vertex array objects
@@ -310,7 +385,7 @@ fn internal_handle_draw_elements_error() -> Result<(), ErrorDrawElements> {
     }
 }
 
-/// Possible errors of [draw_elements]
+/// Possible errors of [draw_elements] and variants
 #[derive(Debug, Clone, Copy)]
 pub enum ErrorDrawElements {
     /// a geometry shader is active and `mode` is incompatible with the input primitive type of the
@@ -391,6 +466,26 @@ pub fn gen_buffers(buffers: &mut [Buffer]) -> () {
     let n = buffers.len() as GLsizei;
     let buffers = buffers.as_mut_ptr() as *mut GLuint;
     unsafe { gl::GenBuffers(n, buffers) }
+}
+
+/// generate framebuffer object names
+///
+/// [gen_frame_buffers] fills all framebuffer object names in `ids`. There is no guarantee that the
+/// names form a contiguous set of integers; however, it is guaranteed that none of the returned
+/// names was in use immediately before the call to [gen_frame_buffers].
+///
+/// Framebuffer object names returned by a call to [gen_frame_buffers] are not returned by subsequent
+/// calls, unless they are first deleted with [delete_frame_buffers].
+///
+/// The names returned in ids are marked as used, for the purposes of [gen_frame_buffers] only,
+/// but they acquire state and type only when they are first bound.
+///
+/// # Arguments
+/// * `ids` - Specifies an array in which the generated framebuffer object names are storeda
+pub fn gen_frame_buffers(ids: &mut [Framebuffer]) -> () {
+    let n = ids.len() as GLsizei;
+    let ids = ids.as_mut_ptr() as *mut GLuint;
+    unsafe { gl::GenFramebuffers(n, ids) }
 }
 
 /// generate vertex array object names
