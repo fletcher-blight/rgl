@@ -1,9 +1,16 @@
 use gl::types::*;
 
+/// Buffer Name Object
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
 pub struct Buffer(GLuint);
 
+/// Vertex Array Name Object
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy)]
+pub struct VertexArray(GLuint);
+
+/// Buffer Name Target Type
 #[derive(Debug, Clone, Copy)]
 pub enum BufferBindingTarget {
     /// Vertex attributes
@@ -70,6 +77,72 @@ impl From<BufferBindingTarget> for GLenum {
     }
 }
 
+/// Primitive Render Draw Type
+#[derive(Debug, Clone, Copy)]
+pub enum DrawMode {
+    Points,
+    LineStrip,
+    LineLoop,
+    Lines,
+    LineStripAdjacency,
+    LinesAdjacency,
+    TriangleStrip,
+    TriangleFan,
+    Triangles,
+    TriangleStripAdjacency,
+    TrianglesAdjacency,
+    Patches,
+}
+
+impl From<DrawMode> for GLenum {
+    fn from(value: DrawMode) -> Self {
+        match value {
+            DrawMode::Points => gl::POINTS,
+            DrawMode::LineStrip => gl::LINE_STRIP,
+            DrawMode::LineLoop => gl::LINE_LOOP,
+            DrawMode::Lines => gl::LINES,
+            DrawMode::LineStripAdjacency => gl::LINE_STRIP_ADJACENCY,
+            DrawMode::LinesAdjacency => gl::LINES_ADJACENCY,
+            DrawMode::TriangleStrip => gl::TRIANGLE_STRIP,
+            DrawMode::TriangleFan => gl::TRIANGLE_FAN,
+            DrawMode::Triangles => gl::TRIANGLES,
+            DrawMode::TriangleStripAdjacency => gl::TRIANGLE_STRIP_ADJACENCY,
+            DrawMode::TrianglesAdjacency => gl::TRIANGLES_ADJACENCY,
+            DrawMode::Patches => gl::PATCHES,
+        }
+    }
+}
+
+/// Index Buffer Integer Type
+#[derive(Debug, Clone, Copy)]
+pub enum IndicesType {
+    U8,
+    U16,
+    U32,
+}
+
+impl From<IndicesType> for GLenum {
+    fn from(value: IndicesType) -> Self {
+        match value {
+            IndicesType::U8 => gl::UNSIGNED_BYTE,
+            IndicesType::U16 => gl::UNSIGNED_SHORT,
+            IndicesType::U32 => gl::UNSIGNED_INT,
+        }
+    }
+}
+
+/// Index Buffer Data Type Map
+pub trait Indices<IndexType> {
+    fn indices_type() -> IndicesType;
+}
+
+impl Indices<u32> for u32 {
+    fn indices_type() -> IndicesType {
+        IndicesType::U32
+    }
+}
+
+/// Possible errors of [bind_buffer]
 #[derive(Debug, Clone, Copy)]
 pub enum ErrorBindBuffer {
     /// `buffer` is not a name previously returned from a call to [gen_buffers]
@@ -132,11 +205,167 @@ pub enum ErrorBindBuffer {
 /// [ShaderStorage](BufferBindingTarget::ShaderStorage)
 /// - 4.4 or greater is required for: [Query](BufferBindingTarget::Query)
 pub fn bind_buffer(target: BufferBindingTarget, buffer: Buffer) -> Result<(), ErrorBindBuffer> {
-    unsafe { gl::BindBuffer(target.into(), buffer.0) };
-    match get_error() {
+    let target: GLenum = target.into();
+    unsafe { gl::BindBuffer(target, buffer.0) };
+    match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidValue => Err(ErrorBindBuffer::InvalidBuffer(buffer)),
         _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [bind_vertex_array]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorBindVertexArray {
+    /// `array` is not zero or the name of a vertex array object previously returned from a call to [gen_vertex_arrays]
+    InvalidArray(VertexArray),
+}
+
+/// bind a vertex array object
+///
+/// Binds the vertex array object with name `array`. `array` is the name of a vertex array object
+/// previously returned from a call to [gen_vertex_arrays], or zero to break the existing
+/// vertex array object binding.
+///
+/// If no vertex array object with name `array` exists, one is created when array is first bound.
+/// If the bind is successful no change is made to the state of the vertex array object,
+/// and any previous vertex array object binding is broken.
+///
+/// # Arguments
+/// * `array` - Specifies the name of the vertex array to bind
+pub fn bind_vertex_array(array: VertexArray) -> Result<(), ErrorBindVertexArray> {
+    unsafe { gl::BindVertexArray(array.0) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidOperation => Err(ErrorBindVertexArray::InvalidArray(array)),
+        _ => unreachable!(),
+    }
+}
+
+/// delete named buffer objects
+///
+/// glDeleteBuffers deletes all buffer objects named by `buffers`. After a buffer object is deleted,
+/// it has no contents, and its name is free for reuse (for example by [gen_buffers]). If a buffer
+/// object that is currently bound is deleted, the binding reverts to 0 (the absence of any buffer object).
+///
+/// [delete_buffers] silently ignores 0's and names that do not correspond to existing buffer objects.
+///
+/// # Arguments
+/// * `buffers` - Specifies an array of buffer objects to be deleted
+pub fn delete_buffers(buffers: &[Buffer]) -> () {
+    let n = buffers.len() as GLsizei;
+    let buffers = buffers.as_ptr() as *const GLuint;
+    unsafe { gl::DeleteBuffers(n, buffers) }
+}
+
+/// render primitives from array data
+///
+/// Either [direct](draw_elements::direct) or [indirect](draw_elements::indirect) specifies multiple
+/// geometric primitives with very few subroutine calls. Instead of calling a GL function to pass each
+/// individual vertex, normal, texture coordinate, edge flag, or color, you can pre-specify separate
+/// arrays of vertices, normals, and so on, and use them to construct a sequence of primitives
+/// with a single call.
+///
+/// [DrawMode] specifies what kind of primitives are constructed and how the array elements
+/// construct these primitives. If more than one array is enabled, each is used.
+///
+/// Vertex attributes that are modified have an unspecified value after the call returns.
+/// Attributes that aren't modified maintain their previous values.
+pub mod draw_elements {
+    use super::{internal_get_error, DrawMode, ErrorOpenGL, Indices, IndicesType};
+    use gl::types::*;
+
+    /// Possible errors of [draw_elements]
+    #[derive(Debug, Clone, Copy)]
+    pub enum Error {
+        /// a geometry shader is active and `mode` is incompatible with the input primitive type of the
+        /// geometry shader in the currently installed program object
+        IncompatibleGeometryShaderInputMode,
+
+        BufferObjectBoundToEnabledArray,
+
+        ElementArrayAndBufferObjectDataCurrentlyMapped,
+    }
+
+    fn internal_return_draw_elements_error() -> Result<(), Error> {
+        match internal_get_error() {
+            ErrorOpenGL::NoError => Ok(()),
+            ErrorOpenGL::InvalidOperation => todo!(),
+            _ => unreachable!(),
+        }
+    }
+
+    /// render primitives from array data already in hardware
+    ///
+    /// When [direct] is called, it uses `count` sequential elements of `indices_type` type from an
+    /// enabled element array buffer, starting at `offset` to construct a sequence of geometric primitives.
+    ///
+    /// # Arguments
+    /// * `mode` - Specifies what kind of primitives to render
+    /// * `count` - Specifies the number of elements to be rendered
+    /// * `indices_type` - Specifies the type of the values in the element array buffer
+    /// * `offset` - offset from buffer data to start reading for elements
+    ///
+    /// # Note
+    /// - see the [Draw Elements](self) module for more details
+    pub fn direct(
+        mode: DrawMode,
+        count: usize,
+        indices_type: IndicesType,
+        offset: isize,
+    ) -> Result<(), Error> {
+        let mode: GLenum = mode.into();
+        let count = count as GLsizei;
+        let indices_type: GLenum = indices_type.into();
+        let indices = offset as *const std::os::raw::c_void;
+        unsafe { gl::DrawElements(mode, count, indices_type, indices) };
+        internal_return_draw_elements_error()
+    }
+
+    /// render primitives from array data in cpu memory
+    ///
+    /// When [indirect] is called, it uses `indices` as an element array buffer of indexes,
+    /// to construct a sequence of geometric primitives.
+    ///
+    /// # Arguments
+    /// * `mode` - Specifies what kind of primitives to render
+    /// * `indices` - Index data to upload and use
+    ///
+    /// # Note
+    /// - see the [Draw Elements](self) module for more details
+    pub fn indirect<IndexType>(mode: DrawMode, indices: &[IndexType]) -> Result<(), Error>
+    where
+        IndexType: Indices<IndexType>,
+    {
+        let mode: GLenum = mode.into();
+        let count = indices.len() as GLsizei;
+        let indices_type: GLenum = IndexType::indices_type().into();
+        let indices = indices.as_ptr() as *const std::os::raw::c_void;
+        unsafe { gl::DrawElements(mode, count, indices_type, indices) };
+        internal_return_draw_elements_error()
+    }
+}
+
+/// generate buffer object names
+///
+/// [gen_buffers] fills all buffer object names in `buffers`. There is no guarantee that the names
+/// form a contiguous set of integers; however, it is guaranteed that none of the returned names
+/// was in use immediately before the call to [gen_buffers].
+///
+/// Buffer object names returned by a call to [gen_buffers] are not returned by subsequent calls,
+/// unless they are first deleted with [delete_buffers].
+///
+/// No buffer objects are associated with the returned buffer object names until they are first
+/// bound by calling [bind_buffer].
+///
+/// # Arguments
+/// * `buffers` - Specifies an array in which the generated buffer object names are stored
+pub fn gen_buffers(buffers: &mut [Buffer]) -> () {
+    unsafe {
+        gl::GenBuffers(
+            buffers.len() as GLsizei,
+            buffers.as_mut_ptr() as *mut GLuint,
+        )
     }
 }
 
@@ -208,6 +437,11 @@ pub fn get_error() -> ErrorOpenGL {
         gl::STACK_OVERFLOW => ErrorOpenGL::StackUnderflow,
         unknown => ErrorOpenGL::Unknown(unknown),
     }
+}
+
+fn internal_get_error() -> ErrorOpenGL {
+    // TODO: create a feature control so this will always return ErrorOpenGL::NoError if per-function error checking is disabled
+    get_error()
 }
 
 pub use gl::load_with;
