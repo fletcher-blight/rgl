@@ -131,24 +131,6 @@ impl From<IndicesType> for GLenum {
     }
 }
 
-/// Index Buffer Data Type Map
-pub trait Indices<IndexType> {
-    fn indices_type() -> IndicesType;
-}
-
-impl Indices<u32> for u32 {
-    fn indices_type() -> IndicesType {
-        IndicesType::U32
-    }
-}
-
-/// Possible errors of [bind_buffer]
-#[derive(Debug, Clone, Copy)]
-pub enum ErrorBindBuffer {
-    /// `buffer` is not a name previously returned from a call to [gen_buffers]
-    InvalidBuffer(Buffer),
-}
-
 /// bind a named buffer object
 ///
 /// Binds a buffer object to the specified buffer binding point. Calling [bind_buffer] with `buffer`
@@ -214,11 +196,11 @@ pub fn bind_buffer(target: BufferBindingTarget, buffer: Buffer) -> Result<(), Er
     }
 }
 
-/// Possible errors of [bind_vertex_array]
+/// Possible errors of [bind_buffer]
 #[derive(Debug, Clone, Copy)]
-pub enum ErrorBindVertexArray {
-    /// `array` is not zero or the name of a vertex array object previously returned from a call to [gen_vertex_arrays]
-    InvalidArray(VertexArray),
+pub enum ErrorBindBuffer {
+    /// `buffer` is not a name previously returned from a call to [gen_buffers]
+    InvalidBuffer(Buffer),
 }
 
 /// bind a vertex array object
@@ -242,6 +224,13 @@ pub fn bind_vertex_array(array: VertexArray) -> Result<(), ErrorBindVertexArray>
     }
 }
 
+/// Possible errors of [bind_vertex_array]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorBindVertexArray {
+    /// `array` is not zero or the name of a vertex array object previously returned from a call to [gen_vertex_arrays]
+    InvalidArray(VertexArray),
+}
+
 /// delete named buffer objects
 ///
 /// glDeleteBuffers deletes all buffer objects named by `buffers`. After a buffer object is deleted,
@@ -256,18 +245,6 @@ pub fn delete_buffers(buffers: &[Buffer]) -> () {
     let n = buffers.len() as GLsizei;
     let buffers = buffers.as_ptr() as *const GLuint;
     unsafe { gl::DeleteBuffers(n, buffers) }
-}
-
-/// Possible errors of [draw_elements]
-#[derive(Debug, Clone, Copy)]
-pub enum Error {
-    /// a geometry shader is active and `mode` is incompatible with the input primitive type of the
-    /// geometry shader in the currently installed program object
-    IncompatibleGeometryShaderInputMode,
-
-    BufferObjectBoundToEnabledArray,
-
-    ElementArrayAndBufferObjectDataCurrentlyMapped,
 }
 
 /// render primitives from array data
@@ -300,17 +277,84 @@ pub fn draw_elements(
     count: usize,
     indices_type: IndicesType,
     offset: usize,
-) -> Result<(), Error> {
+) -> Result<(), ErrorDrawElements> {
     let mode: GLenum = mode.into();
     let count = count as GLsizei;
     let type_: GLenum = indices_type.into();
     let indices = offset as *const std::os::raw::c_void;
     unsafe { gl::DrawElements(mode, count, type_, indices) };
+    internal_handle_draw_elements_error()
+}
+
+fn internal_handle_draw_elements_error() -> Result<(), ErrorDrawElements> {
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidOperation => todo!(),
         _ => unreachable!(),
     }
+}
+
+/// Possible errors of [draw_elements]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorDrawElements {
+    /// a geometry shader is active and `mode` is incompatible with the input primitive type of the
+    /// geometry shader in the currently installed program object
+    IncompatibleGeometryShaderInputMode,
+
+    BufferObjectBoundToEnabledArray,
+
+    ElementArrayAndBufferObjectDataCurrentlyMapped,
+}
+
+/// draw multiple instances of a set of elements
+///
+/// [draw_elements_instanced] behaves identically to [draw_elements] except that `instance_count`
+/// instances of the set of elements are executed and the value of the internal counter `instanceID`
+/// advances for each iteration. `instanceID` is an internal 32-bit integer counter that may be
+/// read by a vertex shader as `gl_InstanceID`.
+///
+/// [draw_elements_instanced] has the same effect as:
+/// ```
+/// use rgl::*;
+/// fn draw_elements_instanced(
+///     mode: DrawMode,
+///     count: usize,
+///     indices_type: IndicesType,
+///     offset: usize,
+///     instance_count: usize) -> Result<(), ErrorDrawElements> {
+///     for instance_id in 0..instance_count {
+///         draw_elements(mode, count, indices_type, offset)?;
+///     }
+///     Ok(())
+/// }
+/// ```
+///
+/// # Arguments
+/// * `mode` - Specifies what kind of primitives to render
+/// * `count` - Specifies the number of elements to be rendered
+/// * `indices_type` - Specifies the type of the values in the element array buffer
+/// * `offset` - Specifies the starting offset from the enabled array
+/// * `instance_count` - Specifies the number of instances of the specified range of indices to be rendered
+///
+/// # Compatability
+/// - 3.1 or greater is required for [draw_elements_instanced]
+/// - 3.2 or greater is required for: [LineStripAdjacency](DrawMode::LineStripAdjacency),
+/// [LinesAdjacency](DrawMode::LinesAdjacency), [TriangleStripAdjacency](DrawMode::TriangleStripAdjacency)
+/// and [TrianglesAdjacency](DrawMode::TrianglesAdjacency)
+pub fn draw_elements_instanced(
+    mode: DrawMode,
+    count: usize,
+    indices_type: IndicesType,
+    offset: usize,
+    instance_count: usize,
+) -> Result<(), ErrorDrawElements> {
+    let mode: GLenum = mode.into();
+    let count = count as GLsizei;
+    let type_: GLenum = indices_type.into();
+    let indices = offset as *const std::os::raw::c_void;
+    let instancecount = instance_count as GLsizei;
+    unsafe { gl::DrawElementsInstanced(mode, count, type_, indices, instancecount) };
+    internal_handle_draw_elements_error()
 }
 
 /// generate buffer object names
@@ -333,6 +377,40 @@ pub fn gen_buffers(buffers: &mut [Buffer]) -> () {
             buffers.len() as GLsizei,
             buffers.as_mut_ptr() as *mut GLuint,
         )
+    }
+}
+
+/// return error information
+///
+/// Returns the value of the error flag. Each detectable error is assigned a numeric code and symbolic name.
+/// When an error occurs, the error flag is set to the appropriate error code value. No other errors
+/// are recorded until [get_error] is called, the error code is returned, and the flag is reset
+/// to [NoError](ErrorOpenGL::NoError). If a call to [get_error] returns
+/// [NoError](ErrorOpenGL::NoError), there has been no detectable error since the last call to [get_error],
+/// or since the GL was initialized.
+///
+/// To allow for distributed implementations, there may be several error flags. If any single
+/// error flag has recorded an error, the value of that flag is returned and that flag is reset to
+/// [NoError](ErrorOpenGL::NoError) when [get_error] is called. If more than one flag has recorded
+/// an error, [get_error] returns and clears an arbitrary error flag value. Thus, [get_error] should
+/// always be called in a loop, until it returns [NoError](ErrorOpenGL::NoError),
+/// if all error flags are to be reset.
+///
+/// When an error flag is set, results of a GL operation are undefined only if
+/// [OutOfMemory](ErrorOpenGL::OutOfMemory) has occurred. In all other cases, the command generating
+/// the error is ignored and has no effect on the GL state or frame buffer contents. If the generating
+/// command returns a value, it returns 0. If [get_error] itself generates an error, it returns 0.
+pub fn get_error() -> ErrorOpenGL {
+    match unsafe { gl::GetError() } {
+        gl::NO_ERROR => ErrorOpenGL::NoError,
+        gl::INVALID_ENUM => ErrorOpenGL::InvalidEnum,
+        gl::INVALID_VALUE => ErrorOpenGL::InvalidValue,
+        gl::INVALID_OPERATION => ErrorOpenGL::InvalidOperation,
+        gl::INVALID_FRAMEBUFFER_OPERATION => ErrorOpenGL::InvalidFrameBufferOperation,
+        gl::OUT_OF_MEMORY => ErrorOpenGL::OutOfMemory,
+        gl::STACK_UNDERFLOW => ErrorOpenGL::StackUnderflow,
+        gl::STACK_OVERFLOW => ErrorOpenGL::StackUnderflow,
+        unknown => ErrorOpenGL::Unknown(unknown),
     }
 }
 
@@ -370,40 +448,6 @@ pub enum ErrorOpenGL {
 
     /// GL returned a non-standard error code
     Unknown(u32),
-}
-
-/// return error information
-///
-/// Returns the value of the error flag. Each detectable error is assigned a numeric code and symbolic name.
-/// When an error occurs, the error flag is set to the appropriate error code value. No other errors
-/// are recorded until [get_error] is called, the error code is returned, and the flag is reset
-/// to [NoError](ErrorOpenGL::NoError). If a call to [get_error] returns
-/// [NoError](ErrorOpenGL::NoError), there has been no detectable error since the last call to [get_error],
-/// or since the GL was initialized.
-///
-/// To allow for distributed implementations, there may be several error flags. If any single
-/// error flag has recorded an error, the value of that flag is returned and that flag is reset to
-/// [NoError](ErrorOpenGL::NoError) when [get_error] is called. If more than one flag has recorded
-/// an error, [get_error] returns and clears an arbitrary error flag value. Thus, [get_error] should
-/// always be called in a loop, until it returns [NoError](ErrorOpenGL::NoError),
-/// if all error flags are to be reset.
-///
-/// When an error flag is set, results of a GL operation are undefined only if
-/// [OutOfMemory](ErrorOpenGL::OutOfMemory) has occurred. In all other cases, the command generating
-/// the error is ignored and has no effect on the GL state or frame buffer contents. If the generating
-/// command returns a value, it returns 0. If [get_error] itself generates an error, it returns 0.
-pub fn get_error() -> ErrorOpenGL {
-    match unsafe { gl::GetError() } {
-        gl::NO_ERROR => ErrorOpenGL::NoError,
-        gl::INVALID_ENUM => ErrorOpenGL::InvalidEnum,
-        gl::INVALID_VALUE => ErrorOpenGL::InvalidValue,
-        gl::INVALID_OPERATION => ErrorOpenGL::InvalidOperation,
-        gl::INVALID_FRAMEBUFFER_OPERATION => ErrorOpenGL::InvalidFrameBufferOperation,
-        gl::OUT_OF_MEMORY => ErrorOpenGL::OutOfMemory,
-        gl::STACK_UNDERFLOW => ErrorOpenGL::StackUnderflow,
-        gl::STACK_OVERFLOW => ErrorOpenGL::StackUnderflow,
-        unknown => ErrorOpenGL::Unknown(unknown),
-    }
 }
 
 fn internal_get_error() -> ErrorOpenGL {
