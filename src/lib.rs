@@ -234,6 +234,21 @@ impl From<ShaderType> for GLenum {
     }
 }
 
+impl TryFrom<GLenum> for ShaderType {
+    type Error = ();
+    fn try_from(value: GLenum) -> Result<Self, Self::Error> {
+        match value {
+            gl::COMPUTE_SHADER => Ok(ShaderType::Compute),
+            gl::VERTEX_SHADER => Ok(ShaderType::Vertex),
+            gl::TESS_CONTROL_SHADER => Ok(ShaderType::TessControl),
+            gl::TESS_EVALUATION_SHADER => Ok(ShaderType::TessEvaluation),
+            gl::GEOMETRY_SHADER => Ok(ShaderType::Geometry),
+            gl::FRAGMENT_SHADER => Ok(ShaderType::Fragment),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Transform Feedback Buffer Capturing Mode
 #[derive(Debug, Clone, Copy)]
 pub enum TransformFeedbackBufferMode {
@@ -991,6 +1006,121 @@ pub enum ErrorGetProgram {
     NotAProgram(Program),
     GeometryQueryWithoutGeometryShader(Program),
     ComputeQueryWithoutComputeShader(Program),
+}
+
+/// Returns a parameter from a shader object
+pub mod get_shader {
+    use super::*;
+
+    fn glint(shader: Shader, pname: GLenum) -> Result<GLint, ErrorGetShader> {
+        let mut params: GLint = 0;
+        unsafe { gl::GetShaderiv(shader.0, pname, &mut params) };
+        match internal_get_error() {
+            ErrorOpenGL::NoError => Ok(params.into()),
+            ErrorOpenGL::InvalidValue => Err(ErrorGetShader::NonOpenGLName(shader)),
+            ErrorOpenGL::InvalidOperation => Err(ErrorGetShader::NotAShader(shader)),
+            _ => unreachable!(),
+        }
+    }
+
+    fn as_bool(i: GLint) -> bool {
+        match i as GLboolean {
+            gl::TRUE => true,
+            gl::FALSE => false,
+            _ => unreachable!(),
+        }
+    }
+
+    fn as_u32(i: GLint) -> u32 {
+        i as u32
+    }
+
+    pub fn shader_type(shader: Shader) -> Result<ShaderType, ErrorGetShader> {
+        glint(shader, gl::SHADER_TYPE).map(|res| {
+            (res as GLenum)
+                .try_into()
+                .expect("Internal OpenGL Failure, invalid ShaderType value: {i}")
+        })
+    }
+
+    /// returns true if shader is currently flagged for deletion, and false otherwise.
+    pub fn delete_status(shader: Shader) -> Result<bool, ErrorGetShader> {
+        glint(shader, gl::DELETE_STATUS).map(as_bool)
+    }
+
+    /// returns true if the last compile operation on shader was successful, and false otherwise.
+    pub fn compile_status(shader: Shader) -> Result<bool, ErrorGetShader> {
+        glint(shader, gl::COMPILE_STATUS).map(as_bool)
+    }
+
+    /// returns the number of characters in the information log for shader including the null
+    /// termination character (i.e., the size of the character buffer required to store the
+    /// information log). If shader has no information log, a value of 0 is returned.
+    pub fn info_log_length(shader: Shader) -> Result<u32, ErrorGetShader> {
+        glint(shader, gl::INFO_LOG_LENGTH).map(as_u32)
+    }
+
+    /// returns the length of the concatenation of the source strings that make up the shader source
+    /// for the shader, including the null termination character. (i.e., the size of the character
+    /// buffer required to store the shader source). If no source code exists, 0 is returned.
+    pub fn source_length(shader: Shader) -> Result<u32, ErrorGetShader> {
+        glint(shader, gl::SHADER_SOURCE_LENGTH).map(as_u32)
+    }
+}
+
+/// Possible errors of [get_shader] queries
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorGetShader {
+    NonOpenGLName(Shader),
+    NotAShader(Shader),
+}
+
+/// Returns the information log for a shader object
+///
+/// [get_shader_info_log] returns the information log for the specified shader object.
+/// The information log for a shader object is modified when the shader is compiled.
+/// The string that is returned will be null terminated.
+///
+/// [get_shader_info_log] returns in `buffer` as much of the information log as it can. The number
+/// of characters actually returned, excluding the null termination character, is specified by the
+/// Ok return value. The size of the buffer required to store the returned information log can be
+/// obtained by calling [get_shader::info_log_length].
+///
+/// The information log for a shader object is a string that may contain diagnostic messages,
+/// warning messages, and other information about the last compile operation. When a shader object
+/// is created, its information log will be a string of length 0.
+///
+/// # Arguments
+/// * `shader` - Specifies the shader object whose information log is to be queried
+/// * `buffer` - Specifies an array of characters that is used to return the information log
+///
+/// # Notes
+/// The information log for a shader object is the OpenGL implementer's primary mechanism for conveying
+/// information about the compilation process. Therefore, the information log can be helpful to
+/// application developers during the development process, even when compilation is successful.
+/// Application developers should not expect different OpenGL implementations to
+/// produce identical information logs.
+pub fn get_shader_info_log(
+    shader: Shader,
+    buffer: &mut [u8],
+) -> Result<u32, ErrorGetShaderInfoLog> {
+    let bufSize = buffer.len() as GLsizei;
+    let mut written_length: GLsizei = 0;
+    let infoLog = buffer.as_mut_ptr() as *mut GLchar;
+    unsafe { gl::GetShaderInfoLog(shader.0, bufSize, &mut written_length, infoLog) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(written_length as u32),
+        ErrorOpenGL::InvalidValue => Err(ErrorGetShaderInfoLog::NonOpenGLName(shader)),
+        ErrorOpenGL::InvalidOperation => Err(ErrorGetShaderInfoLog::NotAShader(shader)),
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [get_shader_info_log]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorGetShaderInfoLog {
+    NonOpenGLName(Shader),
+    NotAShader(Shader),
 }
 
 /// generate vertex array object names
