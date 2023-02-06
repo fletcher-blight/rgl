@@ -33,6 +33,11 @@ pub struct Shader(GLuint);
 #[derive(Debug, Clone, Copy)]
 pub struct VertexArray(GLuint);
 
+/// Location of a specific uniform variable within a program
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy)]
+pub struct UniformLocation(GLint);
+
 /// Buffer Name Target Type
 #[derive(Debug, Clone, Copy)]
 pub enum BufferBindingTarget {
@@ -1093,6 +1098,81 @@ pub enum ErrorGetProgram {
     ComputeQueryWithoutComputeShader(Program),
 }
 
+/// return error information
+///
+/// Returns the value of the error flag. Each detectable error is assigned a numeric code and symbolic name.
+/// When an error occurs, the error flag is set to the appropriate error code value. No other errors
+/// are recorded until [get_error] is called, the error code is returned, and the flag is reset
+/// to [NoError](ErrorOpenGL::NoError). If a call to [get_error] returns
+/// [NoError](ErrorOpenGL::NoError), there has been no detectable error since the last call to [get_error],
+/// or since the GL was initialized.
+///
+/// To allow for distributed implementations, there may be several error flags. If any single
+/// error flag has recorded an error, the value of that flag is returned and that flag is reset to
+/// [NoError](ErrorOpenGL::NoError) when [get_error] is called. If more than one flag has recorded
+/// an error, [get_error] returns and clears an arbitrary error flag value. Thus, [get_error] should
+/// always be called in a loop, until it returns [NoError](ErrorOpenGL::NoError),
+/// if all error flags are to be reset.
+///
+/// When an error flag is set, results of a GL operation are undefined only if
+/// [OutOfMemory](ErrorOpenGL::OutOfMemory) has occurred. In all other cases, the command generating
+/// the error is ignored and has no effect on the GL state or frame buffer contents. If the generating
+/// command returns a value, it returns 0. If [get_error] itself generates an error, it returns 0.
+pub fn get_error() -> ErrorOpenGL {
+    match unsafe { gl::GetError() } {
+        gl::NO_ERROR => ErrorOpenGL::NoError,
+        gl::INVALID_ENUM => ErrorOpenGL::InvalidEnum,
+        gl::INVALID_VALUE => ErrorOpenGL::InvalidValue,
+        gl::INVALID_OPERATION => ErrorOpenGL::InvalidOperation,
+        gl::INVALID_FRAMEBUFFER_OPERATION => ErrorOpenGL::InvalidFrameBufferOperation,
+        gl::OUT_OF_MEMORY => ErrorOpenGL::OutOfMemory,
+        gl::STACK_UNDERFLOW => ErrorOpenGL::StackUnderflow,
+        gl::STACK_OVERFLOW => ErrorOpenGL::StackUnderflow,
+        unknown => ErrorOpenGL::Unknown(unknown),
+    }
+}
+
+fn internal_get_error() -> ErrorOpenGL {
+    // TODO: create a feature control so this will always return ErrorOpenGL::NoError if per-function error checking is disabled
+    get_error()
+}
+
+/// Currently defined OpenGL errors
+#[derive(Debug)]
+pub enum ErrorOpenGL {
+    /// No error has been recorded
+    NoError,
+
+    /// An unacceptable value is specified for an enumerated argument. The offending command is
+    /// ignored and has no other side effect than to set the error flag
+    InvalidEnum,
+
+    /// A numeric argument is out of range. The offending command is ignored and has no other
+    /// side effect than to set the error flag
+    InvalidValue,
+
+    /// The specified operation is not allowed in the current state. The offending command is
+    /// ignored and has no other side effect than to set the error flag
+    InvalidOperation,
+
+    /// The framebuffer object is not complete. The offending command is ignored and has no other
+    /// side effect than to set the error flag
+    InvalidFrameBufferOperation,
+
+    /// There is not enough memory left to execute the command. The state of the GL is undefined,
+    /// except for the state of the error flags, after this error is recorded
+    OutOfMemory,
+
+    /// An attempt has been made to perform an operation that would cause an internal stack to underflow
+    StackUnderflow,
+
+    /// An attempt has been made to perform an operation that would cause an internal stack to overflow
+    StackOverflow,
+
+    /// GL returned a non-standard error code
+    Unknown(u32),
+}
+
 /// Returns the information log for a program object
 ///
 /// [get_program_info_log] returns the information log for the specified program object.
@@ -1257,6 +1337,69 @@ pub enum ErrorGetShaderInfoLog {
     NotAShader(Shader),
 }
 
+/// Returns the location of a uniform variable
+///
+/// [get_uniform_location] returns [UniformLocation] that represents the location of a specific
+/// uniform variable within a program object. `uniform_name` must be a null terminated string that
+/// contains no white space. `uniform_name` must be an active uniform variable name in program that
+/// is not a structure, an array of structures, or a subcomponent of a vector or a matrix.
+/// This function errors with [UnknownUniformName](ErrorGetUniformLocation::UnknownUniformName)
+/// if `name` does not correspond to an active uniform variable in program, if `name` starts with
+/// the reserved prefix "gl_", or if `name` is associated with an atomic counter or a named uniform block.
+///
+/// Uniform variables that are structures or arrays of structures may be queried by calling
+/// [get_uniform_location] for each field within the structure. The array element operator "\[\]"
+/// and the structure field operator "." may be used in name in order to select elements within an
+/// array or fields within a structure. The result of using these operators is not allowed to be
+/// another structure, an array of structures, or a subcomponent of a vector or a matrix.
+/// Except if the last part of name indicates a uniform variable array, the location of the first
+/// element of an array can be retrieved by using the name of the array, or by using the
+/// name appended by "\[0\]".
+///
+/// The actual locations assigned to uniform variables are not known until the program object is
+/// linked successfully. After linking has occurred, the command [get_uniform_location] can be used
+/// to obtain the location of a uniform variable. This location value can then be passed to
+/// [uniform::set], to set the value of the uniform variable or to [uniform::get] in order to
+/// query the current value of the uniform variable. After a program object has been linked successfully,
+/// the index values for uniform variables remain fixed until the next link command occurs.
+/// Uniform variable locations and values can only be queried after a link if the link was successful.
+pub fn get_uniform_location(
+    program: Program,
+    uniform_name: &std::ffi::CStr,
+) -> Result<UniformLocation, ErrorGetUniformLocation> {
+    let name = uniform_name.as_ptr() as *const GLchar;
+    let location = unsafe { gl::GetUniformLocation(program.0, name) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => {
+            if location < 0 {
+                Err(ErrorGetUniformLocation::UnknownUniformName(
+                    uniform_name.into(),
+                ))
+            } else {
+                Ok(UniformLocation(location))
+            }
+        }
+        ErrorOpenGL::InvalidValue => Err(ErrorGetUniformLocation::NonOpenGLName(program)),
+        ErrorOpenGL::InvalidOperation => {
+            if !is_program(program) {
+                Err(ErrorGetUniformLocation::NotAProgram(program))
+            } else {
+                Err(ErrorGetUniformLocation::UnlinkedProgram(program))
+            }
+        }
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [get_shader_info_log]
+#[derive(Debug, Clone)]
+pub enum ErrorGetUniformLocation {
+    NonOpenGLName(Program),
+    NotAProgram(Program),
+    UnlinkedProgram(Program),
+    UnknownUniformName(std::ffi::CString),
+}
+
 /// generate vertex array object names
 ///
 /// [gen_vertex_arrays] fills all vertex array object names in `arrays`. There is no guarantee that
@@ -1275,81 +1418,6 @@ pub fn gen_vertex_arrays(arrays: &mut [VertexArray]) -> () {
     let n = arrays.len() as GLsizei;
     let arrays = arrays.as_mut_ptr() as *mut GLuint;
     unsafe { gl::GenVertexArrays(n, arrays) }
-}
-
-/// return error information
-///
-/// Returns the value of the error flag. Each detectable error is assigned a numeric code and symbolic name.
-/// When an error occurs, the error flag is set to the appropriate error code value. No other errors
-/// are recorded until [get_error] is called, the error code is returned, and the flag is reset
-/// to [NoError](ErrorOpenGL::NoError). If a call to [get_error] returns
-/// [NoError](ErrorOpenGL::NoError), there has been no detectable error since the last call to [get_error],
-/// or since the GL was initialized.
-///
-/// To allow for distributed implementations, there may be several error flags. If any single
-/// error flag has recorded an error, the value of that flag is returned and that flag is reset to
-/// [NoError](ErrorOpenGL::NoError) when [get_error] is called. If more than one flag has recorded
-/// an error, [get_error] returns and clears an arbitrary error flag value. Thus, [get_error] should
-/// always be called in a loop, until it returns [NoError](ErrorOpenGL::NoError),
-/// if all error flags are to be reset.
-///
-/// When an error flag is set, results of a GL operation are undefined only if
-/// [OutOfMemory](ErrorOpenGL::OutOfMemory) has occurred. In all other cases, the command generating
-/// the error is ignored and has no effect on the GL state or frame buffer contents. If the generating
-/// command returns a value, it returns 0. If [get_error] itself generates an error, it returns 0.
-pub fn get_error() -> ErrorOpenGL {
-    match unsafe { gl::GetError() } {
-        gl::NO_ERROR => ErrorOpenGL::NoError,
-        gl::INVALID_ENUM => ErrorOpenGL::InvalidEnum,
-        gl::INVALID_VALUE => ErrorOpenGL::InvalidValue,
-        gl::INVALID_OPERATION => ErrorOpenGL::InvalidOperation,
-        gl::INVALID_FRAMEBUFFER_OPERATION => ErrorOpenGL::InvalidFrameBufferOperation,
-        gl::OUT_OF_MEMORY => ErrorOpenGL::OutOfMemory,
-        gl::STACK_UNDERFLOW => ErrorOpenGL::StackUnderflow,
-        gl::STACK_OVERFLOW => ErrorOpenGL::StackUnderflow,
-        unknown => ErrorOpenGL::Unknown(unknown),
-    }
-}
-
-fn internal_get_error() -> ErrorOpenGL {
-    // TODO: create a feature control so this will always return ErrorOpenGL::NoError if per-function error checking is disabled
-    get_error()
-}
-
-/// Currently defined OpenGL errors
-#[derive(Debug)]
-pub enum ErrorOpenGL {
-    /// No error has been recorded
-    NoError,
-
-    /// An unacceptable value is specified for an enumerated argument. The offending command is
-    /// ignored and has no other side effect than to set the error flag
-    InvalidEnum,
-
-    /// A numeric argument is out of range. The offending command is ignored and has no other
-    /// side effect than to set the error flag
-    InvalidValue,
-
-    /// The specified operation is not allowed in the current state. The offending command is
-    /// ignored and has no other side effect than to set the error flag
-    InvalidOperation,
-
-    /// The framebuffer object is not complete. The offending command is ignored and has no other
-    /// side effect than to set the error flag
-    InvalidFrameBufferOperation,
-
-    /// There is not enough memory left to execute the command. The state of the GL is undefined,
-    /// except for the state of the error flags, after this error is recorded
-    OutOfMemory,
-
-    /// An attempt has been made to perform an operation that would cause an internal stack to underflow
-    StackUnderflow,
-
-    /// An attempt has been made to perform an operation that would cause an internal stack to overflow
-    StackOverflow,
-
-    /// GL returned a non-standard error code
-    Unknown(u32),
 }
 
 /// Determines if a name corresponds to a program object
@@ -1499,6 +1567,256 @@ pub enum ErrorLinkProgram {
     NonOpenGLName(Program),
     NotAProgram(Program),
     ProgramIsActiveAndTransformFeedbackIsActive(Program),
+}
+
+/// Replaces the source code in a shader object
+///
+/// [shader_source] sets the source code in `shader` to the source code in `source`. Any source code
+/// previously stored in the shader object is completely replaced. The source code strings are not
+/// scanned or parsed at this time; they are simply copied into the specified shader object.
+///
+/// # Notes
+/// OpenGL copies the shader source code strings when [shader_source] is called, so an application
+/// may free its copy of the source code strings immediately after the function returns.
+pub fn shader_source(shader: Shader, source: &[u8]) -> Result<(), ErrorShaderSource> {
+    let source_length = source.len() as GLint;
+    let source_ptr = source.as_ptr();
+    let sources = std::slice::from_ref(&source_ptr);
+
+    let count: GLsizei = 1;
+    let string = sources.as_ptr() as *const *const GLchar;
+    let length = &source_length as *const GLint;
+    unsafe { gl::ShaderSource(shader.0, count, string, length) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidValue => Err(ErrorShaderSource::NonOpenGLName(shader)),
+        ErrorOpenGL::InvalidOperation => Err(ErrorShaderSource::NotAShader(shader)),
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors for [shader_source]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorShaderSource {
+    NonOpenGLName(Shader),
+    NotAShader(Shader),
+}
+
+pub mod uniform {
+    use super::*;
+
+    pub trait Data {
+        fn set(&self, location: UniformLocation) -> ();
+    }
+
+    impl Data for f32 {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform1f(location.0, *self) }
+        }
+    }
+
+    impl Data for &[f32; 2] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform2f(location.0, self[0], self[1]) }
+        }
+    }
+
+    impl Data for &[f32; 3] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform3f(location.0, self[0], self[1], self[2]) }
+        }
+    }
+
+    impl Data for &[f32; 4] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform4f(location.0, self[0], self[1], self[2], self[3]) }
+        }
+    }
+
+    impl Data for &[f32] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr();
+            unsafe { gl::Uniform1fv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[f32; 2]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLfloat;
+            unsafe { gl::Uniform2fv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[f32; 3]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLfloat;
+            unsafe { gl::Uniform3fv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[f32; 4]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLfloat;
+            unsafe { gl::Uniform4fv(location.0, count, value) }
+        }
+    }
+
+    impl Data for i32 {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform1i(location.0, *self) }
+        }
+    }
+
+    impl Data for &[i32; 2] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform2i(location.0, self[0], self[1]) }
+        }
+    }
+
+    impl Data for &[i32; 3] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform3i(location.0, self[0], self[1], self[2]) }
+        }
+    }
+
+    impl Data for &[i32; 4] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform4i(location.0, self[0], self[1], self[2], self[3]) }
+        }
+    }
+
+    impl Data for &[i32] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr();
+            unsafe { gl::Uniform1iv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[i32; 2]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLint;
+            unsafe { gl::Uniform2iv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[i32; 3]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLint;
+            unsafe { gl::Uniform3iv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[i32; 4]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLint;
+            unsafe { gl::Uniform4iv(location.0, count, value) }
+        }
+    }
+
+    impl Data for u32 {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform1ui(location.0, *self) }
+        }
+    }
+
+    impl Data for &[u32; 2] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform2ui(location.0, self[0], self[1]) }
+        }
+    }
+
+    impl Data for &[u32; 3] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform3ui(location.0, self[0], self[1], self[2]) }
+        }
+    }
+
+    impl Data for &[u32; 4] {
+        fn set(&self, location: UniformLocation) -> () {
+            unsafe { gl::Uniform4ui(location.0, self[0], self[1], self[2], self[3]) }
+        }
+    }
+
+    impl Data for &[u32] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr();
+            unsafe { gl::Uniform1uiv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[u32; 2]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLuint;
+            unsafe { gl::Uniform2uiv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[u32; 3]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLuint;
+            unsafe { gl::Uniform3uiv(location.0, count, value) }
+        }
+    }
+
+    impl Data for &[[u32; 4]] {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.len() as GLsizei;
+            let value = self.as_ptr() as *const GLuint;
+            unsafe { gl::Uniform4uiv(location.0, count, value) }
+        }
+    }
+
+    struct Matrix<'data, const COLUMN: usize, const ROW: usize> {
+        data: &'data [[f32; ROW]; COLUMN],
+        /// specifies whether to transpose the matrix as the values are loaded into the uniform variable
+        transpose: bool,
+    }
+
+    impl<'data, const COLUMN: usize, const ROW: usize> Data for Matrix<'data, COLUMN, ROW> {
+        fn set(&self, location: UniformLocation) -> () {
+            let count = self.data.len() as GLsizei;
+            let value = self.data.as_ptr() as *const GLfloat;
+            let transpose = if self.transpose { gl::TRUE } else { gl::FALSE };
+            match (COLUMN, ROW) {
+                (2, 2) => unsafe { gl::UniformMatrix2fv(location.0, count, transpose, value) },
+                (2, 3) => unsafe { gl::UniformMatrix2x3fv(location.0, count, transpose, value) },
+                (2, 4) => unsafe { gl::UniformMatrix2x4fv(location.0, count, transpose, value) },
+                (3, 2) => unsafe { gl::UniformMatrix3x2fv(location.0, count, transpose, value) },
+                (3, 3) => unsafe { gl::UniformMatrix3fv(location.0, count, transpose, value) },
+                (3, 4) => unsafe { gl::UniformMatrix3x4fv(location.0, count, transpose, value) },
+                (4, 2) => unsafe { gl::UniformMatrix4x2fv(location.0, count, transpose, value) },
+                (4, 3) => unsafe { gl::UniformMatrix4x3fv(location.0, count, transpose, value) },
+                (4, 4) => unsafe { gl::UniformMatrix4fv(location.0, count, transpose, value) },
+                _ => panic!("Ahhh!"),
+            }
+        }
+    }
+
+    /// Specify the value of a uniform variable for the current program object
+    ///
+    /// [set] modifies the value of a uniform variable or a uniform variable array. The location of
+    /// the uniform variable to be modified is specified by `location`, which should be a value
+    /// returned by [get_uniform_location]. [set] operates on the program object that was made part
+    /// of current state by calling [use_program].
+    ///
+    /// All active uniform variables defined in a program object are initialized to 0 when the program
+    /// object is linked successfully. They retain the values assigned to them by a call to [set]
+    /// until the next successful link operation occurs on the program object, when they are once
+    /// again initialized to 0.
+    pub fn set<DataType: Data>(location: UniformLocation, data: &DataType) {
+        data.set(location);
+    }
 }
 
 /// Installs a program object as part of current rendering state
