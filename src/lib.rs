@@ -935,7 +935,7 @@ pub mod get_program {
     }
 
     /// returns the length of the program binary, in bytes that will be returned by a call to
-    /// [get_program_binary](super::get_program_binary). When a [link_status]  is false,
+    /// [get_program_binary](super::get_program_binary). When a [link_status] is false,
     /// its program binary length is zero.
     pub fn program_binary_length(program: Program) -> Result<u32, ErrorGetProgram> {
         glint(program, gl::PROGRAM_BINARY_LENGTH).map(as_u32)
@@ -1006,6 +1006,55 @@ pub enum ErrorGetProgram {
     NotAProgram(Program),
     GeometryQueryWithoutGeometryShader(Program),
     ComputeQueryWithoutComputeShader(Program),
+}
+
+/// Returns the information log for a program object
+///
+/// [get_program_info_log] returns the information log for the specified program object.
+/// The information log for a program object is modified when the program object is linked or validated.
+/// The string that is returned will be null terminated.
+///
+/// [get_program_info_log] returns in `buffer` as much of the information log as it can. The number
+/// of characters actually returned, excluding the null termination character, is specified by the
+/// Ok return value. The size of the buffer required to store the returned information log can be
+/// obtained by calling [get_program::info_log_length].
+///
+/// The information log for a program object is either an empty string, or a string containing
+/// information about the last link operation, or a string containing information about the last
+/// validation operation. It may contain diagnostic messages, warning messages, and other information.
+/// When a program object is created, its information log will be a string of length 0.
+///
+/// # Arguments
+/// * `program` - Specifies the program object whose information log is to be queried
+/// * `buffer` - Specifies an array of characters that is used to return the information log
+///
+/// # Notes
+/// The information log for a program object is the OpenGL implementer's primary mechanism for
+/// conveying information about linking and validating. Therefore, the information log can be helpful
+/// to application developers during the development process, even when these operations are successful.
+/// Application developers should not expect different OpenGL implementations to
+/// produce identical information logs.
+pub fn get_program_info_log(
+    program: Program,
+    buffer: &mut [u8],
+) -> Result<u32, ErrorGetProgramInfoLog> {
+    let buf_size = buffer.len() as GLsizei;
+    let mut written_length: GLsizei = 0;
+    let info_log = buffer.as_mut_ptr() as *mut GLchar;
+    unsafe { gl::GetProgramInfoLog(program.0, buf_size, &mut written_length, info_log) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(written_length as u32),
+        ErrorOpenGL::InvalidValue => Err(ErrorGetProgramInfoLog::NonOpenGLName(program)),
+        ErrorOpenGL::InvalidOperation => Err(ErrorGetProgramInfoLog::NotAProgram(program)),
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [get_program_info_log]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorGetProgramInfoLog {
+    NonOpenGLName(Program),
+    NotAProgram(Program),
 }
 
 /// Returns a parameter from a shader object
@@ -1104,10 +1153,10 @@ pub fn get_shader_info_log(
     shader: Shader,
     buffer: &mut [u8],
 ) -> Result<u32, ErrorGetShaderInfoLog> {
-    let bufSize = buffer.len() as GLsizei;
+    let buf_size = buffer.len() as GLsizei;
     let mut written_length: GLsizei = 0;
-    let infoLog = buffer.as_mut_ptr() as *mut GLchar;
-    unsafe { gl::GetShaderInfoLog(shader.0, bufSize, &mut written_length, infoLog) };
+    let info_log = buffer.as_mut_ptr() as *mut GLchar;
+    unsafe { gl::GetShaderInfoLog(shader.0, buf_size, &mut written_length, info_log) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(written_length as u32),
         ErrorOpenGL::InvalidValue => Err(ErrorGetShaderInfoLog::NonOpenGLName(shader)),
