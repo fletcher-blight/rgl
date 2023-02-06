@@ -147,6 +147,27 @@ impl From<DrawMode> for GLenum {
     }
 }
 
+impl TryFrom<GLenum> for DrawMode {
+    type Error = ();
+    fn try_from(value: GLenum) -> Result<Self, Self::Error> {
+        match value {
+            gl::POINTS => Ok(DrawMode::Points),
+            gl::LINE_STRIP => Ok(DrawMode::LineStrip),
+            gl::LINE_LOOP => Ok(DrawMode::LineLoop),
+            gl::LINES => Ok(DrawMode::Lines),
+            gl::LINE_STRIP_ADJACENCY => Ok(DrawMode::LineStripAdjacency),
+            gl::LINES_ADJACENCY => Ok(DrawMode::LinesAdjacency),
+            gl::TRIANGLE_STRIP => Ok(DrawMode::TriangleStrip),
+            gl::TRIANGLE_FAN => Ok(DrawMode::TriangleFan),
+            gl::TRIANGLES => Ok(DrawMode::Triangles),
+            gl::TRIANGLE_STRIP_ADJACENCY => Ok(DrawMode::TriangleStripAdjacency),
+            gl::TRIANGLES_ADJACENCY => Ok(DrawMode::TrianglesAdjacency),
+            gl::PATCHES => Ok(DrawMode::Patches),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Framebuffer Name Target Type
 #[derive(Debug, Clone, Copy)]
 pub enum FramebufferBindingTarget {
@@ -209,6 +230,22 @@ impl From<ShaderType> for GLenum {
             ShaderType::TessEvaluation => gl::TESS_EVALUATION_SHADER,
             ShaderType::Geometry => gl::GEOMETRY_SHADER,
             ShaderType::Fragment => gl::FRAGMENT_SHADER,
+        }
+    }
+}
+
+/// Transform Feedback Buffer Capturing Mode
+#[derive(Debug, Clone, Copy)]
+pub enum TransformFeedbackBufferMode {
+    Interleaved,
+    Separate,
+}
+
+impl From<TransformFeedbackBufferMode> for GLenum {
+    fn from(value: TransformFeedbackBufferMode) -> Self {
+        match value {
+            TransformFeedbackBufferMode::Interleaved => gl::INTERLEAVED_ATTRIBS,
+            TransformFeedbackBufferMode::Separate => gl::SEPARATE_ATTRIBS,
         }
     }
 }
@@ -437,7 +474,7 @@ pub fn clear_colour(red: f32, green: f32, blue: f32, alpha: f32) -> () {
 ///
 /// The compilation status will be stored as part of the shader object's state. This value will be
 /// set to true if the shader was compiled without errors and is ready for use, and false otherwise.
-/// It can be queried by calling [get_shader] with arguments `shader` and [CompileStatus].
+/// It can be queried by calling [get_shader::compile_status].
 ///
 /// Compilation of a shader can fail for a number of reasons as specified by the OpenGL Shading
 /// Language Specification. Whether or not the compilation was successful, information about the
@@ -544,6 +581,59 @@ pub fn delete_frame_buffers(frame_buffers: &[Framebuffer]) -> () {
     let n = frame_buffers.len() as GLsizei;
     let framebuffers = frame_buffers.as_ptr() as *const GLuint;
     unsafe { gl::DeleteFramebuffers(n, framebuffers) }
+}
+
+/// Deletes a program object
+///
+/// [delete_program] frees the memory and invalidates the name associated with the program object
+/// specified by program. This command effectively undoes the effects of a call to [create_program].
+///
+/// If a program object is in use as part of current rendering state, it will be flagged for deletion,
+/// but it will not be deleted until it is no longer part of current state for any rendering context.
+/// If a program object to be deleted has shader objects attached to it, those shader objects will
+/// be automatically detached but not deleted unless they have already been flagged for deletion by
+/// a previous call to [delete_shader]. A value of 0 for program will be silently ignored.
+///
+/// To determine whether a program object has been flagged for deletion, call [get_program::delete_status].
+pub fn delete_program(program: Program) -> Result<(), ErrorDeleteProgram> {
+    unsafe { gl::DeleteProgram(program.0) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidValue => Err(ErrorDeleteProgram::NonOpenGLName(program)),
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [delete_program]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorDeleteProgram {
+    NonOpenGLName(Program),
+}
+
+/// Deletes a shader object
+///
+/// [delete_shader] frees the memory and invalidates the name associated with the shader object
+/// specified by shader. This command effectively undoes the effects of a call to [create_shader].
+///
+/// If a shader object to be deleted is attached to a program object, it will be flagged for deletion,
+/// but it will not be deleted until it is no longer attached to any program object, for any rendering
+/// context (i.e., it must be detached from wherever it was attached before it will be deleted).
+/// A value of 0 for shader will be silently ignored.
+///
+/// To determine whether an object has been flagged for deletion, call [get_shader::delete_status].
+pub fn delete_shader(shader: Shader) -> Result<(), ErrorDeleteShader> {
+    unsafe { gl::DeleteShader(shader.0) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidValue => Err(ErrorDeleteShader::NonOpenGLName(shader)),
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [delete_shader]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorDeleteShader {
+    NonOpenGLName(Shader),
 }
 
 /// delete vertex array objects
@@ -724,6 +814,185 @@ pub fn gen_frame_buffers(ids: &mut [Framebuffer]) -> () {
     unsafe { gl::GenFramebuffers(n, ids) }
 }
 
+/// Returns a parameter from a program object
+///
+/// # Notes
+/// - 3.1 or greater is required for: [active_uniform_blocks](get_program::active_uniform_blocks)
+/// and [active_uniform_block_max_name_length](get_program::active_uniform_block_max_name_length)
+/// - 3.2 or greater is required for: [geometry_vertices_out](get_program::geometry_vertices_out),
+/// [geometry_input_type](get_program::geometry_input_type) and
+/// [geometry_output_type](get_program::geometry_output_type)
+/// - 4.3 or greater is required for: [compute_work_group_size](get_program::compute_work_group_size)
+pub mod get_program {
+    use super::*;
+
+    fn glint(program: Program, pname: GLenum) -> Result<GLint, ErrorGetProgram> {
+        let mut params: GLint = 0;
+        unsafe { gl::GetProgramiv(program.0, pname, &mut params) };
+        match internal_get_error() {
+            ErrorOpenGL::NoError => Ok(params.into()),
+            ErrorOpenGL::InvalidValue => Err(ErrorGetProgram::NonOpenGLName(program)),
+            ErrorOpenGL::InvalidOperation => {
+                if !is_program(program) {
+                    Err(ErrorGetProgram::NotAProgram(program))
+                } else if pname == gl::COMPUTE_WORK_GROUP_SIZE {
+                    Err(ErrorGetProgram::ComputeQueryWithoutComputeShader(program))
+                } else {
+                    Err(ErrorGetProgram::GeometryQueryWithoutGeometryShader(program))
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn as_bool(i: GLint) -> bool {
+        match i as GLboolean {
+            gl::TRUE => true,
+            gl::FALSE => false,
+            _ => unreachable!(),
+        }
+    }
+
+    fn as_u32(i: GLint) -> u32 {
+        i as u32
+    }
+
+    fn as_draw_mode(i: GLint) -> DrawMode {
+        (i as GLenum).try_into().expect(&format!(
+            "Internal OpenGL Failure, invalid DrawMode value: {i}"
+        ))
+    }
+
+    /// returns true if program is currently flagged for deletion, and false otherwise.
+    pub fn delete_status(program: Program) -> Result<bool, ErrorGetProgram> {
+        glint(program, gl::DELETE_STATUS).map(as_bool)
+    }
+
+    /// returns true if the last link operation on program was successful, and false otherwise.
+    pub fn link_status(program: Program) -> Result<bool, ErrorGetProgram> {
+        glint(program, gl::LINK_STATUS).map(as_bool)
+    }
+
+    /// returns true or if the last validation operation on program was successful, and false otherwise.
+    pub fn validate_status(program: Program) -> Result<bool, ErrorGetProgram> {
+        glint(program, gl::VALIDATE_STATUS).map(as_bool)
+    }
+
+    /// returns the number of characters in the information log for program including the null
+    /// termination character (i.e., the size of the character buffer required to store the
+    /// information log). If program has no information log, a value of 0 is returned.
+    pub fn info_log_length(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::INFO_LOG_LENGTH).map(as_u32)
+    }
+
+    /// returns the number of shader objects attached to program.
+    pub fn attached_shaders(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::ATTACHED_SHADERS).map(as_u32)
+    }
+
+    /// returns the number of active attribute atomic counter buffers used by program.
+    pub fn active_atomic_counter_buffers(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::ACTIVE_ATOMIC_COUNTER_BUFFERS).map(as_u32)
+    }
+
+    /// returns the number of active attribute variables for program.
+    pub fn active_attributes(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::ACTIVE_ATTRIBUTES).map(as_u32)
+    }
+
+    /// returns the length of the longest active attribute name for program, including the null
+    /// termination character (i.e., the size of the character buffer required to store the longest
+    /// attribute name). If no active attributes exist, 0 is returned.
+    pub fn active_attribute_max_length(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::ACTIVE_ATTRIBUTE_MAX_LENGTH).map(as_u32)
+    }
+
+    /// returns the number of active uniform variables for program.
+    pub fn active_uniforms(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::ACTIVE_UNIFORMS).map(as_u32)
+    }
+
+    /// returns the length of the longest active uniform variable name for program, including the
+    /// null termination character (i.e., the size of the character buffer required to store the
+    /// longest uniform variable name). If no active uniform variables exist, 0 is returned.
+    pub fn active_uniform_max_length(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::ACTIVE_UNIFORM_MAX_LENGTH).map(as_u32)
+    }
+
+    /// returns the length of the program binary, in bytes that will be returned by a call to
+    /// [get_program_binary](super::get_program_binary). When a [link_status]  is false,
+    /// its program binary length is zero.
+    pub fn program_binary_length(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::PROGRAM_BINARY_LENGTH).map(as_u32)
+    }
+
+    /// returns an array of three integers containing the local work group size of the compute
+    /// program as specified by its input layout qualifier(s). program must be the name of a program
+    /// object that has been previously linked successfully and contains a binary for the
+    /// compute shader stage.
+    pub fn compute_work_group_size(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::COMPUTE_WORK_GROUP_SIZE).map(as_u32)
+    }
+
+    /// returns a symbolic constant indicating the buffer mode used when transform feedback is active.
+    pub fn transform_feedback_buffer_mode(
+        program: Program,
+    ) -> Result<Option<TransformFeedbackBufferMode>, ErrorGetProgram> {
+        glint(program, gl::TRANSFORM_FEEDBACK_BUFFER_MODE).map(|res| match res as GLenum {
+            gl::INTERLEAVED_ATTRIBS => Some(TransformFeedbackBufferMode::Interleaved),
+            gl::SEPARATE_ATTRIBS => Some(TransformFeedbackBufferMode::Separate),
+            _ => None,
+        })
+    }
+
+    /// returns the number of varying variables to capture in transform feedback mode for the program.
+    pub fn transform_feedback_varyings(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::TRANSFORM_FEEDBACK_VARYINGS).map(as_u32)
+    }
+
+    /// returns the length of the longest variable name to be used for transform feedback,
+    /// including the null-terminator.
+    pub fn transform_feedback_varying_max_length(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH).map(as_u32)
+    }
+
+    /// returns the maximum number of vertices that the geometry shader in program will output.
+    pub fn geometry_vertices_out(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::GEOMETRY_VERTICES_OUT).map(as_u32)
+    }
+
+    /// returns the primitive draw mode type accepted as input to the geometry shader contained in program.
+    pub fn geometry_input_type(program: Program) -> Result<DrawMode, ErrorGetProgram> {
+        glint(program, gl::GEOMETRY_INPUT_TYPE).map(as_draw_mode)
+    }
+
+    /// returns the primitive draw mode type that will be output by the geometry shader contained in program.
+    pub fn geometry_output_type(program: Program) -> Result<DrawMode, ErrorGetProgram> {
+        glint(program, gl::GEOMETRY_OUTPUT_TYPE).map(as_draw_mode)
+    }
+
+    /// returns the number of active uniform blocks for program.
+    pub fn active_uniform_blocks(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::ACTIVE_UNIFORM_BLOCKS).map(as_u32)
+    }
+
+    /// returns the length of the longest active uniform block name for program, including the
+    /// null termination character (i.e., the size of the character buffer required to store the
+    /// longest uniform block name). If no active uniform block exist, 0 is returned.
+    pub fn active_uniform_block_max_name_length(program: Program) -> Result<u32, ErrorGetProgram> {
+        glint(program, gl::ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH).map(as_u32)
+    }
+}
+
+/// Possible errors of [get_program] queries
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorGetProgram {
+    NonOpenGLName(Program),
+    NotAProgram(Program),
+    GeometryQueryWithoutGeometryShader(Program),
+    ComputeQueryWithoutComputeShader(Program),
+}
+
 /// generate vertex array object names
 ///
 /// [gen_vertex_arrays] fills all vertex array object names in `arrays`. There is no guarantee that
@@ -865,7 +1134,7 @@ pub fn is_shader(shader: Shader) -> bool {
 ///
 /// The status of the link operation will be stored as part of the program object's state. This value
 /// will be set to true if the program object was linked without errors and is ready for use,
-/// and false otherwise. It can be queried by calling [get_program] with arguments program and [LinkStatus].
+/// and false otherwise. It can be queried by calling [get_program::link_status].
 ///
 /// As a result of a successful link operation, all active user-defined uniform variables belonging to
 /// program will be initialized to 0, and each of the program object's active uniform variables will
@@ -910,7 +1179,8 @@ pub fn is_shader(shader: Shader) -> bool {
 /// - Any two entries in the `varyings` array given [transform_feedback_varyings] specify the same
 /// varying variable.
 /// - The total number of components to capture in any transform feedback varying variable is greater
-/// than the constant [MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS] and the buffer mode is [SeparateAttributes].
+/// than the constant [MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS] and the buffer mode is
+/// [TransformFeedbackBufferMode::Separate].
 ///
 /// When a program object has been successfully linked, the program object can be made part of current
 /// state by calling [use_program]. Whether or not the link operation was successful, the program
@@ -960,8 +1230,76 @@ pub fn link_program(program: Program) -> Result<(), ErrorLinkProgram> {
 }
 
 /// Possible errors for [link_program]
+#[derive(Debug, Clone, Copy)]
 pub enum ErrorLinkProgram {
     NonOpenGLName(Program),
     NotAProgram(Program),
     ProgramIsActiveAndTransformFeedbackIsActive(Program),
+}
+
+/// Installs a program object as part of current rendering state
+///
+/// [use_program] installs the program object specified by program as part of current rendering state.
+/// One or more executables are created in a program object by successfully attaching shader objects
+/// to it with [attach_shader], successfully compiling the shader objects with [compile_shader],
+/// and successfully linking the program object with [link_program].
+///
+/// A program object will contain an executable that will run on the vertex processor if it contains
+/// one or more shader objects of type [Vertex](ShaderType::Vertex) that have been successfully
+/// compiled and linked. A program object will contain an executable that will run on the geometry
+/// processor if it contains one or more shader objects of type [Geometry](ShaderType::Geometry) that
+/// have been successfully compiled and linked. Similarly, a program object will contain an executable
+/// that will run on the fragment processor if it contains one or more shader objects of type
+/// [Fragment](ShaderType::Fragment) that have been successfully compiled and linked.
+///
+/// While a program object is in use, applications are free to modify attached shader objects,
+/// compile attached shader objects, attach additional shader objects, and detach or delete
+/// shader objects. None of these operations will affect the executables that are part of the
+/// current state. However, relinking the program object that is currently in use will install the
+/// program object as part of the current rendering state if the link operation was successful
+/// (see [link_program]). If the program object currently in use is relinked unsuccessfully,
+/// [link_status](get_program::link_status) will be false, but the executables and associated
+/// state will remain part of the current state until a subsequent call to [use_program] removes
+/// it from use. After it is removed from use, it cannot be made part of current state until it
+/// has been successfully relinked.
+///
+/// If program is zero, then the current rendering state refers to an invalid program object and
+/// the results of shader execution are undefined. However, this is not an error.
+///
+/// If program does not contain shader objects of type [Fragment](ShaderType::Fragment), an executable
+/// will be installed on the vertex, and possibly geometry processors, but the results of
+/// fragment shader execution will be undefined.
+///
+/// # Notes
+/// - Like buffer and texture objects, the name space for program objects may be shared across a
+/// set of contexts, as long as the server sides of the contexts share the same address space.
+/// If the name space is shared across contexts, any attached objects and the data associated
+/// with those attached objects are shared as well.
+/// - Applications are responsible for providing the synchronization across API calls when objects
+/// are accessed from different execution threads.
+pub fn use_program(program: Program) -> Result<(), ErrorUseProgram> {
+    unsafe { gl::UseProgram(program.0) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidValue => Err(ErrorUseProgram::NonOpenGLName(program)),
+        ErrorOpenGL::InvalidOperation => {
+            if !is_program(program) {
+                Err(ErrorUseProgram::NotAProgram(program))
+            } else if let Ok(Some(_)) = get_program::transform_feedback_buffer_mode(program) {
+                Err(ErrorUseProgram::TransportFeedbackModeActive(program))
+            } else {
+                Err(ErrorUseProgram::CouldNotBeMadePartOfCurrentState(program))
+            }
+        }
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors for [use_program]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorUseProgram {
+    NonOpenGLName(Program),
+    NotAProgram(Program),
+    CouldNotBeMadePartOfCurrentState(Program),
+    TransportFeedbackModeActive(Program),
 }
