@@ -10,6 +10,16 @@ pub struct Buffer(GLuint);
 #[derive(Debug, Clone, Copy)]
 pub struct Framebuffer(GLuint);
 
+/// Program Object
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy)]
+pub struct Program(GLuint);
+
+/// Shader Object
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy)]
+pub struct Shader(GLuint);
+
 /// Vertex Array Name Object
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy)]
@@ -163,6 +173,85 @@ impl From<IndicesType> for GLenum {
             IndicesType::U32 => gl::UNSIGNED_INT,
         }
     }
+}
+
+/// Shader Object Types
+#[derive(Debug, Clone, Copy)]
+pub enum ShaderType {
+    /// intended to run on the programmable compute processor
+    Compute,
+    /// intended to run on the programmable vertex processor
+    Vertex,
+    /// intended to run on the programmable tessellation processor in the control stage
+    TessControl,
+    /// intended to run on the programmable tessellation processor in the evaluation stage
+    TessEvaluation,
+    /// intended to run on the programmable geometry processor
+    Geometry,
+    /// intended to run on the programmable fragment processor
+    Fragment,
+}
+
+impl From<ShaderType> for GLenum {
+    fn from(value: ShaderType) -> Self {
+        match value {
+            ShaderType::Compute => gl::COMPUTE_SHADER,
+            ShaderType::Vertex => gl::VERTEX_SHADER,
+            ShaderType::TessControl => gl::TESS_CONTROL_SHADER,
+            ShaderType::TessEvaluation => gl::TESS_EVALUATION_SHADER,
+            ShaderType::Geometry => gl::GEOMETRY_SHADER,
+            ShaderType::Fragment => gl::FRAGMENT_SHADER,
+        }
+    }
+}
+
+/// Attaches a shader object to a program object
+///
+/// In order to create a complete shader program, there must be a way to specify the list of things
+/// that will be linked together. Program objects provide this mechanism. Shaders that are to be
+/// linked together in a program object must first be attached to that program object. [attach_shader]
+/// attaches the shader object specified by shader to the program object specified by program.
+/// This indicates that `shader` will be included in link operations that will be performed on `program`.
+///
+/// All operations that can be performed on a shader object are valid whether or not the shader
+/// object is attached to a program object. It is permissible to attach a shader object to a program
+/// object before source code has been loaded into the shader object or before the shader object has
+/// been compiled. It is permissible to attach multiple shader objects of the same type because each
+/// may contain a portion of the complete shader. It is also permissible to attach a shader object
+/// to more than one program object. If a shader object is deleted while it is attached to a program
+/// object, it will be flagged for deletion, and deletion will not occur until [detach_shader] is
+/// called to detach it from all program objects to which it is attached.
+///
+/// # Arguments
+/// * `program` - Specifies the program object to which a shader object will be attached
+/// * `shader` - Specifies the shader object that is to be attached
+pub fn attach_shader(program: Program, shader: Shader) -> Result<(), ErrorAttachShader> {
+    unsafe { gl::AttachShader(program.0, shader.0) };
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidValue => Err(ErrorAttachShader::NonOpenGLName(program, shader)),
+        ErrorOpenGL::InvalidOperation => {
+            if !is_program(program) {
+                Err(ErrorAttachShader::NotAProgram(program))
+            } else if !is_shader(shader) {
+                Err(ErrorAttachShader::NotAShader(shader))
+            } else {
+                Err(ErrorAttachShader::ShaderAlreadyAttachedToProgram(
+                    program, shader,
+                ))
+            }
+        }
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [attach_shader]
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorAttachShader {
+    NonOpenGLName(Program, Shader),
+    NotAProgram(Program),
+    NotAShader(Shader),
+    ShaderAlreadyAttachedToProgram(Program, Shader),
 }
 
 /// bind a named buffer object
@@ -324,6 +413,59 @@ pub fn clear(mask: ClearMask) -> () {
 /// the color buffers. Values specified by [clear_colour] are clamped to the range \[0,1\].
 pub fn clear_colour(red: f32, green: f32, blue: f32, alpha: f32) -> () {
     unsafe { gl::ClearColor(red, green, blue, alpha) }
+}
+
+/// Creates a program object
+///
+/// [create_program] creates an empty program object and returns a non-zero value by which it can
+/// be referenced. A program object is an object to which shader objects can be attached.
+/// This provides a mechanism to specify the shader objects that will be linked to create a program.
+/// It also provides a means for checking the compatibility of the shaders that will be used to
+/// create a program (for instance, checking the compatibility between a vertex shader
+/// and a fragment shader). When no longer needed as part of a program object,
+/// shader objects can be detached.
+///
+/// One or more executables are created in a program object by successfully attaching shader objects
+/// to it with [attach_shader], successfully compiling the shader objects with [compile_shader],
+/// and successfully linking the program object with [link_program]. These executables are made part
+/// of current state when [use_program] is called. Program objects can be deleted by calling [delete_program].
+/// The memory associated with the program object will be deleted when it is no longer part of
+/// current rendering state for any context.
+///
+/// # Notes
+/// Like buffer and texture objects, the name space for program objects may be shared across a set
+/// of contexts, as long as the server sides of the contexts share the same address space. If the
+/// name space is shared across contexts, any attached objects and the data associated with those
+/// attached objects are shared as well.
+///
+/// Applications are responsible for providing the synchronization across API calls when objects
+/// are accessed from different execution threads.
+///
+/// # Errors
+/// This function returns 0 if an error occurs creating the program object.
+pub fn create_program() -> Program {
+    let id = unsafe { gl::CreateProgram() };
+    Program(id)
+}
+
+/// Creates a shader object
+///
+/// [create_shader] creates an empty shader object and returns a non-zero value by which it can
+/// be referenced. A shader object is used to maintain the source code strings that define a shader.
+/// `shader_type` indicates the type of shader to be created.
+///
+/// # Notes
+/// - Like buffer and texture objects, the name space for shader objects may be shared across a set
+/// of contexts, as long as the server sides of the contexts share the same address space.
+/// If the name space is shared across contexts, any attached objects and the data associated with
+/// those attached objects are shared as well.
+///
+/// - Applications are responsible for providing the synchronization across API calls when objects
+/// are accessed from different execution threads.
+pub fn create_shader(shader_type: ShaderType) -> Shader {
+    let type_: GLuint = shader_type.into();
+    let id = unsafe { gl::CreateShader(type_) };
+    Shader(id)
 }
 
 /// delete named buffer objects
@@ -614,6 +756,40 @@ pub enum ErrorOpenGL {
 
     /// GL returned a non-standard error code
     Unknown(u32),
+}
+
+/// Determines if a name corresponds to a program object
+///
+/// [is_program] returns true if `program` is the name of a program object previously created with
+/// [create_program] and not yet deleted with [delete_program]. If `program` is zero or a non-zero
+/// value that is not the name of a program object, or if an error occurs, [is_program] returns false.
+///
+/// # Arguments
+/// * `program` - Specifies a potential program object
+///
+/// # Notes
+/// - No error is generated if program is not a valid program object name.
+/// - A program object marked for deletion with [delete_program] but still in use as part of current
+/// rendering state is still considered a program object and [is_program] will return true.
+pub fn is_program(program: Program) -> bool {
+    (unsafe { gl::IsProgram(program.0) }) == gl::TRUE
+}
+
+/// Determines if a name corresponds to a shader object
+///
+/// [is_shader] returns true if `shader` is the name of a shader object previously created with
+/// [create_shader] and not yet deleted with [delete_shader]. If `shader` is zero or a non-zero
+/// value that is not the name of a shader object, or if an error occurs, [is_shader] returns false.
+///
+/// # Arguments
+/// * `shader` - Specifies a potential shader object
+///
+/// # Notes
+/// - No error is generated if shader is not a valid shader object name.
+/// - A shader object marked for deletion with [delete_shader] but still attached to a program object
+/// is still considered a shader object and [is_shader] will return true.
+pub fn is_shader(shader: Shader) -> bool {
+    (unsafe { gl::IsShader(shader.0) }) == gl::TRUE
 }
 
 fn internal_get_error() -> ErrorOpenGL {
