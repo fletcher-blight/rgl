@@ -82,22 +82,15 @@ impl From<BufferBindingTarget> for GLenum {
     }
 }
 
-/// Framebuffer Name Target Type
-#[derive(Debug, Clone, Copy)]
-pub enum FramebufferBindingTarget {
-    Draw,
-    Read,
-    ReadDraw,
-}
-
-impl From<FramebufferBindingTarget> for GLenum {
-    fn from(value: FramebufferBindingTarget) -> Self {
-        match value {
-            FramebufferBindingTarget::Draw => gl::DRAW_FRAMEBUFFER,
-            FramebufferBindingTarget::Read => gl::READ_FRAMEBUFFER,
-            FramebufferBindingTarget::ReadDraw => gl::FRAMEBUFFER,
-        }
-    }
+/// Bitmask for [clear] to specify the desired buffer(s) to clear  
+#[bitmask_enum::bitmask(u32)]
+pub enum ClearMask {
+    /// Indicates the buffers currently enabled for color writing
+    Colour = gl::COLOR_BUFFER_BIT,
+    /// Indicates the depth buffer
+    Depth = gl::DEPTH_BUFFER_BIT,
+    /// Indicates the stencil buffer
+    Stencil = gl::STENCIL_BUFFER_BIT,
 }
 
 /// Primitive Render Draw Type
@@ -132,6 +125,24 @@ impl From<DrawMode> for GLenum {
             DrawMode::TriangleStripAdjacency => gl::TRIANGLE_STRIP_ADJACENCY,
             DrawMode::TrianglesAdjacency => gl::TRIANGLES_ADJACENCY,
             DrawMode::Patches => gl::PATCHES,
+        }
+    }
+}
+
+/// Framebuffer Name Target Type
+#[derive(Debug, Clone, Copy)]
+pub enum FramebufferBindingTarget {
+    Draw,
+    Read,
+    ReadDraw,
+}
+
+impl From<FramebufferBindingTarget> for GLenum {
+    fn from(value: FramebufferBindingTarget) -> Self {
+        match value {
+            FramebufferBindingTarget::Draw => gl::DRAW_FRAMEBUFFER,
+            FramebufferBindingTarget::Read => gl::READ_FRAMEBUFFER,
+            FramebufferBindingTarget::ReadDraw => gl::FRAMEBUFFER,
         }
     }
 }
@@ -288,6 +299,33 @@ pub enum ErrorBindVertexArray {
     InvalidArray(VertexArray),
 }
 
+/// clear buffers to preset values
+///
+/// [clear] sets the bitplane area of the window to values previously selected by
+/// [Colour](ClearMask::Colour), [Depth](ClearMask::Depth), and [Stencil](ClearMask::Stencil).
+/// Multiple colour buffers can be cleared simultaneously by selecting more than one buffer at a time
+/// using [draw_buffer].
+///
+/// The pixel ownership test, the scissor test, dithering, and the buffer writemasks affect the
+/// operation of [clear]. The scissor box bounds the cleared region. Alpha function, blend function,
+/// logical operation, stenciling, texture mapping, and depth-buffering are ignored by [clear].
+///
+/// [clear] takes a single argument that is the bitwise OR of several values indicating which
+/// buffer is to be cleared.
+///
+/// The value to which each buffer is cleared depends on the setting of the clear value for that buffer.
+pub fn clear(mask: ClearMask) -> () {
+    unsafe { gl::Clear(mask.into()) }
+}
+
+/// specify clear values for the color buffers
+///
+/// [clear_colour] specifies the `red`, `green`, `blue`, and `alpha` values used by [clear] to clear
+/// the color buffers. Values specified by [clear_colour] are clamped to the range \[0,1\].
+pub fn clear_colour(red: f32, green: f32, blue: f32, alpha: f32) -> () {
+    unsafe { gl::ClearColor(red, green, blue, alpha) }
+}
+
 /// delete named buffer objects
 ///
 /// [delete_buffers] deletes all buffer objects named by `buffers`. After a buffer object is deleted,
@@ -406,18 +444,18 @@ pub enum ErrorDrawElements {
 ///
 /// [draw_elements_instanced] has the same effect as:
 /// ```
-/// use rgl::*;
-/// fn draw_elements_instanced(
-///     mode: DrawMode,
-///     count: usize,
-///     indices_type: IndicesType,
-///     offset: usize,
-///     instance_count: usize) -> Result<(), ErrorDrawElements> {
-///     for instance_id in 0..instance_count {
-///         draw_elements(mode, count, indices_type, offset)?;
-///     }
-///     Ok(())
+/// # use rgl::*;
+/// # fn draw_elements_instanced(
+/// #     mode: DrawMode,
+/// #     count: usize,
+/// #     indices_type: IndicesType,
+/// #     offset: usize,
+/// #     instance_count: usize) -> Result<(), ErrorDrawElements> {
+/// for instance_id in 0..instance_count {
+///     draw_elements(mode, count, indices_type, offset)?;
 /// }
+/// #    Ok(())
+/// # }
 /// ```
 ///
 /// # Arguments
