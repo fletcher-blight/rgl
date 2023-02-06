@@ -2,11 +2,11 @@ use gl::types::*;
 
 pub use gl::load_with;
 
-pub const MAX_VERTEX_ATTRIBUTES: usize = gl::MAX_VERTEX_ATTRIBS as usize;
-pub const MAX_DRAW_BUFFERS: usize = gl::MAX_DRAW_BUFFERS as usize;
-pub const MAX_DUAL_SOURCE_DRAW_BUFFERS: usize = gl::MAX_DUAL_SOURCE_DRAW_BUFFERS as usize;
-pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: usize =
-    gl::MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS as usize;
+pub const MAX_VERTEX_ATTRIBUTES: u32 = gl::MAX_VERTEX_ATTRIBS as u32;
+pub const MAX_DRAW_BUFFERS: u32 = gl::MAX_DRAW_BUFFERS as u32;
+pub const MAX_DUAL_SOURCE_DRAW_BUFFERS: u32 = gl::MAX_DUAL_SOURCE_DRAW_BUFFERS as u32;
+pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: u32 =
+    gl::MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS as u32;
 
 /// Buffer Name Object
 #[repr(transparent)]
@@ -681,6 +681,91 @@ pub fn detach_shader(program: Program, shader: Shader) -> Result<(), ErrorAttach
 
 /// render primitives from array data
 ///
+/// [draw_arrays] specifies multiple geometric primitives with very few subroutine calls. Instead of
+/// calling a GL procedure to pass each individual vertex, normal, texture coordinate, edge flag,
+/// or color, you can prespecify separate arrays of vertices, normals, and colors and use them to
+/// construct a sequence of primitives with a single call to [draw_arrays].
+///
+/// When [draw_arrays] is called, it uses `count` sequential elements from each enabled array to
+/// construct a sequence of geometric primitives, beginning with element `first`. `mode` specifies
+/// what kind of primitives are constructed and how the array elements construct those primitives.
+///
+/// Vertex attributes that are modified by [draw_arrays] have an unspecified value after
+/// [draw_arrays] returns. Attributes that aren't modified remain well defined.
+///
+/// # Arguments
+/// * `mode` - Specifies what kind of primitives to render
+/// * `first` - Specifies the starting index in the enabled arrays
+/// * `count` - Specifies the number of indices to be rendered
+///
+/// # Notes
+/// - 3.2 or greater is required for: [LineStripAdjacency](DrawMode::LineStripAdjacency),
+/// [LinesAdjacency](DrawMode::LinesAdjacency), [TriangleStripAdjacency](DrawMode::TriangleStripAdjacency)
+/// and [TrianglesAdjacency](DrawMode::TrianglesAdjacency)
+pub fn draw_arrays(mode: DrawMode, first: u32, count: u32) -> Result<(), ErrorDrawArrays> {
+    let mode: GLenum = mode.into();
+    let first = first as GLint;
+    let count = count as GLsizei;
+    unsafe { gl::DrawArrays(mode, first, count) };
+    internal_handle_draw_arrays_error()
+}
+
+fn internal_handle_draw_arrays_error() -> Result<(), ErrorDrawArrays> {
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(()),
+        ErrorOpenGL::InvalidOperation => todo!(),
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [draw_arrays] and variants
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorDrawArrays {
+    /// a non-zero buffer object name is bound to an enabled array and the buffer object's
+    /// data store is currently mapped
+    BufferObjectDataCurrentlyMapped,
+    /// a geometry shader is active and `mode` is incompatible with the input primitive type of the
+    /// geometry shader in the currently installed program object
+    IncompatibleGeometryShaderInputMode,
+}
+
+/// draw multiple instances of a range of elements
+///
+/// [draw_arrays_instanced] behaves identically to [draw_arrays] except that `instance_count` instances
+/// of the range of elements are executed and the value of the internal counter `instanceID` advances
+/// for each iteration. `instanceID` is an internal 32-bit integer counter that may be read by a
+/// vertex shader as `gl_InstanceID`.
+///
+/// [draw_arrays_instanced] has the same effect as:
+/// ```
+/// # use rgl::*;
+/// # fn draw_arrays_instanced(
+/// #     mode: DrawMode,
+/// #     first: u32,
+/// #     count: u32,
+/// #     instance_count: u32) -> Result<(), ErrorDrawArrays> {
+/// for instance_id in 0..instance_count {
+///     draw_arrays(mode, first, count)?;
+/// }
+/// #    Ok(())
+/// # }
+/// ```
+pub fn draw_arrays_instanced(
+    mode: DrawMode,
+    first: u32,
+    count: u32,
+    instance_count: u32,
+) -> Result<(), ErrorDrawArrays> {
+    let mode: GLenum = mode.into();
+    let first = first as GLint;
+    let count = count as GLsizei;
+    let instancecount = instance_count as GLsizei;
+    unsafe { gl::DrawArraysInstanced(mode, first, count, instancecount) };
+    internal_handle_draw_arrays_error()
+}
+
+/// render primitives from array data
+///
 /// [draw_elements] specifies multiple geometric primitives with very few subroutine calls.
 /// Instead of calling a GL function to pass each individual vertex, normal, texture coordinate,
 /// edge flag, or color, you can pre-specify separate arrays of vertices, normals, and so on,
@@ -706,9 +791,9 @@ pub fn detach_shader(program: Program, shader: Shader) -> Result<(), ErrorAttach
 /// and [TrianglesAdjacency](DrawMode::TrianglesAdjacency)
 pub fn draw_elements(
     mode: DrawMode,
-    count: usize,
+    count: u32,
     indices_type: IndicesType,
-    offset: usize,
+    offset: u32,
 ) -> Result<(), ErrorDrawElements> {
     let mode: GLenum = mode.into();
     let count = count as GLsizei;
@@ -750,10 +835,10 @@ pub enum ErrorDrawElements {
 /// # use rgl::*;
 /// # fn draw_elements_instanced(
 /// #     mode: DrawMode,
-/// #     count: usize,
+/// #     count: u32,
 /// #     indices_type: IndicesType,
-/// #     offset: usize,
-/// #     instance_count: usize) -> Result<(), ErrorDrawElements> {
+/// #     offset: u32,
+/// #     instance_count: u32) -> Result<(), ErrorDrawElements> {
 /// for instance_id in 0..instance_count {
 ///     draw_elements(mode, count, indices_type, offset)?;
 /// }
@@ -775,10 +860,10 @@ pub enum ErrorDrawElements {
 /// and [TrianglesAdjacency](DrawMode::TrianglesAdjacency)
 pub fn draw_elements_instanced(
     mode: DrawMode,
-    count: usize,
+    count: u32,
     indices_type: IndicesType,
-    offset: usize,
-    instance_count: usize,
+    offset: u32,
+    instance_count: u32,
 ) -> Result<(), ErrorDrawElements> {
     let mode: GLenum = mode.into();
     let count = count as GLsizei;
