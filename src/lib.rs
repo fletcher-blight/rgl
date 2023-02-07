@@ -920,33 +920,6 @@ pub fn gen_frame_buffers(ids: &mut [Framebuffer]) -> () {
     unsafe { gl::GenFramebuffers(n, ids) }
 }
 
-pub trait ProgramParamConverter {
-    type R;
-    fn convert(i: GLint) -> Self::R;
-}
-pub trait ProgramParamGLenum {
-    fn as_gl_enum() -> GLenum;
-}
-
-macro_rules! generate_program_param {
-    ($R:ty, $C:expr, $($P:ty),+) => {
-        $(impl ProgramParamConverter for $P {
-            type R = $R;
-            fn convert(i: GLint) -> Self::R {
-                $C(i)
-            }
-        })+
-    };
-}
-
-fn glint_as_bool(i: GLint) -> bool {
-    match i as GLboolean {
-        gl::TRUE => true,
-        gl::FALSE => false,
-        _ => unreachable!(),
-    }
-}
-
 fn glint_as_u32(i: GLint) -> u32 {
     i as u32
 }
@@ -957,151 +930,129 @@ fn glint_as_draw_mode(i: GLint) -> DrawMode {
     ))
 }
 
-#[allow(non_snake_case)]
-pub mod ProgramParam {
-    use super::*;
-    macro_rules! create {
-        ($(#[$docs:meta])*
-        $name:ident as $gl_name:ident) => {
-            $(#[$docs])*
-            pub struct $name {}
-            impl ProgramParamGLenum for $name {
-                fn as_gl_enum() -> GLenum {
-                    gl::$gl_name
-                }
-            }
-        };
-    }
-
-    create!(
-        /// returns true if program is currently flagged for deletion, and false otherwise.
-        DeleteStatus as DELETE_STATUS
-    );
-    create!(
-        /// returns true if the last link operation on program was successful, and false otherwise.
-        LinkStatus as LINK_STATUS
-    );
-    create!(
-        /// returns true or if the last validation operation on program was successful, and false otherwise.
-        ValidateStatus as VALIDATE_STATUS
-    );
-    create!(
-        /// returns the number of characters in the information log for program including the null
-        /// termination character (i.e., the size of the character buffer required to store the
-        /// information log). If program has no information log, a value of 0 is returned.
-        InfoLogLength as INFO_LOG_LENGTH
-    );
-    create!(
-        /// returns the number of shader objects attached to program.
-        AttachedShaders as ATTACHED_SHADERS
-    );
-    create!(
-        /// returns the number of active attribute atomic counter buffers used by program.
-        ActiveAtomicCounterBuffers as ACTIVE_ATOMIC_COUNTER_BUFFERS
-    );
-    create!(
-        /// returns the number of active attribute variables for program.
-        ActiveAttributes as ACTIVE_ATTRIBUTES
-    );
-    create!(
-        /// returns the length of the longest active attribute name for program, including the null
-        /// termination character (i.e., the size of the character buffer required to store the longest
-        /// attribute name). If no active attributes exist, 0 is returned.
-        ActiveAttributeMaxLength as ACTIVE_ATTRIBUTE_MAX_LENGTH
-    );
-    create!(
-        /// returns the number of active uniform variables for program.
-        ActiveUniforms as ACTIVE_UNIFORMS
-    );
-    create!(
-        /// returns the length of the longest active uniform variable name for program, including the
-        /// null termination character (i.e., the size of the character buffer required to store the
-        /// longest uniform variable name). If no active uniform variables exist, 0 is returned.
-        ActiveUniformMaxLength as ACTIVE_UNIFORM_MAX_LENGTH
-    );
-    create!(
-        /// returns the number of active uniform blocks for program.
-        ActiveUniformBlocks as ACTIVE_UNIFORM_BLOCKS
-    );
-    create!(
-        /// returns the length of the longest active uniform block name for program, including the
-        /// null termination character (i.e., the size of the character buffer required to store the
-        /// longest uniform block name). If no active uniform block exist, 0 is returned.
-        ActiveUniformBlockMaxNameLength as ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH
-    );
-    create!(
-        /// returns the length of the program binary, in bytes that will be returned by a call to
-        /// [get_program_binary](super::get_program_binary). When a [get_program]\([LinkStatus]\) is false,
-        /// its program binary length is zero.
-        ProgramBinaryLength as PROGRAM_BINARY_LENGTH
-    );
-    create!(
-        /// returns an array of three integers containing the local work group size of the compute
-        /// program as specified by its input layout qualifier(s). program must be the name of a program
-        /// object that has been previously linked successfully and contains a binary for the
-        /// compute shader stage.
-        ComputeWorkGroupSize as COMPUTE_WORK_GROUP_SIZE
-    );
-    create!(
-        /// returns a symbolic constant indicating the buffer mode used when transform feedback is active.
-        TransformFeedbackBufferMode as TRANSFORM_FEEDBACK_BUFFER_MODE
-    );
-    create!(
-        /// returns the number of varying variables to capture in transform feedback mode for the program.
-        TransformFeedbackVaryings as TRANSFORM_FEEDBACK_VARYINGS
-    );
-    create!(
-        /// returns the length of the longest variable name to be used for transform feedback,
-        /// including the null-terminator.
-        TransformFeedbackVaryingMaxLength as TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH
-    );
-    create!(
-        /// returns the maximum number of vertices that the geometry shader in program will output.
-        GeometryVerticesOut as GEOMETRY_VERTICES_OUT
-    );
-    create!(
-        /// returns the primitive draw mode type accepted as input to the geometry shader contained in program.
-        GeometryInputType as GEOMETRY_INPUT_TYPE
-    );
-    create!(
-        /// returns the primitive draw mode type that will be output by the geometry shader contained in program.
-        GeometryOutputType as GEOMETRY_OUTPUT_TYPE
-    );
+pub trait GLenumParamConstantType<GLType> {
+    type DesiredType;
+    fn convert(gl_value: GLType) -> Self::DesiredType;
+    fn gl_enum_value() -> GLenum;
 }
 
-generate_program_param!(
-    bool,
-    glint_as_bool,
-    ProgramParam::DeleteStatus,
-    ProgramParam::LinkStatus,
-    ProgramParam::ValidateStatus
-);
+struct GLenumParamConstant<DesiredType, const GL_VALUE: GLenum> {
+    _unused: std::marker::PhantomData<DesiredType>,
+}
 
-generate_program_param!(
-    u32,
-    glint_as_u32,
-    ProgramParam::InfoLogLength,
-    ProgramParam::AttachedShaders,
-    ProgramParam::ActiveAtomicCounterBuffers,
-    ProgramParam::ActiveAttributes,
-    ProgramParam::ActiveAttributeMaxLength,
-    ProgramParam::ActiveUniforms,
-    ProgramParam::ActiveUniformMaxLength,
-    ProgramParam::ActiveUniformBlocks,
-    ProgramParam::ActiveUniformBlockMaxNameLength,
-    ProgramParam::ProgramBinaryLength,
-    ProgramParam::ComputeWorkGroupSize,
-    ProgramParam::TransformFeedbackVaryings,
-    ProgramParam::TransformFeedbackVaryingMaxLength,
-    ProgramParam::GeometryVerticesOut
-);
+impl<const GL_VALUE: GLenum> GLenumParamConstantType<GLint>
+    for GLenumParamConstant<bool, GL_VALUE>
+{
+    type DesiredType = bool;
+    fn convert(gl_value: GLint) -> Self::DesiredType {
+        match gl_value as GLboolean {
+            gl::TRUE => true,
+            gl::FALSE => false,
+            _ => unreachable!(),
+        }
+    }
+    fn gl_enum_value() -> GLenum {
+        GL_VALUE
+    }
+}
 
-generate_program_param!(
-    DrawMode,
-    glint_as_draw_mode,
-    ProgramParam::GeometryInputType,
-    ProgramParam::GeometryOutputType
-);
+macro_rules! create_params {
+    (
+        $(#[$group_name_docs:meta])*
+        pub struct $group_name:ident {
+            $(
+                $(#[$param_name_docs:meta])*
+                const $name:ident: $T:ty;
+            )+
+        }
+    ) => {
+        $(#[$group_name_docs])*
+        pub struct $group_name {}
+        impl $group_name {
+            $(
+                $(#[$param_name_docs])*
+                pub const $name: GLenumParamConstant<$T, { gl::$gl_name }> = GLenumParamConstant::<$T, { gl::$name }>{ _unused: std::marker::PhantomData::<$T>{} };
+            )+
+        }
+    };
+}
+
+create_params!(
+pub struct ProgramParam {
+    /// returns true if program is currently flagged for deletion, and false otherwise.
+    const DeleteStatus: bool = DELETE_STATUS;
+
+    /// returns true if the last link operation on program was successful, and false otherwise.
+    const LinkStatus: bool = LINK_STATUS;
+
+    /// returns true or if the last validation operation on program was successful, and false otherwise.
+    const ValidateStatus: bool = VALIDATE_STATUS;
+
+    /// returns the number of characters in the information log for program including the null
+    /// termination character (i.e., the size of the character buffer required to store the
+    /// information log). If program has no information log, a value of 0 is returned.
+    const InfoLogLength: u32 = INFO_LOG_LENGTH;
+
+    /// returns the number of shader objects attached to program.
+    const AttachedShaders: u32 = ATTACHED_SHADERS;
+
+    /// returns the number of active attribute atomic counter buffers used by program.
+    const ActiveAtomicCounterBuffers: u32 = ACTIVE_ATOMIC_COUNTER_BUFFERS;
+
+    /// returns the number of active attribute variables for program.
+    const ActiveAttributes: u32 = ACTIVE_ATTRIBUTES;
+
+    /// returns the length of the longest active attribute name for program, including the null
+    /// termination character (i.e., the size of the character buffer required to store the longest
+    /// attribute name). If no active attributes exist, 0 is returned.
+    const ActiveAttributeMaxLength: u32 = ACTIVE_ATTRIBUTE_MAX_LENGTH;
+
+    /// returns the number of active uniform variables for program.
+    const ActiveUniforms: bool = ACTIVE_UNIFORMS;
+
+    /// returns the length of the longest active uniform variable name for program, including the
+    /// null termination character (i.e., the size of the character buffer required to store the
+    /// longest uniform variable name). If no active uniform variables exist, 0 is returned.
+    const ActiveUniformMaxLength: bool = ACTIVE_UNIFORM_MAX_LENGTH;
+
+    /// returns the number of active uniform blocks for program.
+    const ActiveUniformBlocks: bool = ACTIVE_UNIFORM_BLOCKS;
+
+    /// returns the length of the longest active uniform block name for program, including the
+    /// null termination character (i.e., the size of the character buffer required to store the
+    /// longest uniform block name). If no active uniform block exist, 0 is returned.
+    const ActiveUniformBlockMaxNameLength: bool = ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH;
+
+    /// returns the length of the program binary, in bytes that will be returned by a call to
+    /// [get_program_binary](super::get_program_binary). When a [get_program]\([LinkStatus]\) is false,
+    /// its program binary length is zero.
+    const ProgramBinaryLength: bool = PROGRAM_BINARY_LENGTH;
+
+    /// returns an array of three integers containing the local work group size of the compute
+    /// program as specified by its input layout qualifier(s). program must be the name of a program
+    /// object that has been previously linked successfully and contains a binary for the
+    /// compute shader stage.
+    const ComputeWorkGroupSize: bool = COMPUTE_WORK_GROUP_SIZE;
+
+    /// returns a symbolic constant indicating the buffer mode used when transform feedback is active.
+    const TransformFeedbackBufferMode: bool = TRANSFORM_FEEDBACK_BUFFER_MODE;
+
+    /// returns the number of varying variables to capture in transform feedback mode for the program.
+    const TransformFeedbackVaryings: bool = TRANSFORM_FEEDBACK_VARYINGS;
+
+    /// returns the length of the longest variable name to be used for transform feedback,
+    /// including the null-terminator.
+    const TransformFeedbackVaryingMaxLength: bool = TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH;
+
+    /// returns the maximum number of vertices that the geometry shader in program will output.
+    const GeometryVerticesOut: bool = GEOMETRY_VERTICES_OUT;
+
+    /// returns the primitive draw mode type accepted as input to the geometry shader contained in program.
+    const GeometryInputType: bool = GEOMETRY_INPUT_TYPE;
+
+    /// returns the primitive draw mode type that will be output by the geometry shader contained in program.
+    const GeometryOutputType: bool = GEOMETRY_OUTPUT_TYPE;
+});
 
 /// Returns a parameter from a program object
 ///
@@ -1112,12 +1063,15 @@ generate_program_param!(
 /// [GeometryInputType](ProgramParam::GeometryInputType) and
 /// [GeometryOutputType](ProgramParam::GeometryOutputType)
 /// - 4.3 or greater is required for: [ComputeWorkGroupSize](ProgramParam::ComputeWorkGroupSize)
-pub fn get_program<Param>(program: Program, _param: Param) -> Result<Param::R, ErrorGetProgram>
+pub fn get_program<Param>(
+    program: Program,
+    _param: Param,
+) -> Result<Param::DesiredType, ErrorGetProgram>
 where
-    Param: ProgramParamConverter + ProgramParamGLenum,
+    Param: GLenumParamConstantType<GLint>,
 {
     let mut params: GLint = 0;
-    let pname: GLenum = Param::as_gl_enum();
+    let pname: GLenum = Param::gl_enum_value();
     unsafe { gl::GetProgramiv(program.0, pname, &mut params) };
 
     match internal_get_error() {
