@@ -614,7 +614,8 @@ pub fn delete_frame_buffers(frame_buffers: &[Framebuffer]) -> () {
 /// be automatically detached but not deleted unless they have already been flagged for deletion by
 /// a previous call to [delete_shader]. A value of 0 for program will be silently ignored.
 ///
-/// To determine whether a program object has been flagged for deletion, call [get_program::delete_status].
+/// To determine whether a program object has been flagged for deletion, call
+/// [get_program]\([ProgramParam::DeleteStatus]\).
 pub fn delete_program(program: Program) -> Result<(), ErrorDeleteProgram> {
     unsafe { gl::DeleteProgram(program.0) };
     match internal_get_error() {
@@ -919,16 +920,232 @@ pub fn gen_frame_buffers(ids: &mut [Framebuffer]) -> () {
     unsafe { gl::GenFramebuffers(n, ids) }
 }
 
+pub trait ProgramParamConverter {
+    type R;
+    fn convert(i: GLint) -> Self::R;
+}
+pub trait ProgramParamGLenum {
+    fn as_gl_enum() -> GLenum;
+}
+
+macro_rules! generate_program_param {
+    ($R:ty, $C:expr, $($P:ty),+) => {
+        $(impl ProgramParamConverter for $P {
+            type R = $R;
+            fn convert(i: GLint) -> Self::R {
+                $C(i)
+            }
+        })+
+    };
+}
+
+fn glint_as_bool(i: GLint) -> bool {
+    match i as GLboolean {
+        gl::TRUE => true,
+        gl::FALSE => false,
+        _ => unreachable!(),
+    }
+}
+
+fn glint_as_u32(i: GLint) -> u32 {
+    i as u32
+}
+
+fn glint_as_draw_mode(i: GLint) -> DrawMode {
+    (i as GLenum).try_into().expect(&format!(
+        "Internal OpenGL Failure, invalid DrawMode value: {i}"
+    ))
+}
+
+#[allow(non_snake_case)]
+pub mod ProgramParam {
+    use super::*;
+    macro_rules! create {
+        ($(#[$docs:meta])*
+        $name:ident as $gl_name:ident) => {
+            $(#[$docs])*
+            pub struct $name {}
+            impl ProgramParamGLenum for $name {
+                fn as_gl_enum() -> GLenum {
+                    gl::$gl_name
+                }
+            }
+        };
+    }
+
+    create!(
+        /// returns true if program is currently flagged for deletion, and false otherwise.
+        DeleteStatus as DELETE_STATUS
+    );
+    create!(
+        /// returns true if the last link operation on program was successful, and false otherwise.
+        LinkStatus as LINK_STATUS
+    );
+    create!(
+        /// returns true or if the last validation operation on program was successful, and false otherwise.
+        ValidateStatus as VALIDATE_STATUS
+    );
+    create!(
+        /// returns the number of characters in the information log for program including the null
+        /// termination character (i.e., the size of the character buffer required to store the
+        /// information log). If program has no information log, a value of 0 is returned.
+        InfoLogLength as INFO_LOG_LENGTH
+    );
+    create!(
+        /// returns the number of shader objects attached to program.
+        AttachedShaders as ATTACHED_SHADERS
+    );
+    create!(
+        /// returns the number of active attribute atomic counter buffers used by program.
+        ActiveAtomicCounterBuffers as ACTIVE_ATOMIC_COUNTER_BUFFERS
+    );
+    create!(
+        /// returns the number of active attribute variables for program.
+        ActiveAttributes as ACTIVE_ATTRIBUTES
+    );
+    create!(
+        /// returns the length of the longest active attribute name for program, including the null
+        /// termination character (i.e., the size of the character buffer required to store the longest
+        /// attribute name). If no active attributes exist, 0 is returned.
+        ActiveAttributeMaxLength as ACTIVE_ATTRIBUTE_MAX_LENGTH
+    );
+    create!(
+        /// returns the number of active uniform variables for program.
+        ActiveUniforms as ACTIVE_UNIFORMS
+    );
+    create!(
+        /// returns the length of the longest active uniform variable name for program, including the
+        /// null termination character (i.e., the size of the character buffer required to store the
+        /// longest uniform variable name). If no active uniform variables exist, 0 is returned.
+        ActiveUniformMaxLength as ACTIVE_UNIFORM_MAX_LENGTH
+    );
+    create!(
+        /// returns the number of active uniform blocks for program.
+        ActiveUniformBlocks as ACTIVE_UNIFORM_BLOCKS
+    );
+    create!(
+        /// returns the length of the longest active uniform block name for program, including the
+        /// null termination character (i.e., the size of the character buffer required to store the
+        /// longest uniform block name). If no active uniform block exist, 0 is returned.
+        ActiveUniformBlockMaxNameLength as ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH
+    );
+    create!(
+        /// returns the length of the program binary, in bytes that will be returned by a call to
+        /// [get_program_binary](super::get_program_binary). When a [get_program]\([LinkStatus]\) is false,
+        /// its program binary length is zero.
+        ProgramBinaryLength as PROGRAM_BINARY_LENGTH
+    );
+    create!(
+        /// returns an array of three integers containing the local work group size of the compute
+        /// program as specified by its input layout qualifier(s). program must be the name of a program
+        /// object that has been previously linked successfully and contains a binary for the
+        /// compute shader stage.
+        ComputeWorkGroupSize as COMPUTE_WORK_GROUP_SIZE
+    );
+    create!(
+        /// returns a symbolic constant indicating the buffer mode used when transform feedback is active.
+        TransformFeedbackBufferMode as TRANSFORM_FEEDBACK_BUFFER_MODE
+    );
+    create!(
+        /// returns the number of varying variables to capture in transform feedback mode for the program.
+        TransformFeedbackVaryings as TRANSFORM_FEEDBACK_VARYINGS
+    );
+    create!(
+        /// returns the length of the longest variable name to be used for transform feedback,
+        /// including the null-terminator.
+        TransformFeedbackVaryingMaxLength as TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH
+    );
+    create!(
+        /// returns the maximum number of vertices that the geometry shader in program will output.
+        GeometryVerticesOut as GEOMETRY_VERTICES_OUT
+    );
+    create!(
+        /// returns the primitive draw mode type accepted as input to the geometry shader contained in program.
+        GeometryInputType as GEOMETRY_INPUT_TYPE
+    );
+    create!(
+        /// returns the primitive draw mode type that will be output by the geometry shader contained in program.
+        GeometryOutputType as GEOMETRY_OUTPUT_TYPE
+    );
+}
+
+generate_program_param!(
+    bool,
+    glint_as_bool,
+    ProgramParam::DeleteStatus,
+    ProgramParam::LinkStatus,
+    ProgramParam::ValidateStatus
+);
+
+generate_program_param!(
+    u32,
+    glint_as_u32,
+    ProgramParam::InfoLogLength,
+    ProgramParam::AttachedShaders,
+    ProgramParam::ActiveAtomicCounterBuffers,
+    ProgramParam::ActiveAttributes,
+    ProgramParam::ActiveAttributeMaxLength,
+    ProgramParam::ActiveUniforms,
+    ProgramParam::ActiveUniformMaxLength,
+    ProgramParam::ActiveUniformBlocks,
+    ProgramParam::ActiveUniformBlockMaxNameLength,
+    ProgramParam::ProgramBinaryLength,
+    ProgramParam::ComputeWorkGroupSize,
+    ProgramParam::TransformFeedbackVaryings,
+    ProgramParam::TransformFeedbackVaryingMaxLength,
+    ProgramParam::GeometryVerticesOut
+);
+
+generate_program_param!(
+    DrawMode,
+    glint_as_draw_mode,
+    ProgramParam::GeometryInputType,
+    ProgramParam::GeometryOutputType
+);
+
 /// Returns a parameter from a program object
 ///
 /// # Notes
-/// - 3.1 or greater is required for: [active_uniform_blocks](get_program::active_uniform_blocks)
-/// and [active_uniform_block_max_name_length](get_program::active_uniform_block_max_name_length)
-/// - 3.2 or greater is required for: [geometry_vertices_out](get_program::geometry_vertices_out),
-/// [geometry_input_type](get_program::geometry_input_type) and
-/// [geometry_output_type](get_program::geometry_output_type)
-/// - 4.3 or greater is required for: [compute_work_group_size](get_program::compute_work_group_size)
-pub mod get_program {
+/// - 3.1 or greater is required for: [ActiveUniformBlocks](ProgramParam::ActiveUniformBlocks)
+/// and [ActiveUniformBlockMaxNameLength](ProgramParam::ActiveUniformBlockMaxNameLength)
+/// - 3.2 or greater is required for: [GeometryVerticesOut](ProgramParam::GeometryVerticesOut)
+/// [GeometryInputType](ProgramParam::GeometryInputType) and
+/// [GeometryOutputType](ProgramParam::GeometryOutputType)
+/// - 4.3 or greater is required for: [ComputeWorkGroupSize](ProgramParam::ComputeWorkGroupSize)
+pub fn get_program<Param>(program: Program, _param: Param) -> Result<Param::R, ErrorGetProgram>
+where
+    Param: ProgramParamConverter + ProgramParamGLenum,
+{
+    let mut params: GLint = 0;
+    let pname: GLenum = Param::as_gl_enum();
+    unsafe { gl::GetProgramiv(program.0, pname, &mut params) };
+
+    match internal_get_error() {
+        ErrorOpenGL::NoError => Ok(Param::convert(params)),
+        ErrorOpenGL::InvalidValue => Err(ErrorGetProgram::NonOpenGLName(program)),
+        ErrorOpenGL::InvalidOperation => {
+            if !is_program(program) {
+                Err(ErrorGetProgram::NotAProgram(program))
+            } else if pname == gl::COMPUTE_WORK_GROUP_SIZE {
+                Err(ErrorGetProgram::ComputeQueryWithoutComputeShader(program))
+            } else {
+                Err(ErrorGetProgram::GeometryQueryWithoutGeometryShader(program))
+            }
+        }
+        _ => unreachable!(),
+    }
+}
+
+/// Possible errors of [program] queries
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorGetProgram {
+    NonOpenGLName(Program),
+    NotAProgram(Program),
+    GeometryQueryWithoutGeometryShader(Program),
+    ComputeQueryWithoutComputeShader(Program),
+}
+
+pub mod program {
     use super::*;
 
     fn glint(program: Program, pname: GLenum) -> Result<GLint, ErrorGetProgram> {
@@ -1089,15 +1306,6 @@ pub mod get_program {
     }
 }
 
-/// Possible errors of [get_program] queries
-#[derive(Debug, Clone, Copy)]
-pub enum ErrorGetProgram {
-    NonOpenGLName(Program),
-    NotAProgram(Program),
-    GeometryQueryWithoutGeometryShader(Program),
-    ComputeQueryWithoutComputeShader(Program),
-}
-
 /// return error information
 ///
 /// Returns the value of the error flag. Each detectable error is assigned a numeric code and symbolic name.
@@ -1182,7 +1390,7 @@ pub enum ErrorOpenGL {
 /// [get_program_info_log] returns in `buffer` as much of the information log as it can. The number
 /// of characters actually returned, excluding the null termination character, is specified by the
 /// Ok return value. The size of the buffer required to store the returned information log can be
-/// obtained by calling [get_program::info_log_length].
+/// obtained by calling [get_program]\([ProgramParam::InfoLogLength]\).
 ///
 /// The information log for a program object is either an empty string, or a string containing
 /// information about the last link operation, or a string containing information about the last
@@ -1466,7 +1674,7 @@ pub fn is_shader(shader: Shader) -> bool {
 ///
 /// The status of the link operation will be stored as part of the program object's state. This value
 /// will be set to true if the program object was linked without errors and is ready for use,
-/// and false otherwise. It can be queried by calling [get_program::link_status].
+/// and false otherwise. It can be queried by calling [get_program]\([ProgramParam::LinkStatus]\).
 ///
 /// As a result of a successful link operation, all active user-defined uniform variables belonging to
 /// program will be initialized to 0, and each of the program object's active uniform variables will
@@ -2132,7 +2340,7 @@ pub use uniform::*;
 /// current state. However, relinking the program object that is currently in use will install the
 /// program object as part of the current rendering state if the link operation was successful
 /// (see [link_program]). If the program object currently in use is relinked unsuccessfully,
-/// [link_status](get_program::link_status) will be false, but the executables and associated
+/// [get_program]\([ProgramParam::LinkStatus]\) will be false, but the executables and associated
 /// state will remain part of the current state until a subsequent call to [use_program] removes
 /// it from use. After it is removed from use, it cannot be made part of current state until it
 /// has been successfully relinked.
@@ -2159,7 +2367,7 @@ pub fn use_program(program: Program) -> Result<(), ErrorUseProgram> {
         ErrorOpenGL::InvalidOperation => {
             if !is_program(program) {
                 Err(ErrorUseProgram::NotAProgram(program))
-            } else if let Ok(Some(_)) = get_program::transform_feedback_buffer_mode(program) {
+            } else if let Ok(_) = get_program(program, ProgramParam::TransformFeedbackBufferMode) {
                 Err(ErrorUseProgram::TransportFeedbackModeActive(program))
             } else {
                 Err(ErrorUseProgram::CouldNotBeMadePartOfCurrentState(program))
