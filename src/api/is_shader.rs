@@ -14,5 +14,5 @@ use crate::*;
 /// - A shader object marked for deletion with [delete_shader] but still attached to a program object
 /// is still considered a shader object and [is_shader] will return true.
 pub fn is_shader(shader: Shader) -> bool {
-    (unsafe { gl::IsShader(shader.id) }) == gl::TRUE
+    (unsafe { gl::IsShader(shader.0) }) == gl::TRUE
 }

@@ -18,7 +18,7 @@ pub fn shader_source(shader: Shader, source: &[u8]) -> Result<(), Error> {
     let count: GLsizei = 1;
     let string = sources.as_ptr() as *const *const GLchar;
     let length = &source_length as *const GLint;
-    unsafe { gl::ShaderSource(shader.id, count, string, length) };
+    unsafe { gl::ShaderSource(shader.0, count, string, length) };
 
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),

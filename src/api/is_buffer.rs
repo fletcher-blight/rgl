@@ -12,5 +12,5 @@ use crate::*;
 /// # Arguments
 /// * `buffer` - Specifies a value that may be the name of a buffer object
 pub fn is_buffer(buffer: Buffer) -> bool {
-    (unsafe { gl::IsBuffer(buffer.id) }) == gl::TRUE
+    (unsafe { gl::IsBuffer(buffer.0) }) == gl::TRUE
 }

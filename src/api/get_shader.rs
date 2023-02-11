@@ -31,7 +31,7 @@ pub fn get_shader_source_length(shader: Shader) -> Result<u32, Error> {
 
 fn get_shader_iv(shader: Shader, pname: GLenum) -> Result<GLint, Error> {
     let mut params: GLint = 0;
-    unsafe { gl::GetShaderiv(shader.id, pname, &mut params) };
+    unsafe { gl::GetShaderiv(shader.0, pname, &mut params) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(params.into()),
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLShader(shader)),

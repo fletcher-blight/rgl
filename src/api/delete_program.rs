@@ -14,7 +14,7 @@ use crate::*;
 /// To determine whether a program object has been flagged for deletion, call
 /// [get_program_delete_status]\).
 pub fn delete_program(program: Program) -> Result<(), Error> {
-    unsafe { gl::DeleteProgram(program.id) };
+    unsafe { gl::DeleteProgram(program.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLProgram(program)),

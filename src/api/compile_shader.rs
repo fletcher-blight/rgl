@@ -13,7 +13,7 @@ use crate::*;
 /// Language Specification. Whether or not the compilation was successful, information about the
 /// compilation can be obtained from the shader object's information log by calling [get_shader_info_log].
 pub fn compile_shader(shader: Shader) -> Result<(), Error> {
-    unsafe { gl::CompileShader(shader.id) };
+    unsafe { gl::CompileShader(shader.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLShader(shader)),

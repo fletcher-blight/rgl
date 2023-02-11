@@ -30,5 +30,5 @@ use crate::*;
 /// This function returns 0 if an error occurs creating the program object.
 pub fn create_program() -> Program {
     let id = unsafe { gl::CreateProgram() };
-    Program { id }
+    Program(id)
 }

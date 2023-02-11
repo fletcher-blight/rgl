@@ -32,13 +32,13 @@ pub fn get_uniform_location(
     uniform_name: &std::ffi::CStr,
 ) -> Result<UniformLocation, Error> {
     let name = uniform_name.as_ptr() as *const GLchar;
-    let location = unsafe { gl::GetUniformLocation(program.id, name) };
+    let location = unsafe { gl::GetUniformLocation(program.0, name) };
     match internal_get_error() {
         ErrorOpenGL::NoError => {
             if location < 0 {
                 Err(Error::UnknownUniformName(uniform_name.into()))
             } else {
-                Ok(UniformLocation { location })
+                Ok(UniformLocation(location))
             }
         }
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLProgram(program)),

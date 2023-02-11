@@ -84,7 +84,7 @@ pub fn named_buffer_data<Data>(
     let size = (data.len() * std::mem::size_of::<Data>()) as GLsizeiptr;
     let data = data.as_ptr() as *const std::os::raw::c_void;
     let usage: GLenum = usage.into();
-    unsafe { gl::NamedBufferData(buffer.id, size, data, usage) };
+    unsafe { gl::NamedBufferData(buffer.0, size, data, usage) };
     handle_error()
 }
 
@@ -99,7 +99,7 @@ pub fn named_buffer_data_reserved(
     let size = size as GLsizeiptr;
     let data = std::ptr::null() as *const std::os::raw::c_void;
     let usage: GLenum = usage.into();
-    unsafe { gl::NamedBufferData(buffer.id, size, data, usage) };
+    unsafe { gl::NamedBufferData(buffer.0, size, data, usage) };
     handle_error()
 }
 

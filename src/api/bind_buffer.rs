@@ -59,9 +59,9 @@ use gl::types::*;
 /// [ShaderStorage](BufferBindingTarget::ShaderStorage)
 /// - 4.4 or greater is required for: [Query](BufferBindingTarget::Query)
 pub fn bind_buffer(target: BufferBindingTarget, buffer: Option<Buffer>) -> Result<(), Error> {
-    let buffer = buffer.unwrap_or(Buffer { id: 0 });
+    let buffer = buffer.unwrap_or(Buffer(0));
     let target: GLenum = target.into();
-    unsafe { gl::BindBuffer(target, buffer.id) };
+    unsafe { gl::BindBuffer(target, buffer.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLBuffer(buffer)),

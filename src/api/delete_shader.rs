@@ -12,7 +12,7 @@ use crate::*;
 ///
 /// To determine whether an object has been flagged for deletion, call [get_shader_delete_status].
 pub fn delete_shader(shader: Shader) -> Result<(), Error> {
-    unsafe { gl::DeleteShader(shader.id) };
+    unsafe { gl::DeleteShader(shader.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLShader(shader)),

@@ -123,7 +123,7 @@ pub fn get_program_active_uniform_block_max_name_length(program: Program) -> Res
 
 fn get_program_iv(program: Program, pname: GLenum) -> Result<GLint, Error> {
     let mut params: GLint = 0;
-    unsafe { gl::GetProgramiv(program.id, pname, &mut params) };
+    unsafe { gl::GetProgramiv(program.0, pname, &mut params) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(params.into()),
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLProgram(program)),

@@ -41,7 +41,7 @@ use crate::*;
 /// - Applications are responsible for providing the synchronization across API calls when objects
 /// are accessed from different execution threads.
 pub fn use_program(program: Program) -> Result<(), Error> {
-    unsafe { gl::UseProgram(program.id) };
+    unsafe { gl::UseProgram(program.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLProgram(program)),

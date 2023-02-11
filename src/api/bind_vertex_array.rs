@@ -13,8 +13,8 @@ use crate::*;
 /// # Arguments
 /// * `array` - Specifies the name of the vertex array to bind
 pub fn bind_vertex_array(array: Option<VertexArray>) -> Result<(), Error> {
-    let array = array.unwrap_or(VertexArray { id: 0 });
-    unsafe { gl::BindVertexArray(array.id) };
+    let array = array.unwrap_or(VertexArray(0));
+    unsafe { gl::BindVertexArray(array.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidOperation => Err(Error::NonOpenGLVertexArray(array)),

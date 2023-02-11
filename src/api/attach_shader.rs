@@ -21,7 +21,7 @@ use crate::*;
 /// * `program` - Specifies the program object to which a shader object will be attached
 /// * `shader` - Specifies the shader object that is to be attached
 pub fn attach_shader(program: Program, shader: Shader) -> Result<(), Error> {
-    unsafe { gl::AttachShader(program.id, shader.id) };
+    unsafe { gl::AttachShader(program.0, shader.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidValue => {

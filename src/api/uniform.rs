@@ -76,7 +76,7 @@ use gl::types::*;
 ///
 /// See [uniform] for more details
 pub fn uniform_1f32(location: UniformLocation, v0: f32) -> Result<(), Error> {
-    unsafe { gl::Uniform1f(location.location, v0) }
+    unsafe { gl::Uniform1f(location.0, v0) }
     internal_handle_uniform_set_error()
 }
 
@@ -84,7 +84,7 @@ pub fn uniform_1f32(location: UniformLocation, v0: f32) -> Result<(), Error> {
 ///
 /// See [uniform] for more details
 pub fn uniform_2f32(location: UniformLocation, v0: f32, v1: f32) -> Result<(), Error> {
-    unsafe { gl::Uniform2f(location.location, v0, v1) }
+    unsafe { gl::Uniform2f(location.0, v0, v1) }
     internal_handle_uniform_set_error()
 }
 
@@ -92,7 +92,7 @@ pub fn uniform_2f32(location: UniformLocation, v0: f32, v1: f32) -> Result<(), E
 ///
 /// See [uniform] for more details
 pub fn uniform_3f32(location: UniformLocation, v0: f32, v1: f32, v2: f32) -> Result<(), Error> {
-    unsafe { gl::Uniform3f(location.location, v0, v1, v2) }
+    unsafe { gl::Uniform3f(location.0, v0, v1, v2) }
     internal_handle_uniform_set_error()
 }
 
@@ -106,7 +106,7 @@ pub fn uniform_4f32(
     v2: f32,
     v3: f32,
 ) -> Result<(), Error> {
-    unsafe { gl::Uniform4f(location.location, v0, v1, v2, v3) }
+    unsafe { gl::Uniform4f(location.0, v0, v1, v2, v3) }
     internal_handle_uniform_set_error()
 }
 
@@ -114,7 +114,7 @@ pub fn uniform_4f32(
 ///
 /// See [uniform] for more details
 pub fn uniform_1i32(location: UniformLocation, v0: i32) -> Result<(), Error> {
-    unsafe { gl::Uniform1i(location.location, v0) }
+    unsafe { gl::Uniform1i(location.0, v0) }
     internal_handle_uniform_set_error()
 }
 
@@ -122,7 +122,7 @@ pub fn uniform_1i32(location: UniformLocation, v0: i32) -> Result<(), Error> {
 ///
 /// See [uniform] for more details
 pub fn uniform_2i32(location: UniformLocation, v0: i32, v1: i32) -> Result<(), Error> {
-    unsafe { gl::Uniform2i(location.location, v0, v1) }
+    unsafe { gl::Uniform2i(location.0, v0, v1) }
     internal_handle_uniform_set_error()
 }
 
@@ -130,7 +130,7 @@ pub fn uniform_2i32(location: UniformLocation, v0: i32, v1: i32) -> Result<(), E
 ///
 /// See [uniform] for more details
 pub fn uniform_3i32(location: UniformLocation, v0: i32, v1: i32, v2: i32) -> Result<(), Error> {
-    unsafe { gl::Uniform3i(location.location, v0, v1, v2) }
+    unsafe { gl::Uniform3i(location.0, v0, v1, v2) }
     internal_handle_uniform_set_error()
 }
 
@@ -144,7 +144,7 @@ pub fn uniform_4i32(
     v2: i32,
     v3: i32,
 ) -> Result<(), Error> {
-    unsafe { gl::Uniform4i(location.location, v0, v1, v2, v3) }
+    unsafe { gl::Uniform4i(location.0, v0, v1, v2, v3) }
     internal_handle_uniform_set_error()
 }
 
@@ -152,7 +152,7 @@ pub fn uniform_4i32(
 ///
 /// See [uniform] for more details
 pub fn uniform_1u32(location: UniformLocation, v0: u32) -> Result<(), Error> {
-    unsafe { gl::Uniform1ui(location.location, v0) }
+    unsafe { gl::Uniform1ui(location.0, v0) }
     internal_handle_uniform_set_error()
 }
 
@@ -160,7 +160,7 @@ pub fn uniform_1u32(location: UniformLocation, v0: u32) -> Result<(), Error> {
 ///
 /// See [uniform] for more details
 pub fn uniform_2u32(location: UniformLocation, v0: u32, v1: u32) -> Result<(), Error> {
-    unsafe { gl::Uniform2ui(location.location, v0, v1) }
+    unsafe { gl::Uniform2ui(location.0, v0, v1) }
     internal_handle_uniform_set_error()
 }
 
@@ -168,7 +168,7 @@ pub fn uniform_2u32(location: UniformLocation, v0: u32, v1: u32) -> Result<(), E
 ///
 /// See [uniform] for more details
 pub fn uniform_3u32(location: UniformLocation, v0: u32, v1: u32, v2: u32) -> Result<(), Error> {
-    unsafe { gl::Uniform3ui(location.location, v0, v1, v2) }
+    unsafe { gl::Uniform3ui(location.0, v0, v1, v2) }
     internal_handle_uniform_set_error()
 }
 
@@ -182,7 +182,7 @@ pub fn uniform_4u32(
     v2: u32,
     v3: u32,
 ) -> Result<(), Error> {
-    unsafe { gl::Uniform4ui(location.location, v0, v1, v2, v3) }
+    unsafe { gl::Uniform4ui(location.0, v0, v1, v2, v3) }
     internal_handle_uniform_set_error()
 }
 
@@ -192,7 +192,7 @@ pub fn uniform_4u32(
 pub fn uniform_1f32v(location: UniformLocation, value: &[f32]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::Uniform1fv(location.location, count, value) }
+    unsafe { gl::Uniform1fv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -202,7 +202,7 @@ pub fn uniform_1f32v(location: UniformLocation, value: &[f32]) -> Result<(), Err
 pub fn uniform_2f32v(location: UniformLocation, value: &[(f32, f32)]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::Uniform2fv(location.location, count, value) }
+    unsafe { gl::Uniform2fv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -212,7 +212,7 @@ pub fn uniform_2f32v(location: UniformLocation, value: &[(f32, f32)]) -> Result<
 pub fn uniform_3f32v(location: UniformLocation, value: &[(f32, f32, f32)]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::Uniform3fv(location.location, count, value) }
+    unsafe { gl::Uniform3fv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -225,7 +225,7 @@ pub fn uniform_4f32v(
 ) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::Uniform4fv(location.location, count, value) }
+    unsafe { gl::Uniform4fv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -235,7 +235,7 @@ pub fn uniform_4f32v(
 pub fn uniform_1i32v(location: UniformLocation, value: &[i32]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLint;
-    unsafe { gl::Uniform1iv(location.location, count, value) }
+    unsafe { gl::Uniform1iv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -245,7 +245,7 @@ pub fn uniform_1i32v(location: UniformLocation, value: &[i32]) -> Result<(), Err
 pub fn uniform_2i32v(location: UniformLocation, value: &[(i32, i32)]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLint;
-    unsafe { gl::Uniform2iv(location.location, count, value) }
+    unsafe { gl::Uniform2iv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -255,7 +255,7 @@ pub fn uniform_2i32v(location: UniformLocation, value: &[(i32, i32)]) -> Result<
 pub fn uniform_3i32v(location: UniformLocation, value: &[(i32, i32, i32)]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLint;
-    unsafe { gl::Uniform3iv(location.location, count, value) }
+    unsafe { gl::Uniform3iv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -268,7 +268,7 @@ pub fn uniform_4i32v(
 ) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLint;
-    unsafe { gl::Uniform4iv(location.location, count, value) }
+    unsafe { gl::Uniform4iv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -278,7 +278,7 @@ pub fn uniform_4i32v(
 pub fn uniform_1u32v(location: UniformLocation, value: &[u32]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLuint;
-    unsafe { gl::Uniform1uiv(location.location, count, value) }
+    unsafe { gl::Uniform1uiv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -288,7 +288,7 @@ pub fn uniform_1u32v(location: UniformLocation, value: &[u32]) -> Result<(), Err
 pub fn uniform_2u32v(location: UniformLocation, value: &[(u32, u32)]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLuint;
-    unsafe { gl::Uniform2uiv(location.location, count, value) }
+    unsafe { gl::Uniform2uiv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -298,7 +298,7 @@ pub fn uniform_2u32v(location: UniformLocation, value: &[(u32, u32)]) -> Result<
 pub fn uniform_3u32v(location: UniformLocation, value: &[(u32, u32, u32)]) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLuint;
-    unsafe { gl::Uniform3uiv(location.location, count, value) }
+    unsafe { gl::Uniform3uiv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -311,7 +311,7 @@ pub fn uniform_4u32v(
 ) -> Result<(), Error> {
     let count = value.len() as GLsizei;
     let value = value.as_ptr() as *const GLuint;
-    unsafe { gl::Uniform4uiv(location.location, count, value) }
+    unsafe { gl::Uniform4uiv(location.0, count, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -326,7 +326,7 @@ pub fn uniform_matrix_2f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix2fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix2fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -341,7 +341,7 @@ pub fn uniform_matrix_3f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix3fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix3fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -356,7 +356,7 @@ pub fn uniform_matrix_4f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix4fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix4fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -371,7 +371,7 @@ pub fn uniform_matrix_2x3f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix2x3fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix2x3fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -386,7 +386,7 @@ pub fn uniform_matrix_3x2f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix3x2fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix3x2fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -401,7 +401,7 @@ pub fn uniform_matrix_2x4f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix2x4fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix2x4fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -416,7 +416,7 @@ pub fn uniform_matrix_4x2f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix4x2fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix4x2fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -431,7 +431,7 @@ pub fn uniform_matrix_3x4f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix3x4fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix3x4fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 
@@ -446,7 +446,7 @@ pub fn uniform_matrix_4x3f32v(
     let count = value.len() as GLsizei;
     let transpose = as_gl_bool(transpose);
     let value = value.as_ptr() as *const GLfloat;
-    unsafe { gl::UniformMatrix4x3fv(location.location, count, transpose, value) }
+    unsafe { gl::UniformMatrix4x3fv(location.0, count, transpose, value) }
     internal_handle_uniform_set_error()
 }
 

@@ -92,7 +92,7 @@ use crate::*;
 /// can still be retrieved from program even after an unsuccessful link operation. See for instance
 /// [get_active_attribute] and [get_active_uniform].
 pub fn link_program(program: Program) -> Result<(), Error> {
-    unsafe { gl::LinkProgram(program.id) };
+    unsafe { gl::LinkProgram(program.0) };
 
     let error = internal_get_error();
     match error {

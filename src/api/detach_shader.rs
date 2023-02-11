@@ -8,7 +8,7 @@ use crate::*;
 /// If `shader` has already been flagged for deletion by a call to [delete_shader] and it is not
 /// attached to any other program object, it will be deleted after it has been detached.
 pub fn detach_shader(program: Program, shader: Shader) -> Result<(), Error> {
-    unsafe { gl::DetachShader(program.id, shader.id) };
+    unsafe { gl::DetachShader(program.0, shader.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidValue => {

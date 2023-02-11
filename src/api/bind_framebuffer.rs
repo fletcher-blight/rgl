@@ -19,9 +19,9 @@ pub fn bind_framebuffer(
     target: FramebufferBindingTarget,
     framebuffer: Option<Framebuffer>,
 ) -> Result<(), Error> {
-    let framebuffer = framebuffer.unwrap_or(Framebuffer { id: 0 });
+    let framebuffer = framebuffer.unwrap_or(Framebuffer(0));
     let target: GLenum = target.into();
-    unsafe { gl::BindFramebuffer(target, framebuffer.id) };
+    unsafe { gl::BindFramebuffer(target, framebuffer.0) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(()),
         ErrorOpenGL::InvalidOperation => Err(Error::NonOpenGLFramebuffer(framebuffer)),

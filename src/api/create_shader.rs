@@ -18,5 +18,5 @@ use gl::types::*;
 pub fn create_shader(shader_type: ShaderType) -> Shader {
     let type_: GLuint = shader_type.into();
     let id = unsafe { gl::CreateShader(type_) };
-    Shader { id }
+    Shader(id)
 }

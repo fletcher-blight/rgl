@@ -30,7 +30,7 @@ pub fn get_shader_info_log(shader: Shader, buffer: &mut [u8]) -> Result<u32, Err
     let buf_size = buffer.len() as GLsizei;
     let mut written_length: GLsizei = 0;
     let info_log = buffer.as_mut_ptr() as *mut GLchar;
-    unsafe { gl::GetShaderInfoLog(shader.id, buf_size, &mut written_length, info_log) };
+    unsafe { gl::GetShaderInfoLog(shader.0, buf_size, &mut written_length, info_log) };
     match internal_get_error() {
         ErrorOpenGL::NoError => Ok(written_length as u32),
         ErrorOpenGL::InvalidValue => Err(Error::NonOpenGLShader(shader)),

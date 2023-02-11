@@ -14,5 +14,5 @@ use crate::*;
 /// - A program object marked for deletion with [delete_program] but still in use as part of current
 /// rendering state is still considered a program object and [is_program] will return true.
 pub fn is_program(program: Program) -> bool {
-    (unsafe { gl::IsProgram(program.id) }) == gl::TRUE
+    (unsafe { gl::IsProgram(program.0) }) == gl::TRUE
 }
