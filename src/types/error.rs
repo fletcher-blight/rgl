@@ -16,9 +16,11 @@ pub enum Error {
     NotABuffer(Buffer),
     NotAProgram(Program),
     NotAShader(Shader),
+    NotATexture(Texture),
 
     NoVertexArrayBound,
     OutOfBoundsVertexAttributeIndex(u32),
+    OutOfBoundsTextureIndex(u32),
 
     ShaderAlreadyAttachedToProgram(Program, Shader),
     TransportFeedbackModeActive(Program),
@@ -28,6 +30,7 @@ pub enum Error {
     MissingGeometryShader(Program),
     UnknownUniformName(std::ffi::CString),
     UnlinkedProgram(Program),
+    TextureAttemptedTargetChange(Texture, TextureBindingTarget),
 
     BufferTargetNull(BufferBindingTarget),
 }

@@ -1,6 +1,8 @@
+mod active_texture;
 mod attach_shader;
 mod bind_buffer;
 mod bind_framebuffer;
+mod bind_texture;
 mod bind_vertex_array;
 pub mod buffer_data;
 mod clear;
@@ -12,6 +14,7 @@ mod delete_buffers;
 mod delete_framebuffers;
 mod delete_program;
 mod delete_shader;
+mod delete_textures;
 mod delete_vertex_arrays;
 mod detach_shader;
 mod draw_arrays;
@@ -21,6 +24,7 @@ mod draw_elements_instanced;
 mod enable_vertex_attribute_array;
 mod gen_buffers;
 mod gen_framebuffers;
+mod gen_textures;
 mod gen_vertex_arrays;
 mod get_error;
 mod get_program;
@@ -39,11 +43,15 @@ mod vertex_attribute_divisor;
 pub mod vertex_attribute_pointer;
 
 #[doc(inline)]
+pub use active_texture::*;
+#[doc(inline)]
 pub use attach_shader::*;
 #[doc(inline)]
 pub use bind_buffer::*;
 #[doc(inline)]
 pub use bind_framebuffer::*;
+#[doc(inline)]
+pub use bind_texture::*;
 #[doc(inline)]
 pub use bind_vertex_array::*;
 pub use buffer_data::*;
@@ -66,6 +74,8 @@ pub use delete_program::*;
 #[doc(inline)]
 pub use delete_shader::*;
 #[doc(inline)]
+pub use delete_textures::*;
+#[doc(inline)]
 pub use delete_vertex_arrays::*;
 #[doc(inline)]
 pub use detach_shader::*;
@@ -83,6 +93,8 @@ pub use enable_vertex_attribute_array::*;
 pub use gen_buffers::*;
 #[doc(inline)]
 pub use gen_framebuffers::*;
+#[doc(inline)]
+pub use gen_textures::*;
 #[doc(inline)]
 pub use gen_vertex_arrays::*;
 #[doc(inline)]

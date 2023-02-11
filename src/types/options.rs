@@ -314,6 +314,40 @@ impl TryFrom<GLenum> for ShaderType {
     }
 }
 
+/// Texture Bind Targets
+#[derive(Debug, Clone, Copy)]
+pub enum TextureBindingTarget {
+    Image1D,
+    Image2D,
+    Image3D,
+    Array1D,
+    Array2D,
+    Rectangle,
+    CubeMap,
+    CubeMapArray,
+    Buffer,
+    Image2DMultisample,
+    Image2DMultisampleArray,
+}
+
+impl From<TextureBindingTarget> for GLenum {
+    fn from(value: TextureBindingTarget) -> Self {
+        match value {
+            TextureBindingTarget::Image1D => gl::TEXTURE_1D,
+            TextureBindingTarget::Image2D => gl::TEXTURE_2D,
+            TextureBindingTarget::Image3D => gl::TEXTURE_3D,
+            TextureBindingTarget::Array1D => gl::TEXTURE_1D_ARRAY,
+            TextureBindingTarget::Array2D => gl::TEXTURE_2D_ARRAY,
+            TextureBindingTarget::Rectangle => gl::TEXTURE_RECTANGLE,
+            TextureBindingTarget::CubeMap => gl::TEXTURE_CUBE_MAP,
+            TextureBindingTarget::CubeMapArray => gl::TEXTURE_CUBE_MAP_ARRAY,
+            TextureBindingTarget::Buffer => gl::TEXTURE_BUFFER,
+            TextureBindingTarget::Image2DMultisample => gl::TEXTURE_2D_MULTISAMPLE,
+            TextureBindingTarget::Image2DMultisampleArray => gl::TEXTURE_2D_MULTISAMPLE_ARRAY,
+        }
+    }
+}
+
 /// Transform Feedback Buffer Capturing Mode
 #[derive(Debug, Clone, Copy)]
 pub enum TransformFeedbackBufferMode {
@@ -331,6 +365,7 @@ impl From<TransformFeedbackBufferMode> for GLenum {
 }
 
 /// Floating Point Data Types for a Vertex Attribute
+#[derive(Debug, Clone, Copy)]
 pub enum VertexAttributeFloatType {
     Integer(VertexAttributeIntegerType),
     F16,
@@ -350,6 +385,7 @@ impl From<VertexAttributeFloatType> for GLenum {
 }
 
 /// Integer Data Types for a Vertex Attribute
+#[derive(Debug, Clone, Copy)]
 pub enum VertexAttributeIntegerType {
     U8,
     I8,
@@ -373,6 +409,7 @@ impl From<VertexAttributeIntegerType> for GLenum {
 }
 
 /// Vertex Attribute Size Options
+#[derive(Debug, Clone, Copy)]
 pub enum VertexAttributeSize {
     Single,
     Duple,

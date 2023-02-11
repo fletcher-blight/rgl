@@ -8,7 +8,6 @@ pub struct Buffer(pub(crate) GLuint);
 /// Framebuffer Name Object
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
-#[repr(transparent)]
 pub struct Framebuffer(pub(crate) GLuint);
 
 /// Shader Object
