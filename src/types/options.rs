@@ -329,3 +329,64 @@ impl From<TransformFeedbackBufferMode> for GLenum {
         }
     }
 }
+
+/// Floating Point Data Types for a Vertex Attribute
+pub enum VertexAttributeFloatType {
+    Integer(VertexAttributeIntegerType),
+    F16,
+    F32,
+    Fixed,
+}
+
+impl From<VertexAttributeFloatType> for GLenum {
+    fn from(value: VertexAttributeFloatType) -> Self {
+        match value {
+            VertexAttributeFloatType::Integer(t) => t.into(),
+            VertexAttributeFloatType::F16 => gl::HALF_FLOAT,
+            VertexAttributeFloatType::F32 => gl::FLOAT,
+            VertexAttributeFloatType::Fixed => gl::FIXED,
+        }
+    }
+}
+
+/// Integer Data Types for a Vertex Attribute
+pub enum VertexAttributeIntegerType {
+    U8,
+    I8,
+    U16,
+    I16,
+    U32,
+    I32,
+}
+
+impl From<VertexAttributeIntegerType> for GLenum {
+    fn from(value: VertexAttributeIntegerType) -> Self {
+        match value {
+            VertexAttributeIntegerType::U8 => gl::UNSIGNED_BYTE,
+            VertexAttributeIntegerType::I8 => gl::BYTE,
+            VertexAttributeIntegerType::U16 => gl::UNSIGNED_SHORT,
+            VertexAttributeIntegerType::I16 => gl::SHORT,
+            VertexAttributeIntegerType::U32 => gl::UNSIGNED_INT,
+            VertexAttributeIntegerType::I32 => gl::INT,
+        }
+    }
+}
+
+/// Vertex Attribute Size Options
+pub enum VertexAttributeSize {
+    Single,
+    Duple,
+    Triple,
+    Quad,
+}
+
+impl From<VertexAttributeSize> for GLint {
+    fn from(value: VertexAttributeSize) -> Self {
+        match value {
+            VertexAttributeSize::Single => 1,
+            VertexAttributeSize::Duple => 2,
+            VertexAttributeSize::Triple => 3,
+            VertexAttributeSize::Quad => 4,
+        }
+    }
+}

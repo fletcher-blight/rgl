@@ -17,6 +17,9 @@ pub enum Error {
     NotAProgram(Program),
     NotAShader(Shader),
 
+    NoVertexArrayBound,
+    OutOfBoundsVertexAttributeIndex(u32),
+
     ShaderAlreadyAttachedToProgram(Program, Shader),
     TransportFeedbackModeActive(Program),
     ProgramCannotBeUsed(Program),

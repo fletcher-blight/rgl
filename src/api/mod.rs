@@ -18,6 +18,7 @@ mod draw_arrays;
 mod draw_arrays_instanced;
 mod draw_elements;
 mod draw_elements_instanced;
+mod enable_vertex_attribute_array;
 mod gen_buffers;
 mod gen_framebuffers;
 mod gen_vertex_arrays;
@@ -34,6 +35,8 @@ mod link_program;
 mod shader_source;
 pub mod uniform;
 mod use_program;
+mod vertex_attribute_divisor;
+pub mod vertex_attribute_pointer;
 
 #[doc(inline)]
 pub use attach_shader::*;
@@ -75,6 +78,8 @@ pub use draw_elements::*;
 #[doc(inline)]
 pub use draw_elements_instanced::*;
 #[doc(inline)]
+pub use enable_vertex_attribute_array::*;
+#[doc(inline)]
 pub use gen_buffers::*;
 #[doc(inline)]
 pub use gen_framebuffers::*;
@@ -105,3 +110,6 @@ pub use shader_source::*;
 pub use uniform::*;
 #[doc(inline)]
 pub use use_program::*;
+#[doc(inline)]
+pub use vertex_attribute_divisor::*;
+pub use vertex_attribute_pointer::*;
