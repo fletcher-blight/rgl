@@ -10,8 +10,8 @@ use gl::types::*;
 /// object with name `buffer` exists, one is created with that name. When a buffer object is bound
 /// to a target, the previous binding for that target is automatically broken.
 ///
-/// Buffer object names are unsigned integers. The value zero is reserved, but there is no default
-/// buffer object for each buffer object target. Instead, `buffer` set to zero effectively unbinds
+/// Buffer object names are unsigned integers. The value zero (None) is reserved, but there is no default
+/// buffer object for each buffer object target. Instead, `buffer` set to None effectively unbinds
 /// any buffer object previously bound, and restores client memory usage for that buffer object target
 /// (if supported for that target). Buffer object names and the corresponding buffer object contents
 /// are local to the shared object space of the current GL rendering context;
@@ -25,7 +25,7 @@ use gl::types::*;
 ///
 /// While a non-zero buffer object name is bound, GL operations on the target to which it is bound
 /// affect the bound buffer object, and queries of the target to which it is bound return state from
-/// the bound buffer object. While buffer object name zero is bound, as in the initial state,
+/// the bound buffer object. While buffer object name None is bound, as in the initial state,
 /// attempts to modify or query state on the target to which it is bound generates an
 /// [InvalidOperation](ErrorOpenGL::InvalidOperation) error.
 ///
@@ -42,10 +42,10 @@ use gl::types::*;
 /// * `buffer` - Specifies the name of a buffer object
 ///
 /// # Target Usage
-/// - When a non-zero buffer object is bound to the [Array](BufferBindingTarget::Array) target,
+/// - When Some(`buffer`) object is bound to the [Array](BufferBindingTarget::Array) target,
 /// the vertex array pointer parameter is interpreted as an offset within the buffer object measured
 /// in basic machine units.
-/// - While a non-zero buffer object is bound to the [ElementArray](BufferBindingTarget::ElementArray)
+/// - While a Some(`buffer`) object is bound to the [ElementArray](BufferBindingTarget::ElementArray)
 /// target, the indices parameter of [draw_elements], [draw_elements_instanced], [draw_elements_base_vertex],
 /// [draw_range_elements], [draw_range_elements_base_vertex], [multi_draw_elements], or
 /// [multi_draw_elements_base_vertex] is interpreted as an offset within the buffer object measured
@@ -58,7 +58,8 @@ use gl::types::*;
 /// - 4.3 or greater is required for: [DispatchIndirect](BufferBindingTarget::DispatchIndirect) and
 /// [ShaderStorage](BufferBindingTarget::ShaderStorage)
 /// - 4.4 or greater is required for: [Query](BufferBindingTarget::Query)
-pub fn bind_buffer(target: BufferBindingTarget, buffer: Buffer) -> Result<(), Error> {
+pub fn bind_buffer(target: BufferBindingTarget, buffer: Option<Buffer>) -> Result<(), Error> {
+    let buffer = buffer.unwrap_or(Buffer { id: 0 });
     let target: GLenum = target.into();
     unsafe { gl::BindBuffer(target, buffer.id) };
     match internal_get_error() {

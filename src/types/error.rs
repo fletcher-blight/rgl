@@ -13,6 +13,7 @@ pub enum Error {
     NonOpenGLShader(Shader),
     NonOpenGLVertexArray(VertexArray),
 
+    NotABuffer(Buffer),
     NotAProgram(Program),
     NotAShader(Shader),
 
@@ -24,4 +25,6 @@ pub enum Error {
     MissingGeometryShader(Program),
     UnknownUniformName(std::ffi::CString),
     UnlinkedProgram(Program),
+
+    BufferTargetNull(BufferBindingTarget),
 }

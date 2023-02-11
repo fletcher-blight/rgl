@@ -9,7 +9,7 @@ use gl::types::*;
 /// operations, respectively, until it is deleted or another framebuffer is bound to the corresponding
 /// bind point. Calling [bind_framebuffer] with target set to [ReadDraw](FramebufferBindingTarget::ReadDraw)
 /// binds `framebuffer` to both the read and draw framebuffer targets. `framebuffer` is the name of
-/// a framebuffer object previously returned from a call to [gen_frame_buffers], or zero to break the
+/// a framebuffer object previously returned from a call to [gen_framebuffers], or None to break the
 /// existing binding of a framebuffer object to target.
 ///
 /// # Arguments
@@ -17,8 +17,9 @@ use gl::types::*;
 /// * `framebuffer` - Specifies the name of the framebuffer object to bind
 pub fn bind_framebuffer(
     target: FramebufferBindingTarget,
-    framebuffer: Framebuffer,
+    framebuffer: Option<Framebuffer>,
 ) -> Result<(), Error> {
+    let framebuffer = framebuffer.unwrap_or(Framebuffer { id: 0 });
     let target: GLenum = target.into();
     unsafe { gl::BindFramebuffer(target, framebuffer.id) };
     match internal_get_error() {

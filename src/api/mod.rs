@@ -2,6 +2,7 @@ mod attach_shader;
 mod bind_buffer;
 mod bind_framebuffer;
 mod bind_vertex_array;
+pub mod buffer_data;
 mod clear;
 mod clear_colour;
 mod compile_shader;
@@ -26,6 +27,7 @@ mod get_program_info_log;
 mod get_shader;
 mod get_shader_info_log;
 mod get_uniform_location;
+mod is_buffer;
 mod is_program;
 mod is_shader;
 mod link_program;
@@ -41,6 +43,7 @@ pub use bind_buffer::*;
 pub use bind_framebuffer::*;
 #[doc(inline)]
 pub use bind_vertex_array::*;
+pub use buffer_data::*;
 #[doc(inline)]
 pub use clear::*;
 #[doc(inline)]
@@ -89,6 +92,8 @@ pub use get_shader::*;
 pub use get_shader_info_log::*;
 #[doc(inline)]
 pub use get_uniform_location::*;
+#[doc(inline)]
+pub use is_buffer::*;
 #[doc(inline)]
 pub use is_program::*;
 #[doc(inline)]

@@ -68,6 +68,62 @@ impl From<BufferBindingTarget> for GLenum {
     }
 }
 
+/// Buffer Usage Frequency
+///
+/// the frequency of access (modification and usage)
+#[derive(Debug, Clone, Copy)]
+pub enum BufferUsageFrequency {
+    /// The data store contents will be modified once and used at most a few times.
+    Stream,
+    /// The data store contents will be modified once and used many times.
+    Static,
+    /// The data store contents will be modified repeatedly and used many times.
+    Dynamic,
+}
+
+/// Buffer Usage Nature of Access
+#[derive(Debug, Clone, Copy)]
+pub enum BufferUsageNature {
+    /// The data store contents are modified by the application, and used as the source for GL drawing
+    /// and image specification commands.
+    Draw,
+    /// The data store contents are modified by reading data from the GL, and used to return that data
+    /// when queried by the application.
+    Read,
+    /// The data store contents are modified by reading data from the GL, and used as the source for
+    /// GL drawing and image specification commands.
+    Copy,
+}
+
+/// Buffer Usage
+///
+/// is a hint to the GL implementation as to how a buffer object's data store will be accessed.
+/// This enables the GL implementation to make more intelligent decisions that may significantly
+/// impact buffer object performance. It does not, however, constrain the actual usage of the data store.
+pub struct BufferUsage(BufferUsageFrequency, BufferUsageNature);
+
+impl From<BufferUsage> for GLenum {
+    fn from(BufferUsage(frequency, nature): BufferUsage) -> Self {
+        match frequency {
+            BufferUsageFrequency::Stream => match nature {
+                BufferUsageNature::Draw => gl::STREAM_DRAW,
+                BufferUsageNature::Read => gl::STREAM_READ,
+                BufferUsageNature::Copy => gl::STREAM_COPY,
+            },
+            BufferUsageFrequency::Static => match nature {
+                BufferUsageNature::Draw => gl::STATIC_DRAW,
+                BufferUsageNature::Read => gl::STATIC_READ,
+                BufferUsageNature::Copy => gl::STATIC_COPY,
+            },
+            BufferUsageFrequency::Dynamic => match nature {
+                BufferUsageNature::Draw => gl::DYNAMIC_DRAW,
+                BufferUsageNature::Read => gl::DYNAMIC_READ,
+                BufferUsageNature::Copy => gl::DYNAMIC_COPY,
+            },
+        }
+    }
+}
+
 bitflags::bitflags! {
     /// Bitmask for [clear] to specify the desired buffer(s) to clear
     pub struct ClearMask: GLenum {
