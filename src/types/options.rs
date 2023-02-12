@@ -2,6 +2,8 @@ use crate::*;
 use gl::types::*;
 
 /// Buffer Name Target Type
+///
+/// See [bind_buffer]
 #[derive(Debug, Clone, Copy)]
 pub enum BufferBindingTarget {
     /// Vertex attributes
@@ -71,6 +73,7 @@ impl From<BufferBindingTarget> for GLenum {
 /// Buffer Usage Frequency
 ///
 /// the frequency of access (modification and usage)
+/// See [mod@buffer_data]
 #[derive(Debug, Clone, Copy)]
 pub enum BufferUsageFrequency {
     /// The data store contents will be modified once and used at most a few times.
@@ -82,6 +85,8 @@ pub enum BufferUsageFrequency {
 }
 
 /// Buffer Usage Nature of Access
+///
+/// See [mod@buffer_data]
 #[derive(Debug, Clone, Copy)]
 pub enum BufferUsageNature {
     /// The data store contents are modified by the application, and used as the source for GL drawing
@@ -100,6 +105,8 @@ pub enum BufferUsageNature {
 /// is a hint to the GL implementation as to how a buffer object's data store will be accessed.
 /// This enables the GL implementation to make more intelligent decisions that may significantly
 /// impact buffer object performance. It does not, however, constrain the actual usage of the data store.
+///
+/// See [mod@buffer_data]
 pub struct BufferUsage(BufferUsageFrequency, BufferUsageNature);
 
 impl From<BufferUsage> for GLenum {
@@ -137,6 +144,8 @@ bitflags::bitflags! {
 }
 
 /// Currently defined OpenGL errors
+///
+/// Retrieve from [get_error]
 #[derive(Debug, Clone, Copy)]
 pub enum ErrorOpenGL {
     /// No error has been recorded
@@ -173,6 +182,8 @@ pub enum ErrorOpenGL {
 }
 
 /// Framebuffer Name Target Type
+///
+/// See [bind_framebuffer]
 #[derive(Debug, Clone, Copy)]
 pub enum FramebufferBindingTarget {
     Draw,
@@ -268,6 +279,8 @@ impl TryFrom<GLenum> for RenderPrimitive {
 }
 
 /// Shader Object Types
+///
+/// See [create_shader]
 #[derive(Debug, Clone, Copy)]
 pub enum ShaderType {
     /// intended to run on the programmable compute processor
@@ -315,6 +328,8 @@ impl TryFrom<GLenum> for ShaderType {
 }
 
 /// Texture Bind Targets
+///
+/// See [bind_texture]
 #[derive(Debug, Clone, Copy)]
 pub enum TextureBindingTarget {
     Image1D,
@@ -348,6 +363,162 @@ impl From<TextureBindingTarget> for GLenum {
     }
 }
 
+/// Depth or Stencil mode for Textures
+///
+/// See [depth_stencil_mode](TextureParameter::depth_stencil_mode)
+#[derive(Debug, Clone, Copy)]
+pub enum TextureDepthStencilMode {
+    Depth,
+    Stencil,
+}
+
+impl From<TextureDepthStencilMode> for GLenum {
+    fn from(value: TextureDepthStencilMode) -> Self {
+        match value {
+            TextureDepthStencilMode::Depth => gl::DEPTH_COMPONENT,
+            TextureDepthStencilMode::Stencil => gl::STENCIL_INDEX,
+        }
+    }
+}
+
+/// Texture Magnification Filter Options
+///
+/// Used in [mag_filter](TextureParameter::mag_filter)
+#[derive(Debug, Clone, Copy)]
+pub enum TextureMagFilter {
+    /// Returns the value of the texture element that is nearest (in Manhattan distance) to the
+    /// specified texture coordinates.
+    Nearest,
+
+    /// Returns the weighted average of the texture elements that are closest to the specified
+    /// texture coordinates. These can include items wrapped or repeated from other parts of a texture,
+    /// depending on the values of [WrapS](TextureWrapTarget::S) and [WrapT](TextureWrapTarget::T),
+    /// and on the exact mapping.
+    Linear,
+}
+
+impl From<TextureMagFilter> for GLenum {
+    fn from(value: TextureMagFilter) -> Self {
+        match value {
+            TextureMagFilter::Nearest => gl::NEAREST,
+            TextureMagFilter::Linear => gl::LINEAR,
+        }
+    }
+}
+
+/// Texture Minifying Filter Options
+///
+/// Used in [min_filter](TextureParameter::min_filter)
+#[derive(Debug, Clone, Copy)]
+pub enum TextureMinFilter {
+    /// Returns the value of the texture element that is nearest (in Manhattan distance) to the
+    /// specified texture coordinates.
+    Nearest,
+
+    /// Returns the weighted average of the four texture elements that are closest to the specified
+    /// texture coordinates. These can include items wrapped or repeated from other parts of a texture,
+    /// depending on the values of [WrapS](TextureWrapTarget::S) and [WrapT](TextureWrapTarget::T),
+    /// and on the exact mapping.
+    Linear,
+
+    /// Chooses the mipmap that most closely matches the size of the pixel being textured and uses
+    /// the [Nearest](TextureMinFilter::Nearest) criterion (the texture element closest to the
+    /// specified texture coordinates) to produce a texture value.
+    NearestMipmapNearest,
+
+    /// Chooses the mipmap that most closely matches the size of the pixel being textured and uses
+    /// the [Linear](TextureMinFilter::Linear) criterion (a weighted average of the four texture
+    /// elements that are closest to the specified texture coordinates) to produce a texture value.
+    LinearMipmapNearest,
+
+    /// Chooses the two mipmaps that most closely match the size of the pixel being textured and
+    /// uses the [Nearest](TextureMinFilter::Nearest) criterion (the texture element closest to the
+    /// specified texture coordinates) to produce a texture value from each mipmap. The final texture
+    /// value is a weighted average of those two values.
+    NearestMipmapLinear,
+
+    /// Chooses the two mipmaps that most closely match the size of the pixel being textured and uses
+    /// the [Linear](TextureMinFilter::Linear) criterion (a weighted average of the texture elements
+    /// that are closest to the specified texture coordinates) to produce a texture value from each
+    /// mipmap. The final texture value is a weighted average of those two values.
+    LinearMipmapLinear,
+}
+
+impl From<TextureMinFilter> for GLint {
+    fn from(value: TextureMinFilter) -> Self {
+        (match value {
+            TextureMinFilter::Nearest => gl::NEAREST,
+            TextureMinFilter::Linear => gl::LINEAR,
+            TextureMinFilter::NearestMipmapNearest => gl::NEAREST_MIPMAP_NEAREST,
+            TextureMinFilter::LinearMipmapNearest => gl::LINEAR_MIPMAP_NEAREST,
+            TextureMinFilter::NearestMipmapLinear => gl::NEAREST_MIPMAP_LINEAR,
+            TextureMinFilter::LinearMipmapLinear => gl::LINEAR_MIPMAP_LINEAR,
+        }) as GLint
+    }
+}
+
+/// Texture Wrap Targets
+///
+/// See [wrap](TextureParameter::wrap)
+#[derive(Debug, Clone, Copy)]
+pub enum TextureWrapTarget {
+    S,
+    T,
+    R,
+}
+
+impl From<TextureWrapTarget> for GLenum {
+    fn from(value: TextureWrapTarget) -> Self {
+        match value {
+            TextureWrapTarget::S => gl::TEXTURE_WRAP_S,
+            TextureWrapTarget::T => gl::TEXTURE_WRAP_T,
+            TextureWrapTarget::R => gl::TEXTURE_WRAP_R,
+        }
+    }
+}
+
+/// Modes for each [Texture Wrap Target](TextureWrapTarget)
+pub enum TextureWrapMode {
+    /// causes a [TextureWrapTarget] coordinates to be clamped to the range \[12N,1−12N\], where N
+    /// is the size of the texture in the direction of clamping.
+    ClampToEdge,
+
+    /// evaluates a [TextureWrapTarget] coordinates in a similar manner to
+    /// [ClampToEdge](TextureWrapMode::ClampToEdge).  However, in cases where clamping would have
+    /// occurred in [ClampToEdge](TextureWrapMode::ClampToEdge) mode, the fetched texel data is
+    /// substituted with the values specified by [border_colour](TextureParameter::border_colour).
+    ClampToBorder,
+
+    /// causes the integer part of the a [TextureWrapTarget] coordinate to be ignored; the GL uses
+    /// only the fractional part, thereby creating a repeating pattern.
+    Repeat,
+
+    /// causes the a [TextureWrapTarget] coordinate to be set to the fractional part of the texture
+    /// coordinate if the integer part is even; if the integer part is odd, then the texture
+    /// coordinate is set to 1−frac(s), where frac(s) represents the fractional part of the coordinate.
+    MirroredRepeat,
+
+    /// causes the a [TextureWrapTarget] coordinate to be repeated as for
+    /// [MirroredRepeat](TextureWrapMode::MirroredRepeat) for one repetition of the texture, at which
+    /// point the coordinate to be clamped as in [ClampToEdge](TextureWrapMode::ClampToEdge).
+    ///
+    /// # Compatibility
+    /// 4.4 or greater is required
+    MirrorClampToEdge,
+}
+
+impl From<TextureWrapMode> for GLenum {
+    fn from(value: TextureWrapMode) -> Self {
+        match value {
+            TextureWrapMode::ClampToEdge => gl::CLAMP_TO_EDGE,
+            TextureWrapMode::ClampToBorder => gl::CLAMP_TO_BORDER,
+            TextureWrapMode::MirroredRepeat => gl::MIRRORED_REPEAT,
+            TextureWrapMode::Repeat => gl::REPEAT,
+            TextureWrapMode::MirrorClampToEdge => gl::MIRROR_CLAMP_TO_EDGE,
+        }
+    }
+}
+
 /// Transform Feedback Buffer Capturing Mode
 #[derive(Debug, Clone, Copy)]
 pub enum TransformFeedbackBufferMode {
@@ -365,6 +536,8 @@ impl From<TransformFeedbackBufferMode> for GLenum {
 }
 
 /// Floating Point Data Types for a Vertex Attribute
+///
+/// See [vertex_attribute_pointer]
 #[derive(Debug, Clone, Copy)]
 pub enum VertexAttributeFloatType {
     Integer(VertexAttributeIntegerType),
@@ -385,6 +558,8 @@ impl From<VertexAttributeFloatType> for GLenum {
 }
 
 /// Integer Data Types for a Vertex Attribute
+///
+/// See [vertex_attribute_pointer]
 #[derive(Debug, Clone, Copy)]
 pub enum VertexAttributeIntegerType {
     U8,
@@ -409,6 +584,8 @@ impl From<VertexAttributeIntegerType> for GLenum {
 }
 
 /// Vertex Attribute Size Options
+///
+/// See [vertex_attribute_pointer]
 #[derive(Debug, Clone, Copy)]
 pub enum VertexAttributeSize {
     Single,

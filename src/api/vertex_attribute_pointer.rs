@@ -8,7 +8,7 @@
 //! array or stored in separate arrays.
 //!
 //! If `normalized` is set to `true`, it indicates that values stored in an integer format are to be
-//! mapped to the range [-1,1] (for signed values) or [0,1] (for unsigned values) when they are
+//! mapped to the range \[-1,1\] (for signed values) or \[0,1\] (for unsigned values) when they are
 //! accessed and converted to floating point. Otherwise, values will be converted to floats directly
 //! without normalization.
 //!

@@ -21,7 +21,8 @@ use gl::types::*;
 /// [gen_buffers] must be used to generate a set of unused buffer object names.
 ///
 /// The state of a buffer object immediately after it is first bound is an unmapped zero-sized memory
-/// buffer with [ReadWrite] access and [StaticDraw] usage.
+/// buffer with [ReadWrite] access and
+/// [Static](BufferUsageFrequency::Static)[Draw](BufferUsageNature::Draw) usage.
 ///
 /// While a non-zero buffer object name is bound, GL operations on the target to which it is bound
 /// affect the bound buffer object, and queries of the target to which it is bound return state from

@@ -37,6 +37,7 @@ mod is_program;
 mod is_shader;
 mod link_program;
 mod shader_source;
+mod texture_parameter;
 pub mod uniform;
 mod use_program;
 mod vertex_attribute_divisor;
@@ -119,6 +120,8 @@ pub use is_shader::*;
 pub use link_program::*;
 #[doc(inline)]
 pub use shader_source::*;
+#[doc(inline)]
+pub use texture_parameter::*;
 pub use uniform::*;
 #[doc(inline)]
 pub use use_program::*;
