@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// generate vertex array object names
 ///
+/// # Description
 /// [gen_vertex_arrays] fills all vertex array object names in `arrays`. There is no guarantee that
 /// the names form a contiguous set of integers; however, it is guaranteed that none of the returned
 /// names was in use immediately before the call to [gen_vertex_arrays].

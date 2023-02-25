@@ -32,6 +32,7 @@ use gl::types::*;
 
 /// define an array of generic vertex attribute data for integer only use
 ///
+/// # Description
 /// see [vertex_attribute_pointer] for more details
 ///
 /// # Arguments
@@ -61,6 +62,7 @@ pub fn vertex_attribute_integer_pointer(
 
 /// define an array of generic vertex attribute data for floating point only use
 ///
+/// # Description
 /// see [vertex_attribute_pointer] for more details
 ///
 /// # Arguments
@@ -94,6 +96,7 @@ pub fn vertex_attribute_float_pointer(
 
 /// define an array of generic vertex attribute data for BGRA colour use
 ///
+/// # Description
 /// see [vertex_attribute_pointer] for more details
 ///
 /// # Arguments
@@ -129,6 +132,7 @@ pub fn vertex_attribute_bgra_colour_pointer(
 
 /// define an array of generic vertex attribute data for colour byte use
 ///
+/// # Description
 /// see [vertex_attribute_pointer] for more details
 ///
 /// # Arguments
@@ -161,6 +165,7 @@ pub fn vertex_attribute_u8_colour_pointer(
 
 /// define an array of generic vertex attribute data for 10f,11f,11f (GBR) colour use
 ///
+/// # Description
 /// see [vertex_attribute_pointer] for more details
 ///
 /// # Arguments
@@ -193,6 +198,7 @@ pub fn vertex_attribute_f32_colour_pointer(
 
 /// define an array of generic vertex attribute data for f64 usage only
 ///
+/// # Description
 /// see [vertex_attribute_pointer] for more details
 ///
 /// # Arguments

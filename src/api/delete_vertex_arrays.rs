@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// delete vertex array objects
 ///
+/// # Description
 /// [delete_vertex_arrays] deletes all vertex array objects whose names are stored in the array
 /// addressed by `arrays`. Once a vertex array object is deleted it has no contents and its name is
 /// again unused. If a vertex array object that is currently bound is deleted, the binding for that

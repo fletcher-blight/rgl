@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// delete named buffer objects
 ///
+/// # Description
 /// [delete_buffers] deletes all buffer objects named by `buffers`. After a buffer object is deleted,
 /// it has no contents, and its name is free for reuse (for example by [gen_buffers]). If a buffer
 /// object that is currently bound is deleted, the binding reverts to 0 (the absence of any buffer object).

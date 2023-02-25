@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// generate framebuffer object names
 ///
+/// # Description
 /// [gen_framebuffers] fills all framebuffer object names in `ids`. There is no guarantee that the
 /// names form a contiguous set of integers; however, it is guaranteed that none of the returned
 /// names was in use immediately before the call to [gen_framebuffers].

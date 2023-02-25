@@ -2,6 +2,7 @@ use crate::*;
 
 /// Enable generic vertex attribute array
 ///
+/// # Description
 /// [enable_vertex_attribute_array] enable the generic vertex attribute array specified by `index`,
 /// using currently bound vertex array object for the operation.
 pub fn enable_vertex_attribute_array(index: u32) -> Result<(), Error> {
@@ -11,6 +12,7 @@ pub fn enable_vertex_attribute_array(index: u32) -> Result<(), Error> {
 
 /// Disable generic vertex attribute array
 ///
+/// # Description
 /// [disable_vertex_attribute_array] disable the generic vertex attribute array specified by `index`.
 /// using currently bound vertex array object for the operation.
 /// updating state of the vertex array object with ID `array`.
@@ -30,6 +32,7 @@ fn handle_attribute_array_error(index: u32) -> Result<(), Error> {
 
 /// Enable generic vertex attribute array
 ///
+/// # Description
 /// [enable_vertex_array_attribute] enable the generic vertex attribute array specified by `index`,
 /// updating state of the vertex array object with ID `array`.
 pub fn enable_vertex_array_attribute(array: VertexArray, index: u32) -> Result<(), Error> {
@@ -39,6 +42,7 @@ pub fn enable_vertex_array_attribute(array: VertexArray, index: u32) -> Result<(
 
 /// Disable generic vertex attribute array
 ///
+/// # Description
 /// [disable_vertex_array_attribute] disable the generic vertex attribute array specified by `index`.
 /// using currently bound vertex array object for the operation.
 /// updating state of the vertex array object with ID `array`.

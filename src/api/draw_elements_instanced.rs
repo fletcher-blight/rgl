@@ -3,13 +3,14 @@ use gl::types::*;
 
 /// draw multiple instances of a set of elements
 ///
+/// # Description
 /// [draw_elements_instanced] behaves identically to [draw_elements] except that `instance_count`
 /// instances of the set of elements are executed and the value of the internal counter `instanceID`
 /// advances for each iteration. `instanceID` is an internal 32-bit integer counter that may be
 /// read by a vertex shader as `gl_InstanceID`.
 ///
 /// [draw_elements_instanced] has the same effect as:
-/// ```
+/// ```no_run
 /// # use rgl::*;
 /// # fn draw_elements_instanced(
 /// #     mode: RenderPrimitive,

@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// Replaces the source code in a shader object
 ///
+/// # Description
 /// [shader_source] sets the source code in `shader` to the source code in `source`. Any source code
 /// previously stored in the shader object is completely replaced. The source code strings are not
 /// scanned or parsed at this time; they are simply copied into the specified shader object.

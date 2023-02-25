@@ -2,6 +2,7 @@ use crate::*;
 
 /// return error information
 ///
+/// # Description
 /// Returns the value of the error flag. Each detectable error is assigned a numeric code and symbolic name.
 /// When an error occurs, the error flag is set to the appropriate error code value. No other errors
 /// are recorded until [get_error] is called, the error code is returned, and the flag is reset

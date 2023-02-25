@@ -2,6 +2,7 @@ use crate::*;
 
 /// Compiles a shader object
 ///
+/// # Description
 /// [compile_shader] compiles the source code strings that have been stored in the shader object
 /// specified by `shader`.
 ///

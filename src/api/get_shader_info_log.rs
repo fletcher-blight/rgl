@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// Returns the information log for a shader object
 ///
+/// # Description
 /// [get_shader_info_log] returns the information log for the specified shader object.
 /// The information log for a shader object is modified when the shader is compiled.
 /// The string that is returned will be null terminated.

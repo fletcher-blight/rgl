@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// Creates a shader object
 ///
+/// # Description
 /// [create_shader] creates an empty shader object and returns a non-zero value by which it can
 /// be referenced. A shader object is used to maintain the source code strings that define a shader.
 /// `shader_type` indicates the type of shader to be created.

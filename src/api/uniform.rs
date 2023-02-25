@@ -1,5 +1,6 @@
 //! Specify the value of a uniform variable for the current program object
 //!
+//! # Description
 //! [uniform] api modify the value of a uniform variable or a uniform variable array. The
 //! location of the uniform variable to be modified is specified by location, which should be a
 //! value returned by [get_uniform_location]. [uniform] api operate on the program object

@@ -2,6 +2,7 @@ use crate::*;
 
 /// Deletes a shader object
 ///
+/// # Description
 /// [delete_shader] frees the memory and invalidates the name associated with the shader object
 /// specified by shader. This command effectively undoes the effects of a call to [create_shader].
 ///

@@ -365,7 +365,7 @@ impl From<TextureBindingTarget> for GLenum {
 
 /// Depth or Stencil mode for Textures
 ///
-/// See [depth_stencil_mode](TextureParameter::depth_stencil_mode)
+/// See [Depth Stencil Mode](texture_parameter#depth-stencil-mode)
 #[derive(Debug, Clone, Copy)]
 pub enum TextureDepthStencilMode {
     Depth,
@@ -383,7 +383,7 @@ impl From<TextureDepthStencilMode> for GLenum {
 
 /// Texture Magnification Filter Options
 ///
-/// Used in [mag_filter](TextureParameter::mag_filter)
+/// See [Mag Filter](texture_parameter#mag-filter)
 #[derive(Debug, Clone, Copy)]
 pub enum TextureMagFilter {
     /// Returns the value of the texture element that is nearest (in Manhattan distance) to the
@@ -408,7 +408,7 @@ impl From<TextureMagFilter> for GLenum {
 
 /// Texture Minifying Filter Options
 ///
-/// Used in [min_filter](TextureParameter::min_filter)
+/// See [Min Filter](texture_parameter#min-filter)
 #[derive(Debug, Clone, Copy)]
 pub enum TextureMinFilter {
     /// Returns the value of the texture element that is nearest (in Manhattan distance) to the
@@ -459,7 +459,7 @@ impl From<TextureMinFilter> for GLint {
 
 /// Texture Wrap Targets
 ///
-/// See [wrap](TextureParameter::wrap)
+/// See [wrap](texture_parameter#wrap)
 #[derive(Debug, Clone, Copy)]
 pub enum TextureWrapTarget {
     S,
@@ -486,7 +486,7 @@ pub enum TextureWrapMode {
     /// evaluates a [TextureWrapTarget] coordinates in a similar manner to
     /// [ClampToEdge](TextureWrapMode::ClampToEdge).  However, in cases where clamping would have
     /// occurred in [ClampToEdge](TextureWrapMode::ClampToEdge) mode, the fetched texel data is
-    /// substituted with the values specified by [border_colour](TextureParameter::border_colour).
+    /// substituted with the values specified by [texture_target_border_colour].
     ClampToBorder,
 
     /// causes the integer part of the a [TextureWrapTarget] coordinate to be ignored; the GL uses

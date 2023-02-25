@@ -2,6 +2,7 @@ use crate::*;
 
 /// Creates a program object
 ///
+/// # Description
 /// [create_program] creates an empty program object and returns a non-zero value by which it can
 /// be referenced. A program object is an object to which shader objects can be attached.
 /// This provides a mechanism to specify the shader objects that will be linked to create a program.

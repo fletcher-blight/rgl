@@ -2,6 +2,7 @@ use crate::*;
 
 /// Installs a program object as part of current rendering state
 ///
+/// # Description
 /// [use_program] installs the program object specified by program as part of current rendering state.
 /// One or more executables are created in a program object by successfully attaching shader objects
 /// to it with [attach_shader], successfully compiling the shader objects with [compile_shader],

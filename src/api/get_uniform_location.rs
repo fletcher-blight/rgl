@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// Returns the location of a uniform variable
 ///
+/// # Description
 /// [get_uniform_location] returns [UniformLocation] that represents the location of a specific
 /// uniform variable within a program object. `uniform_name` must be a null terminated string that
 /// contains no white space. `uniform_name` must be an active uniform variable name in program that

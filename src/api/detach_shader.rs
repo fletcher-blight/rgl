@@ -2,6 +2,7 @@ use crate::*;
 
 /// Detaches a shader object from a program object to which it is attached
 ///
+/// # Description
 /// [detach_shader] detaches the shader object specified by `shader` from the program object specified
 /// by `program`. This command can be used to undo the effect of the command [attach_shader].
 ///

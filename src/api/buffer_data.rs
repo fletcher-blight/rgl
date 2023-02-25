@@ -1,7 +1,6 @@
 //! creates and initializes a buffer object's data store
 //!
 //! # Description
-//!
 //! [buffer_data()], [buffer_data_reserved], [named_buffer_data] and [named_buffer_data_reserved]
 //! create a new data store for a buffer object. In case of [buffer_data()] and [buffer_data_reserved],
 //! the buffer object currently bound to `target` is used. For [named_buffer_data] and
@@ -14,7 +13,6 @@
 //! it has a None mapped pointer, and its mapped access is [ReadWrite].
 //!
 //! # Arguments
-//!
 //! * `target` - Specifies the target to which the buffer object is bound for [buffer_data()] and
 //! [buffer_data_reserved]
 //! * `buffer` - Specifies the name of the buffer object for [named_buffer_data] and
@@ -24,7 +22,6 @@
 //! * `usage` - Specifies the expected usage pattern of the data store
 //!
 //! # Notes
-//!
 //! If using `*_reserved`, a data store of the specified `size` is still created, but its contents
 //! remain uninitialized and thus undefined.
 //!

@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// render primitives from array data
 ///
+/// # Description
 /// [draw_arrays] specifies multiple geometric primitives with very few subroutine calls. Instead of
 /// calling a GL procedure to pass each individual vertex, normal, texture coordinate, edge flag,
 /// or color, you can prespecify separate arrays of vertices, normals, and colors and use them to

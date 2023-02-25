@@ -2,6 +2,7 @@ use crate::*;
 
 /// bind a vertex array object
 ///
+/// # Description
 /// Binds the vertex array object with name `array`. `array` is the name of a vertex array object
 /// previously returned from a call to [gen_vertex_arrays], or None to break the existing
 /// vertex array object binding.

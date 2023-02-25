@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// Returns the information log for a program object
 ///
+/// # Description
 /// [get_program_info_log] returns the information log for the specified program object.
 /// The information log for a program object is modified when the program object is linked or validated.
 /// The string that is returned will be null terminated.

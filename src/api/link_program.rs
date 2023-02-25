@@ -2,6 +2,7 @@ use crate::*;
 
 /// Links a program object
 ///
+/// # Description
 /// [link_program] links the program object specified by program. If any shader objects of type
 /// [Vertex](ShaderType::Vertex) are attached to program, they will be used to create an executable
 /// that will run on the programmable vertex processor. If any shader objects of type

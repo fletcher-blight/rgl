@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// bind a framebuffer to a framebuffer target
 ///
+/// # Description
 /// [bind_framebuffer] binds the framebuffer object with name `framebuffer` to the framebuffer target
 /// specified by `target`. If a framebuffer object is bound to [Draw](FramebufferBindingTarget::Draw)
 /// or [Read](FramebufferBindingTarget::Read), it becomes the target for rendering or readback

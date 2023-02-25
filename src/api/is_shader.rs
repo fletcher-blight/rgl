@@ -2,6 +2,7 @@ use crate::*;
 
 /// Determines if a name corresponds to a shader object
 ///
+/// # Description
 /// [is_shader] returns true if `shader` is the name of a shader object previously created with
 /// [create_shader] and not yet deleted with [delete_shader]. If `shader` is zero or a non-zero
 /// value that is not the name of a shader object, or if an error occurs, [is_shader] returns false.

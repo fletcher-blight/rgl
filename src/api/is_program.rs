@@ -2,6 +2,7 @@ use crate::*;
 
 /// Determines if a name corresponds to a program object
 ///
+/// # Description
 /// [is_program] returns true if `program` is the name of a program object previously created with
 /// [create_program] and not yet deleted with [delete_program]. If `program` is zero or a non-zero
 /// value that is not the name of a program object, or if an error occurs, [is_program] returns false.

@@ -2,6 +2,7 @@ use crate::*;
 
 /// Deletes a program object
 ///
+/// # Description
 /// [delete_program] frees the memory and invalidates the name associated with the program object
 /// specified by program. This command effectively undoes the effects of a call to [create_program].
 ///

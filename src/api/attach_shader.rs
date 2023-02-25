@@ -2,6 +2,7 @@ use crate::*;
 
 /// Attaches a shader object to a program object
 ///
+/// # Description
 /// In order to create a complete shader program, there must be a way to specify the list of things
 /// that will be linked together. Program objects provide this mechanism. Shaders that are to be
 /// linked together in a program object must first be attached to that program object. [attach_shader]

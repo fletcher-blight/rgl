@@ -1,6 +1,9 @@
 use crate::*;
 use gl::types::*;
 
+/// returns [Vertex](ShaderType::Vertex) if shader is a vertex shader object,
+/// [Geometry](ShaderType::Geometry) if shader is a geometry shader object, and
+/// [Fragment](ShaderType::Fragment) if shader is a fragment shader object.
 pub fn get_shader_shader_type(shader: Shader) -> Result<ShaderType, Error> {
     get_shader_iv(shader, gl::SHADER_TYPE).map(|res| (res as GLenum).try_into())?
 }

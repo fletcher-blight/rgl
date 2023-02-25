@@ -4,7 +4,6 @@ use gl::types::*;
 /// bind a named buffer object
 ///
 /// # Description
-///
 /// Binds a buffer object to the specified buffer binding point. Calling [bind_buffer] with `buffer`
 /// set to the name of a buffer object binds that buffer object name to the `target`. If no buffer
 /// object with name `buffer` exists, one is created with that name. When a buffer object is bound

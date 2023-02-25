@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// generate buffer object names
 ///
+/// # Description
 /// [gen_buffers] fills all buffer object names in `buffers`. There is no guarantee that the names
 /// form a contiguous set of integers; however, it is guaranteed that none of the returned names
 /// was in use immediately before the call to [gen_buffers].

@@ -2,6 +2,7 @@ use crate::*;
 
 /// clear buffers to preset values
 ///
+/// # Description
 /// [clear] sets the bitplane area of the window to values previously selected by
 /// [Colour](ClearMask::COLOUR), [Depth](ClearMask::DEPTH), and [Stencil](ClearMask::STENCIL).
 /// Multiple colour buffers can be cleared simultaneously by selecting more than one buffer at a time

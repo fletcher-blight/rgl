@@ -2,6 +2,7 @@ use crate::*;
 
 /// determine if a name corresponds to a buffer object
 ///
+/// # Description
 /// [is_buffer] returns true if `buffer` is currently the name of a buffer object. If `buffer` is zero,
 /// or is a non-zero value that is not currently the name of a buffer object, or if an error occurs,
 /// [is_buffer] returns false.

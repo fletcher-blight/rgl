@@ -3,6 +3,7 @@ use gl::types::*;
 
 /// delete framebuffer objects
 ///
+/// # Description
 /// [delete_framebuffers] deletes all framebuffer objects whose names are stored in the array
 /// addressed by `frame_buffers`. The name zero is reserved by the GL and is silently ignored,
 /// should it occur in `frame_buffers`, as are other unused names. Once a framebuffer object is deleted,
