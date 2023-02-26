@@ -11,7 +11,7 @@ use gl::types::*;
 /// [get_program_info_log] returns in `buffer` as much of the information log as it can. The number
 /// of characters actually returned, excluding the null termination character, is specified by the
 /// Ok return value. The size of the buffer required to store the returned information log can be
-/// obtained by calling [get_program_info_log_length]\).
+/// obtained by calling [get_program_info_log_length].
 ///
 /// The information log for a program object is either an empty string, or a string containing
 /// information about the last link operation, or a string containing information about the last
@@ -28,6 +28,18 @@ use gl::types::*;
 /// to application developers during the development process, even when these operations are successful.
 /// Application developers should not expect different OpenGL implementations to
 /// produce identical information logs.
+///
+/// # Examples
+/// ```no_run
+/// # fn print_log(program: rgl::Program) -> Result<(), rgl::Error> {
+/// let mut buffer = [0; 1024];
+/// let num_bytes: usize = rgl::get_program_info_log(program, &mut buffer)? as usize;
+/// let buffer: &[u8] = &buffer[0..num_bytes];
+/// let info_log: String = String::from_utf8_lossy(&buffer).into_owned();
+/// println!("{info_log}");
+/// # Ok(())
+/// # }
+/// ```
 pub fn get_program_info_log(program: Program, buffer: &mut [u8]) -> Result<u32, Error> {
     let buf_size = buffer.len() as GLsizei;
     let mut written_length: GLsizei = 0;

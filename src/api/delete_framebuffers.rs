@@ -14,6 +14,14 @@ use gl::types::*;
 ///
 /// # Arguments
 /// * `frame_buffers` - Specifies an array of framebuffer objects to be deleted
+///
+/// # Examples
+/// ```no_run
+/// # fn cleanup(framebuffer: rgl::Framebuffer, framebuffers: &[rgl::Framebuffer]) {
+/// rgl::delete_framebuffers(&[framebuffer]);
+/// rgl::delete_framebuffers(framebuffers);
+/// # }
+/// ```
 pub fn delete_framebuffers(framebuffers: &[Framebuffer]) -> () {
     let n = framebuffers.len() as GLsizei;
     let framebuffers = framebuffers.as_ptr() as *const GLuint;

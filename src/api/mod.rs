@@ -22,10 +22,10 @@ mod draw_arrays_instanced;
 mod draw_elements;
 mod draw_elements_instanced;
 mod enable_vertex_attribute_array;
-mod gen_buffers;
-mod gen_framebuffers;
-mod gen_textures;
-mod gen_vertex_arrays;
+mod gen_buffer;
+mod gen_framebuffer;
+mod gen_texture;
+mod gen_vertex_array;
 mod get_error;
 mod get_program;
 mod get_program_info_log;
@@ -91,13 +91,13 @@ pub use draw_elements_instanced::*;
 #[doc(inline)]
 pub use enable_vertex_attribute_array::*;
 #[doc(inline)]
-pub use gen_buffers::*;
+pub use gen_buffer::*;
 #[doc(inline)]
-pub use gen_framebuffers::*;
+pub use gen_framebuffer::*;
 #[doc(inline)]
-pub use gen_textures::*;
+pub use gen_texture::*;
 #[doc(inline)]
-pub use gen_vertex_arrays::*;
+pub use gen_vertex_array::*;
 #[doc(inline)]
 pub use get_error::*;
 #[doc(inline)]

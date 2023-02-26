@@ -27,6 +27,18 @@ use gl::types::*;
 /// application developers during the development process, even when compilation is successful.
 /// Application developers should not expect different OpenGL implementations to
 /// produce identical information logs.
+///
+/// # Examples
+/// ```no_run
+/// # fn print_log(shader: rgl::Shader) -> Result<(), rgl::Error> {
+/// let mut buffer = [0; 1024];
+/// let num_bytes: usize = rgl::get_shader_info_log(shader, &mut buffer)? as usize;
+/// let buffer: &[u8] = &buffer[0..num_bytes];
+/// let info_log: String = String::from_utf8_lossy(&buffer).into_owned();
+/// println!("{info_log}");
+/// # Ok(())
+/// # }
+/// ```
 pub fn get_shader_info_log(shader: Shader, buffer: &mut [u8]) -> Result<u32, Error> {
     let buf_size = buffer.len() as GLsizei;
     let mut written_length: GLsizei = 0;

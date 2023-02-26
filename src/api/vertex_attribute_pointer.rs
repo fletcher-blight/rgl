@@ -44,6 +44,28 @@ use gl::types::*;
 /// * `offset` - Specifies a offset of the first component of the first generic vertex attribute in
 /// the array in the data store of the buffer currently bound to the [Array](BufferBindingTarget::Array)
 /// target
+///
+/// # Examples
+/// ```no_run
+/// # fn init_attrib(index: u32, offset: u32) -> Result<(), rgl::Error> {
+/// // Given a buffer with only u32 data
+/// rgl::buffer_data(
+///     rgl::BufferBindingTarget::Array,
+///     &[[1, 2], [3, 4], [5, 6u32]],
+///     rgl::BufferUsage(rgl::BufferUsageFrequency::Static,
+///     rgl::BufferUsageNature::Draw)
+/// )?;
+///
+/// // Configure as integer only usage attribute
+/// rgl::vertex_attribute_integer_pointer(
+///     index,
+///     rgl::VertexAttributeSize::Duple,
+///     rgl::VertexAttributeIntegerType::U32,
+///     (std::mem::size_of::<u32>() * 2) as u32,
+///     offset)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn vertex_attribute_integer_pointer(
     index: u32,
     size: VertexAttributeSize,
@@ -76,6 +98,31 @@ pub fn vertex_attribute_integer_pointer(
 /// * `offset` - Specifies a offset of the first component of the first generic vertex attribute in
 /// the array in the data store of the buffer currently bound to the [Array](BufferBindingTarget::Array)
 /// target
+///
+/// # Examples
+/// ```no_run
+/// # fn init_attrib(index: u32, offset: u32, normalised: bool) -> Result<(), rgl::Error> {
+/// // Given a buffer with only f32 data
+/// rgl::buffer_data(
+///     rgl::BufferBindingTarget::Array,
+///     &[[-0.5, -0.5], [0.0, 0.5], [0.5, -0.5f32]],
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+///
+/// // Configure as float only usage attribute
+/// rgl::vertex_attribute_float_pointer(
+///     index,
+///     rgl::VertexAttributeSize::Duple,
+///     rgl::VertexAttributeFloatType::F32,
+///     normalised,
+///     (std::mem::size_of::<f32>() * 2) as u32,
+///     offset)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn vertex_attribute_float_pointer(
     index: u32,
     size: VertexAttributeSize,
@@ -109,6 +156,30 @@ pub fn vertex_attribute_float_pointer(
 /// * `offset` - Specifies a offset of the first component of the first generic vertex attribute in
 /// the array in the data store of the buffer currently bound to the [Array](BufferBindingTarget::Array)
 /// target
+///
+/// # Examples
+/// ```no_run
+/// # fn init_attrib(index: u32, offset: u32, sized: bool, signed: bool, colour_data: &[u32]) -> Result<(), rgl::Error> {
+/// // Given a buffer with u32 2_10_10_10 colour data
+/// rgl::buffer_data(
+///     rgl::BufferBindingTarget::Array,
+///     &colour_data, // &[u32]
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+///
+/// // Configure as an array of u32 2_10_10_10 colour usage attribute
+/// rgl::vertex_attribute_bgra_colour_pointer(
+///     index,
+///     sized,
+///     signed,
+///     (std::mem::size_of::<u32>() * 1) as u32,
+///     offset)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn vertex_attribute_bgra_colour_pointer(
     index: u32,
     sized: bool,
@@ -146,6 +217,30 @@ pub fn vertex_attribute_bgra_colour_pointer(
 /// * `offset` - Specifies a offset of the first component of the first generic vertex attribute in
 /// the array in the data store of the buffer currently bound to the [Array](BufferBindingTarget::Array)
 /// target
+///
+/// # Examples
+/// ```no_run
+/// # fn init_attrib(index: u32, offset: u32, normalised: bool, sized: bool, signed: bool, colour_data: &[u8]) -> Result<(), rgl::Error> {
+/// // Given a buffer with u8 BGRA colour data
+/// rgl::buffer_data(
+///     rgl::BufferBindingTarget::Array,
+///     &colour_data, // &[u8]
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+///
+/// // Configure as an array of u8 BGRA colour usage attribute
+/// rgl::vertex_attribute_u8_colour_pointer(
+///     index,
+///     None,
+///     normalised,
+///     (std::mem::size_of::<u32>() * 4) as u32,
+///     offset)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn vertex_attribute_u8_colour_pointer(
     index: u32,
     size: Option<VertexAttributeSize>,
@@ -180,6 +275,29 @@ pub fn vertex_attribute_u8_colour_pointer(
 ///
 /// # Compatability
 /// - Requires 4.4 or greater
+///
+/// # Examples
+/// ```no_run
+/// # fn init_attrib(index: u32, offset: u32, normalised: bool, colour_data: &[f32]) -> Result<(), rgl::Error> {
+/// // Given a buffer with f32 10f,11f,11f (GBR) colour data
+/// rgl::buffer_data(
+///     rgl::BufferBindingTarget::Array,
+///     &colour_data, // &[f32]
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+///
+/// // Configure as an array of f32 10f,11f,11f (GBR) colour usage attribute
+/// rgl::vertex_attribute_f32_colour_pointer(
+///     index,
+///     normalised,
+///     (std::mem::size_of::<f32>() * 1) as u32,
+///     offset)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn vertex_attribute_f32_colour_pointer(
     index: u32,
     normalised: bool,
@@ -209,6 +327,29 @@ pub fn vertex_attribute_f32_colour_pointer(
 /// * `offset` - Specifies a offset of the first component of the first generic vertex attribute in
 /// the array in the data store of the buffer currently bound to the [Array](BufferBindingTarget::Array)
 /// target
+///
+/// # Examples
+/// ```no_run
+/// # fn init_attrib(index: u32, offset: u32, normalised: bool) -> Result<(), rgl::Error> {
+/// // Given a buffer with f64 data
+/// rgl::buffer_data(
+///     rgl::BufferBindingTarget::Array,
+///     &[[-0.5, -0.5], [0.0, 0.5], [0.5, -0.5f64]],
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+///
+/// // Configure as f64 only usage attribute
+/// rgl::vertex_attribute_f64_pointer(
+///     index,
+///     rgl::VertexAttributeSize::Duple,
+///     (std::mem::size_of::<f64>() * 2) as u32,
+///     offset)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn vertex_attribute_f64_pointer(
     index: u32,
     size: VertexAttributeSize,

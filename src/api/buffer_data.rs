@@ -41,6 +41,21 @@ use gl::types::*;
 /// creates and initializes `target`'s buffer object's data store with `data`
 ///
 /// See [mod@buffer_data] for more details
+///
+/// # Examples
+/// ```no_run
+/// # fn setup() -> Result<(), rgl::Error> {
+/// rgl::buffer_data(
+///     rgl::BufferBindingTarget::Array,
+///     &[[-0.5, -0.5], [0.0, 0.5], [0.5, -0.5f32]],
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn buffer_data<Data>(
     target: BufferBindingTarget,
     data: &[Data],
@@ -57,6 +72,21 @@ pub fn buffer_data<Data>(
 /// reserves `size` bytes of uninitialised data for a `target`'s buffer object's data store
 ///
 /// See [mod@buffer_data] for more details
+///
+/// # Examples
+/// ```no_run
+/// # fn setup() -> Result<(), rgl::Error> {
+/// rgl::buffer_data_reserved(
+///     rgl::BufferBindingTarget::Array,
+///     (std::mem::size_of::<f32>() * 6) as u32,
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn buffer_data_reserved(
     target: BufferBindingTarget,
     size: u32,
@@ -73,6 +103,20 @@ pub fn buffer_data_reserved(
 /// creates and initializes `buffer`'s buffer object's data store with `data`
 ///
 /// See [mod@buffer_data] for more details
+///
+/// # Examples
+/// ```no_run
+/// # fn setup(vbo: rgl::Buffer) -> Result<(), rgl::Error> {
+/// rgl::named_buffer_data(
+///     vbo,
+///     &[[-0.5, -0.5], [0.0, 0.5], [0.5, -0.5f32]],
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+/// # Ok(())
+/// # }
 pub fn named_buffer_data<Data>(
     buffer: Buffer,
     data: &[Data],
@@ -88,6 +132,21 @@ pub fn named_buffer_data<Data>(
 /// reserves `size` bytes of uninitialised data for a `buffer`'s buffer object's data store
 ///
 /// See [mod@buffer_data] for more details
+///
+/// # Examples
+/// ```no_run
+/// # fn setup(vbo: rgl::Buffer) -> Result<(), rgl::Error> {
+/// rgl::named_buffer_data_reserved(
+///     vbo,
+///     (std::mem::size_of::<f32>() * 6) as u32,
+///     rgl::BufferUsage(
+///         rgl::BufferUsageFrequency::Static,
+///         rgl::BufferUsageNature::Draw,
+///     ),
+/// )?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn named_buffer_data_reserved(
     buffer: Buffer,
     size: u32,

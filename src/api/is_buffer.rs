@@ -7,7 +7,7 @@ use crate::*;
 /// or is a non-zero value that is not currently the name of a buffer object, or if an error occurs,
 /// [is_buffer] returns false.
 ///
-/// A name returned by [gen_buffers], but not yet associated with a buffer object by calling
+/// A name returned by [gen_buffer], but not yet associated with a buffer object by calling
 /// [bind_buffer], is not the name of a buffer object.
 ///
 /// # Arguments

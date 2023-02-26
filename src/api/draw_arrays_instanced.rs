@@ -11,16 +11,28 @@ use gl::types::*;
 ///
 /// [draw_arrays_instanced] has the same effect as:
 /// ```no_run
-/// # use rgl::*;
 /// # fn draw_arrays_instanced(
-/// #     mode: RenderPrimitive,
+/// #     mode: rgl::RenderPrimitive,
 /// #     first: u32,
 /// #     count: u32,
-/// #     instance_count: u32) -> Result<(), Error> {
+/// #     instance_count: u32) -> Result<(), rgl::Error> {
 /// for instance_id in 0..instance_count {
-///     draw_arrays(mode, first, count)?;
+///     rgl::draw_arrays(mode, first, count)?;
 /// }
 /// #    Ok(())
+/// # }
+/// ```
+///
+/// # Examples
+/// ```no_run
+/// # fn draw(start: u32, num_vertices: u32, num_instances: u32) -> Result<(), rgl::Error> {
+/// rgl::draw_arrays_instanced(
+///     rgl::RenderPrimitive::Triangles,
+///     start,
+///     num_vertices,
+///     num_instances
+/// )?;
+/// # Ok(())
 /// # }
 /// ```
 pub fn draw_arrays_instanced(

@@ -27,6 +27,19 @@ use gl::types::*;
 /// - 3.2 or greater is required for: [LineStripAdjacency](RenderPrimitive::LineStripAdjacency),
 /// [LinesAdjacency](RenderPrimitive::LinesAdjacency), [TriangleStripAdjacency](RenderPrimitive::TriangleStripAdjacency)
 /// and [TrianglesAdjacency](RenderPrimitive::TrianglesAdjacency)
+///
+/// # Examples
+/// ```no_run
+/// # fn draw(num_indices: u32, offset: u32) -> Result<(), rgl::Error> {
+/// rgl::draw_elements(
+///     rgl::RenderPrimitive::Triangles,
+///     num_indices,
+///     rgl::IndicesType::U32,
+///     offset
+/// )?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn draw_elements(
     mode: RenderPrimitive,
     count: u32,

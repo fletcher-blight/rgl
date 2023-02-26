@@ -17,7 +17,7 @@ use gl::types::*;
 /// two rendering contexts share buffer object names only if they explicitly enable sharing between
 /// contexts through the appropriate GL windows interfaces api.
 ///
-/// [gen_buffers] must be used to generate a set of unused buffer object names.
+/// [gen_buffer] must be used to generate a set of unused buffer object names.
 ///
 /// The state of a buffer object immediately after it is first bound is an unmapped zero-sized memory
 /// buffer with [ReadWrite] access and
@@ -58,6 +58,18 @@ use gl::types::*;
 /// - 4.3 or greater is required for: [DispatchIndirect](BufferBindingTarget::DispatchIndirect) and
 /// [ShaderStorage](BufferBindingTarget::ShaderStorage)
 /// - 4.4 or greater is required for: [Query](BufferBindingTarget::Query)
+///
+/// # Examples
+/// ```no_run
+/// # fn setup_buffers(vbo: rgl::Buffer, ebo: rgl::Buffer) -> Result<(), rgl::Error> {
+/// rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(vbo))?;
+/// rgl::bind_buffer(rgl::BufferBindingTarget::ElementArray, Some(ebo))?;
+/// // ... setup logic ...
+/// rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
+/// rgl::bind_buffer(rgl::BufferBindingTarget::ElementArray, None)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn bind_buffer(target: BufferBindingTarget, buffer: Option<Buffer>) -> Result<(), Error> {
     let buffer = buffer.unwrap_or(Buffer(0));
     let target: GLenum = target.into();

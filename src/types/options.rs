@@ -107,7 +107,7 @@ pub enum BufferUsageNature {
 /// impact buffer object performance. It does not, however, constrain the actual usage of the data store.
 ///
 /// See [mod@buffer_data]
-pub struct BufferUsage(BufferUsageFrequency, BufferUsageNature);
+pub struct BufferUsage(pub BufferUsageFrequency, pub BufferUsageNature);
 
 impl From<BufferUsage> for GLenum {
     fn from(BufferUsage(frequency, nature): BufferUsage) -> Self {

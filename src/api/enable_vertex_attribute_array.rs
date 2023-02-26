@@ -15,7 +15,6 @@ pub fn enable_vertex_attribute_array(index: u32) -> Result<(), Error> {
 /// # Description
 /// [disable_vertex_attribute_array] disable the generic vertex attribute array specified by `index`.
 /// using currently bound vertex array object for the operation.
-/// updating state of the vertex array object with ID `array`.
 pub fn disable_vertex_attribute_array(index: u32) -> Result<(), Error> {
     unsafe { gl::DisableVertexAttribArray(index) };
     handle_attribute_array_error(index)
@@ -43,8 +42,7 @@ pub fn enable_vertex_array_attribute(array: VertexArray, index: u32) -> Result<(
 /// Disable generic vertex attribute array
 ///
 /// # Description
-/// [disable_vertex_array_attribute] disable the generic vertex attribute array specified by `index`.
-/// using currently bound vertex array object for the operation.
+/// [disable_vertex_array_attribute] disable the generic vertex attribute array specified by `index`,
 /// updating state of the vertex array object with ID `array`.
 pub fn disable_vertex_array_attribute(array: VertexArray, index: u32) -> Result<(), Error> {
     unsafe { gl::DisableVertexArrayAttrib(array.0, index) };

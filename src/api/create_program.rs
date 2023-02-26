@@ -18,6 +18,8 @@ use crate::*;
 /// The memory associated with the program object will be deleted when it is no longer part of
 /// current rendering state for any context.
 ///
+/// This function returns `None` if an error occurs creating the program object.
+///
 /// # Notes
 /// Like buffer and texture objects, the name space for program objects may be shared across a set
 /// of contexts, as long as the server sides of the contexts share the same address space. If the
@@ -27,9 +29,20 @@ use crate::*;
 /// Applications are responsible for providing the synchronization across API calls when objects
 /// are accessed from different execution threads.
 ///
-/// # Errors
-/// This function returns 0 if an error occurs creating the program object.
-pub fn create_program() -> Program {
+/// # Examples
+/// ```no_run
+/// let program: rgl::Program = rgl::create_program().expect("Program Create Failed");
+/// ```
+///
+/// For safety, program must be generated from [create_program]
+/// ```compile_fail
+/// let program = rgl::Program(42);
+/// ```
+pub fn create_program() -> Option<Program> {
     let id = unsafe { gl::CreateProgram() };
-    Program(id)
+    if id == 0 {
+        None
+    } else {
+        Some(Program(id))
+    }
 }

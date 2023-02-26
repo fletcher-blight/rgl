@@ -16,6 +16,12 @@ use crate::*;
 /// buffer is to be cleared.
 ///
 /// The value to which each buffer is cleared depends on the setting of the clear value for that buffer.
+///
+/// # Examples
+/// ```no_run
+/// rgl::clear(rgl::ClearMask::COLOUR);
+/// rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH | rgl::ClearMask::STENCIL);
+/// ```
 pub fn clear(mask: ClearMask) -> () {
     unsafe { gl::Clear(mask.bits()) }
 }

@@ -12,6 +12,14 @@ use crate::*;
 /// A value of 0 for shader will be silently ignored.
 ///
 /// To determine whether an object has been flagged for deletion, call [get_shader_delete_status].
+///
+/// # Examples
+/// ```no_run
+/// # fn cleanup(shader: rgl::Shader) -> Result<(), rgl::Error> {
+/// rgl::delete_shader(shader)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn delete_shader(shader: Shader) -> Result<(), Error> {
     unsafe { gl::DeleteShader(shader.0) };
     match internal_get_error() {

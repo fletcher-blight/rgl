@@ -25,6 +25,14 @@ use gl::types::*;
 /// - 3.2 or greater is required for: [LineStripAdjacency](RenderPrimitive::LineStripAdjacency),
 /// [LinesAdjacency](RenderPrimitive::LinesAdjacency), [TriangleStripAdjacency](RenderPrimitive::TriangleStripAdjacency)
 /// and [TrianglesAdjacency](RenderPrimitive::TrianglesAdjacency)
+///
+/// # Examples
+/// ```no_run
+/// # fn draw(start: u32, num_vertices: u32) -> Result<(), rgl::Error> {
+/// rgl::draw_arrays(rgl::RenderPrimitive::Triangles, start, num_vertices)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn draw_arrays(mode: RenderPrimitive, first: u32, count: u32) -> Result<(), Error> {
     let mode: GLenum = mode.into();
     let first = first as GLint;

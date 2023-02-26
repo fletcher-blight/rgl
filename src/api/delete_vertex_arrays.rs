@@ -12,6 +12,14 @@ use gl::types::*;
 ///
 /// # Arguments
 /// * `arrays` - Specifies an array of vertex array objects to be deleted
+///
+/// # Examples
+/// ```no_run
+/// # fn cleanup(vertex_array: rgl::VertexArray, vertex_arrays: &[rgl::VertexArray]) {
+/// rgl::delete_vertex_arrays(&[vertex_array]);
+/// rgl::delete_vertex_arrays(vertex_arrays);
+/// # }
+/// ```
 pub fn delete_vertex_arrays(arrays: &[VertexArray]) -> () {
     let n = arrays.len() as GLsizei;
     let arrays = arrays.as_ptr() as *const GLuint;

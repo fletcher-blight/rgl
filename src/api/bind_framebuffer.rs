@@ -10,12 +10,22 @@ use gl::types::*;
 /// operations, respectively, until it is deleted or another framebuffer is bound to the corresponding
 /// bind point. Calling [bind_framebuffer] with target set to [ReadDraw](FramebufferBindingTarget::ReadDraw)
 /// binds `framebuffer` to both the read and draw framebuffer targets. `framebuffer` is the name of
-/// a framebuffer object previously returned from a call to [gen_framebuffers], or None to break the
+/// a framebuffer object previously returned from a call to [gen_framebuffer], or None to break the
 /// existing binding of a framebuffer object to target.
 ///
 /// # Arguments
 /// * `target` - Specifies the framebuffer target of the binding operation
 /// * `framebuffer` - Specifies the name of the framebuffer object to bind
+///
+/// # Examples
+/// ```no_run
+/// # fn setup_framebuffer(framebuffer: rgl::Framebuffer) -> Result<(), rgl::Error> {
+/// rgl::bind_framebuffer(rgl::FramebufferBindingTarget::ReadDraw, Some(framebuffer))?;
+/// // ... setup logic ...
+/// rgl::bind_framebuffer(rgl::FramebufferBindingTarget::ReadDraw, None)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn bind_framebuffer(
     target: FramebufferBindingTarget,
     framebuffer: Option<Framebuffer>,

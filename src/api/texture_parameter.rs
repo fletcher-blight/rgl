@@ -72,6 +72,26 @@
 //! 4.3 or greater is required for: all [texture_depth_stencil_mode]
 //! 4.5 or greater is required for: configurating textures using a [Texture] type instead of
 //! [TextureBindingTarget]
+//!
+//! # Examples
+//! ```no_run
+//! # fn main() -> Result<(), rgl::Error> {
+//! // Given `texture` is bound to `rgl::TextureBindingTarget::Image2D`
+//! let texture = rgl::gen_texture();
+//! rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture))?;
+//!
+//! // setting the target
+//! rgl::texture_target_min_filter(
+//!     rgl::TextureBindingTarget::Image2D,
+//!     rgl::TextureMinFilter::Nearest)?;
+//! // does the same as setting the texture itself (but only available in 4.5)
+//! rgl::texture_min_filter(
+//!     texture,
+//!     rgl::TextureMinFilter::Nearest)?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 use crate::*;
 use gl::types::*;

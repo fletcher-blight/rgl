@@ -13,7 +13,7 @@ use gl::types::*;
 /// if they explicitly enable sharing between contexts through the appropriate GL windows interfaces
 /// functions.
 ///
-/// You must use [gen_textures] to generate a set of new texture names.
+/// You must use [gen_texture] to generate a set of new texture names.
 ///
 /// While a texture is bound, GL operations on the target to which it is bound affect the bound texture,
 /// and queries of the target to which it is bound return state from the bound texture. In effect,
@@ -31,6 +31,16 @@ use gl::types::*;
 /// # Compatability
 /// 3.2 or greater is required for: [2D Multisample](TextureBindingTarget::Image2DMultisample) and
 /// [2D Multisample Array](TextureBindingTarget::Image2DMultisampleArray)
+///
+/// # Examples
+/// ```no_run
+/// # fn setup_texture(texture: rgl::Texture) -> Result<(), rgl::Error> {
+/// rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture))?;
+/// // ... setup logic ...
+/// rgl::bind_texture(rgl::TextureBindingTarget::Image2D, None)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn bind_texture(target: TextureBindingTarget, texture: Option<Texture>) -> Result<(), Error> {
     let target_val: GLenum = target.into();
     let texture = texture.unwrap_or(Texture(0));

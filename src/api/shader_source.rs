@@ -11,6 +11,21 @@ use gl::types::*;
 /// # Notes
 /// OpenGL copies the shader source code strings when [shader_source] is called, so an application
 /// may free its copy of the source code strings immediately after the function returns.
+///
+/// # Examples
+/// ```no_run
+/// # fn set_source(shader: rgl::Shader) -> Result<(), rgl::Error> {
+/// let source = r#"
+/// # version 330
+/// out vec4 colour;
+/// void main() {
+///     colour = vec4(1.0, 0.0, 0.0, 1.0);
+/// }
+/// "#;
+/// rgl::shader_source(shader, source.as_bytes())?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn shader_source(shader: Shader, source: &[u8]) -> Result<(), Error> {
     let source_length = source.len() as GLint;
     let source_ptr = source.as_ptr();

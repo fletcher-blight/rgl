@@ -8,6 +8,8 @@ use gl::types::*;
 /// be referenced. A shader object is used to maintain the source code strings that define a shader.
 /// `shader_type` indicates the type of shader to be created.
 ///
+/// This function returns `None` if an error occurs creating the shader object.
+///
 /// # Notes
 /// - Like buffer and texture objects, the name space for shader objects may be shared across a set
 /// of contexts, as long as the server sides of the contexts share the same address space.
@@ -16,8 +18,23 @@ use gl::types::*;
 ///
 /// - Applications are responsible for providing the synchronization across API calls when objects
 /// are accessed from different execution threads.
-pub fn create_shader(shader_type: ShaderType) -> Shader {
+///
+/// # Examples
+/// ```no_run
+/// let shader: rgl::Shader = rgl::create_shader(rgl::ShaderType::Vertex)
+///     .expect("Vertex Shader Create Failed");
+/// ```
+///
+/// For safety, shader must be generated from [create_shader]
+/// ```compile_fail
+/// let shader = rgl::Shader(42);
+/// ```
+pub fn create_shader(shader_type: ShaderType) -> Option<Shader> {
     let type_: GLuint = shader_type.into();
     let id = unsafe { gl::CreateShader(type_) };
-    Shader(id)
+    if id == 0 {
+        None
+    } else {
+        Some(Shader(id))
+    }
 }

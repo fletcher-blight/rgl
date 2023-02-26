@@ -28,6 +28,15 @@ use gl::types::*;
 /// query the current value of the uniform variable. After a program object has been linked successfully,
 /// the index values for uniform variables remain fixed until the next link command occurs.
 /// Uniform variable locations and values can only be queried after a link if the link was successful.
+///
+/// # Examples
+/// ```no_run
+/// # fn find_mvp(program: rgl::Program) -> Result<(), rgl::Error> {
+/// let name: &std::ffi::CStr = std::ffi::CStr::from_bytes_with_nul(b"MVP\0").unwrap();
+/// let location: rgl::UniformLocation = rgl::get_uniform_location(program, name).unwrap();
+/// # Ok(())
+/// # }
+/// ```
 pub fn get_uniform_location(
     program: Program,
     uniform_name: &std::ffi::CStr,

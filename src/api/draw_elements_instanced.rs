@@ -11,15 +11,14 @@ use gl::types::*;
 ///
 /// [draw_elements_instanced] has the same effect as:
 /// ```no_run
-/// # use rgl::*;
 /// # fn draw_elements_instanced(
-/// #     mode: RenderPrimitive,
+/// #     mode: rgl::RenderPrimitive,
 /// #     count: u32,
-/// #     indices_type: IndicesType,
+/// #     indices_type: rgl::IndicesType,
 /// #     offset: u32,
-/// #     instance_count: u32) -> Result<(), Error> {
+/// #     instance_count: u32) -> Result<(), rgl::Error> {
 /// for instance_id in 0..instance_count {
-///     draw_elements(mode, count, indices_type, offset)?;
+///     rgl::draw_elements(mode, count, indices_type, offset)?;
 /// }
 /// #    Ok(())
 /// # }
@@ -37,6 +36,20 @@ use gl::types::*;
 /// - 3.2 or greater is required for: [LineStripAdjacency](RenderPrimitive::LineStripAdjacency),
 /// [LinesAdjacency](RenderPrimitive::LinesAdjacency), [TriangleStripAdjacency](RenderPrimitive::TriangleStripAdjacency)
 /// and [TrianglesAdjacency](RenderPrimitive::TrianglesAdjacency)
+///
+/// # Examples
+/// ```no_run
+/// # fn draw(num_indices: u32, offset: u32, num_instances: u32) -> Result<(), rgl::Error> {
+/// rgl::draw_elements_instanced(
+///     rgl::RenderPrimitive::Triangles,
+///     num_indices,
+///     rgl::IndicesType::U32,
+///     offset,
+///     num_instances
+/// )?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn draw_elements_instanced(
     mode: RenderPrimitive,
     count: u32,

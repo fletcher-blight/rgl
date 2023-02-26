@@ -4,7 +4,7 @@ use crate::*;
 ///
 /// # Description
 /// Binds the vertex array object with name `array`. `array` is the name of a vertex array object
-/// previously returned from a call to [gen_vertex_arrays], or None to break the existing
+/// previously returned from a call to [gen_vertex_array], or None to break the existing
 /// vertex array object binding.
 ///
 /// If no vertex array object with name `array` exists, one is created when array is first bound.
@@ -13,6 +13,16 @@ use crate::*;
 ///
 /// # Arguments
 /// * `array` - Specifies the name of the vertex array to bind
+///
+/// # Examples
+/// ```no_run
+/// # fn setup_vertex_array(vertex_array: rgl::VertexArray) -> Result<(), rgl::Error> {
+/// rgl::bind_vertex_array(Some(vertex_array))?;
+/// // ... setup logic ...
+/// rgl::bind_vertex_array(None)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn bind_vertex_array(array: Option<VertexArray>) -> Result<(), Error> {
     let array = array.unwrap_or(VertexArray(0));
     unsafe { gl::BindVertexArray(array.0) };

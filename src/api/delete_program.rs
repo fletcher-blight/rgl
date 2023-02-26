@@ -14,6 +14,14 @@ use crate::*;
 ///
 /// To determine whether a program object has been flagged for deletion, call
 /// [get_program_delete_status]\).
+///
+/// # Examples
+/// ```no_run
+/// # fn cleanup(program: rgl::Program) -> Result<(), rgl::Error> {
+/// rgl::delete_program(program)?;
+/// # Ok(())
+/// # }
+/// ```
 pub fn delete_program(program: Program) -> Result<(), Error> {
     unsafe { gl::DeleteProgram(program.0) };
     match internal_get_error() {
