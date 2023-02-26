@@ -3,9 +3,10 @@ name = "rgl"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-per_api_error_checking = []
-
 [dependencies]
 gl = "0.14.0"
 bitflags = "1.3.2"
+
+[dev-dependencies]
+anyhow = "1.0"
+sdl2 = "0.35"

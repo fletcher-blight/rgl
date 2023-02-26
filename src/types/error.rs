@@ -1,4 +1,5 @@
 use crate::*;
+use std::fmt::{Display, Formatter};
 
 /// Actual API Errors
 #[derive(Debug, Clone)]
@@ -36,3 +37,11 @@ pub enum Error {
 
     BufferTargetNull(BufferBindingTarget),
 }
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl std::error::Error for Error {}
