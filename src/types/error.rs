@@ -22,6 +22,8 @@ pub enum Error {
     OutOfBoundsVertexAttributeIndex(u32),
     OutOfBoundsTextureIndex(u32),
 
+    OutOfBoundsClipDistance(u32),
+
     ShaderAlreadyAttachedToProgram(Program, Shader),
     TransportFeedbackModeActive(Program),
     ProgramCannotBeUsed(Program),

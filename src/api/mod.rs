@@ -16,11 +16,13 @@ mod delete_program;
 mod delete_shader;
 mod delete_textures;
 mod delete_vertex_arrays;
+mod depth_func;
 mod detach_shader;
 mod draw_arrays;
 mod draw_arrays_instanced;
 mod draw_elements;
 mod draw_elements_instanced;
+mod enable;
 mod enable_vertex_attribute_array;
 mod gen_buffer;
 mod gen_framebuffer;
@@ -79,6 +81,8 @@ pub use delete_textures::*;
 #[doc(inline)]
 pub use delete_vertex_arrays::*;
 #[doc(inline)]
+pub use depth_func::*;
+#[doc(inline)]
 pub use detach_shader::*;
 #[doc(inline)]
 pub use draw_arrays::*;
@@ -88,6 +92,8 @@ pub use draw_arrays_instanced::*;
 pub use draw_elements::*;
 #[doc(inline)]
 pub use draw_elements_instanced::*;
+#[doc(inline)]
+pub use enable::*;
 #[doc(inline)]
 pub use enable_vertex_attribute_array::*;
 #[doc(inline)]
