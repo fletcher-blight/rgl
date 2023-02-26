@@ -39,6 +39,7 @@ mod is_program;
 mod is_shader;
 mod link_program;
 mod shader_source;
+mod texture_image_2d;
 pub mod texture_parameter;
 pub mod uniform;
 mod use_program;
@@ -126,6 +127,8 @@ pub use is_shader::*;
 pub use link_program::*;
 #[doc(inline)]
 pub use shader_source::*;
+#[doc(inline)]
+pub use texture_image_2d::*;
 pub use texture_parameter::*;
 pub use uniform::*;
 #[doc(inline)]
