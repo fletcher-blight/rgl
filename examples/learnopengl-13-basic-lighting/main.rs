@@ -139,10 +139,11 @@ fn main() -> anyhow::Result<()> {
     rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
 
     const LIGHT_COLOUR: [f32; 3] = [1.0, 1.0, 1.0];
+    const LIGHT_SCALE: [f32; 3] = [0.2; 3];
     const LIGHT_POS: [f32; 3] = [1.2, 1.0, 2.0];
     const EYE_POS: [f32; 3] = [1.5, 2.0, 5.0];
 
-    let cube_model = {
+    let cube_light_pos = {
         rgl::use_program(cube_shader_program)?;
         let model = rgl::get_uniform_location(
             cube_shader_program,
@@ -163,6 +164,14 @@ fn main() -> anyhow::Result<()> {
         let light_colour = rgl::get_uniform_location(
             cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"light_colour\0")?,
+        )?;
+        let light_pos = rgl::get_uniform_location(
+            cube_shader_program,
+            std::ffi::CStr::from_bytes_with_nul(b"light_pos\0")?,
+        )?;
+        let view_pos = rgl::get_uniform_location(
+            cube_shader_program,
+            std::ffi::CStr::from_bytes_with_nul(b"view_pos\0")?,
         )?;
 
         rgl::uniform_matrix_4f32v(model, true, &[from_glm(&glm::one())])?;
@@ -193,11 +202,12 @@ fn main() -> anyhow::Result<()> {
             LIGHT_COLOUR[1],
             LIGHT_COLOUR[2],
         )?;
+        rgl::uniform_3f32(view_pos, EYE_POS[0], EYE_POS[1], EYE_POS[2])?;
 
-        model
+        light_pos
     };
 
-    {
+    let light_model = {
         rgl::use_program(light_shader_program)?;
         let model = rgl::get_uniform_location(
             light_shader_program,
@@ -221,7 +231,7 @@ fn main() -> anyhow::Result<()> {
             true,
             &[from_glm(&glm::scale(
                 &glm::translate(&glm::one(), &glm::make_vec3(&LIGHT_POS)),
-                &glm::make_vec3(&[0.2; 3]),
+                &glm::make_vec3(&LIGHT_SCALE),
             ))],
         )?;
         rgl::uniform_matrix_4f32v(
@@ -250,7 +260,9 @@ fn main() -> anyhow::Result<()> {
             LIGHT_COLOUR[1],
             LIGHT_COLOUR[2],
         )?;
-    }
+
+        model
+    };
 
     // ============================================================================================
 
@@ -273,21 +285,27 @@ fn main() -> anyhow::Result<()> {
 
         rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
 
+        let light_pos = glm::rotate_vec3(
+            &glm::make_vec3(&LIGHT_POS),
+            total_duration.as_secs_f32() / 2.0,
+            &glm::vec3(0.0, 1.0, 0.0),
+        );
+
         {
             rgl::use_program(cube_shader_program)?;
-            rgl::uniform_matrix_4f32v(
-                cube_model,
-                true,
-                &[from_glm(&glm::rotate(
-                    &glm::one(),
-                    total_duration.as_secs_f32(),
-                    &glm::vec3(1.0, 1.0, 1.0),
-                ))],
-            )?;
+            rgl::uniform_3f32(cube_light_pos, light_pos[0], light_pos[1], light_pos[2])?;
             rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
         }
         {
             rgl::use_program(light_shader_program)?;
+            rgl::uniform_matrix_4f32v(
+                light_model,
+                true,
+                &[from_glm(&glm::scale(
+                    &glm::translate(&glm::one(), &light_pos),
+                    &glm::make_vec3(&LIGHT_SCALE),
+                ))],
+            )?;
             rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
         }
 
