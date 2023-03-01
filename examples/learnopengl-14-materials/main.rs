@@ -335,14 +335,6 @@ fn main() -> anyhow::Result<()> {
                     &glm::make_vec3(&LIGHT_SCALE),
                 ))],
             )?;
-            rgl::uniform_matrix_4f32v(
-                light_model,
-                true,
-                &[from_glm(&glm::scale(
-                    &glm::translate(&glm::one(), &light_pos),
-                    &glm::make_vec3(&LIGHT_SCALE),
-                ))],
-            )?;
             rgl::uniform_3f32v(light_light_colour, &[light_colour_strength(1.0)])?;
             rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
         }
