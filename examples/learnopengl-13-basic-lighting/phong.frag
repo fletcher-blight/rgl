@@ -26,6 +26,6 @@ void main() {
     float specular_effect = specular_strength * pow(max(dot(view_dir, reflect_dir), 0.0), 32);
     vec3 specular_light = specular_effect * light_colour;
 
-    vec3 result_colour = vec3(ambient_light + diffuse_light + specular_light) * object_colour;
+    vec3 result_colour = (ambient_light + diffuse_light + specular_light) * object_colour;
     colour = vec4(result_colour, 1.0);
 }
