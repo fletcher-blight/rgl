@@ -58,43 +58,89 @@ fn main() -> anyhow::Result<()> {
     )?;
     rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
 
-    let image = image::open("./assets/splatoon-face.png")?.flipv();
-    let texture = rgl::gen_texture();
-    rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture))?;
-    rgl::texture_target_wrap(
-        rgl::TextureBindingTarget::Image2D,
-        rgl::TextureWrapTarget::S,
-        rgl::TextureWrapMode::Repeat,
-    )?;
-    rgl::texture_target_wrap(
-        rgl::TextureBindingTarget::Image2D,
-        rgl::TextureWrapTarget::T,
-        rgl::TextureWrapMode::Repeat,
-    )?;
-    rgl::texture_target_min_filter(
-        rgl::TextureBindingTarget::Image2D,
-        rgl::TextureMinFilter::Linear,
-    )?;
-    rgl::texture_target_mag_filter(
-        rgl::TextureBindingTarget::Image2D,
-        rgl::TextureMagFilter::Linear,
-    )?;
-    rgl::texture_image_2d(
-        rgl::Texture2DTarget::Image2D,
-        0,
-        rgl::TextureInternalFormat::RGB,
-        image.width(),
-        image.height(),
-        rgl::TextureFormat::RGBA,
-        rgl::TexturePixelDataType::U8,
-        image.as_bytes(),
-    )?;
+    let texture1 = {
+        let texture1 = rgl::gen_texture();
+        rgl::active_texture(0)?;
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture1))?;
+        rgl::texture_target_wrap(
+            rgl::TextureBindingTarget::Image2D,
+            rgl::TextureWrapTarget::S,
+            rgl::TextureWrapMode::Repeat,
+        )?;
+        rgl::texture_target_wrap(
+            rgl::TextureBindingTarget::Image2D,
+            rgl::TextureWrapTarget::T,
+            rgl::TextureWrapMode::Repeat,
+        )?;
+        rgl::texture_target_min_filter(
+            rgl::TextureBindingTarget::Image2D,
+            rgl::TextureMinFilter::Linear,
+        )?;
+        rgl::texture_target_mag_filter(
+            rgl::TextureBindingTarget::Image2D,
+            rgl::TextureMagFilter::Linear,
+        )?;
 
-    let loc = rgl::get_uniform_location(
-        shader_program,
-        std::ffi::CStr::from_bytes_with_nul(b"tex\0")?,
-    )?;
-    rgl::uniform_1i32(loc, 0)?;
+        let image = image::open("./assets/splatoon-face.png")?.flipv();
+        rgl::texture_image_2d(
+            rgl::Texture2DTarget::Image2D,
+            0,
+            rgl::TextureInternalFormat::RGB,
+            image.width(),
+            image.height(),
+            rgl::TextureFormat::RGBA,
+            rgl::TexturePixelDataType::U8,
+            image.as_bytes(),
+        )?;
+        let loc = rgl::get_uniform_location(
+            shader_program,
+            std::ffi::CStr::from_bytes_with_nul(b"tex1\0")?,
+        )?;
+        rgl::uniform_1i32(loc, 0)?;
+        texture1
+    };
+
+    let texture2 = {
+        let texture2 = rgl::gen_texture();
+        rgl::active_texture(1)?;
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture2))?;
+        rgl::texture_target_wrap(
+            rgl::TextureBindingTarget::Image2D,
+            rgl::TextureWrapTarget::S,
+            rgl::TextureWrapMode::Repeat,
+        )?;
+        rgl::texture_target_wrap(
+            rgl::TextureBindingTarget::Image2D,
+            rgl::TextureWrapTarget::T,
+            rgl::TextureWrapMode::Repeat,
+        )?;
+        rgl::texture_target_min_filter(
+            rgl::TextureBindingTarget::Image2D,
+            rgl::TextureMinFilter::Linear,
+        )?;
+        rgl::texture_target_mag_filter(
+            rgl::TextureBindingTarget::Image2D,
+            rgl::TextureMagFilter::Linear,
+        )?;
+
+        let image = image::open("./assets/container2.png")?.flipv();
+        rgl::texture_image_2d(
+            rgl::Texture2DTarget::Image2D,
+            0,
+            rgl::TextureInternalFormat::RGB,
+            image.width(),
+            image.height(),
+            rgl::TextureFormat::RGBA,
+            rgl::TexturePixelDataType::U8,
+            image.as_bytes(),
+        )?;
+        let loc = rgl::get_uniform_location(
+            shader_program,
+            std::ffi::CStr::from_bytes_with_nul(b"tex2\0")?,
+        )?;
+        rgl::uniform_1i32(loc, 1)?;
+        texture2
+    };
 
     // ============================================================================================
 
@@ -113,7 +159,9 @@ fn main() -> anyhow::Result<()> {
 
         rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
         rgl::active_texture(0)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture))?;
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture1))?;
+        rgl::active_texture(1)?;
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture2))?;
         rgl::bind_vertex_array(Some(vao))?;
         rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 3)?;
         window.gl_swap_window();
