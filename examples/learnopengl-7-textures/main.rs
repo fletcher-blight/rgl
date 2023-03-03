@@ -7,7 +7,7 @@ fn main() -> anyhow::Result<()> {
         gl_attr.set_context_version(3, 3);
     }
     let window = video
-        .window("Textures", 1920, 1080)
+        .window("LearnOpenGL: Textures", 1920, 1080)
         .opengl()
         .resizable()
         .build()?;

@@ -9,7 +9,7 @@ fn main() -> anyhow::Result<()> {
         gl_attr.set_context_version(3, 3);
     }
     let window = video
-        .window("Hello Triangle", 1920, 1080)
+        .window("LearnOpenGL: Basic Lighting", 1920, 1080)
         .opengl()
         .resizable()
         .build()?;
