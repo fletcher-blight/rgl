@@ -28,6 +28,7 @@ mod gen_buffer;
 mod gen_framebuffer;
 mod gen_texture;
 mod gen_vertex_array;
+mod generate_mipmap;
 mod get_error;
 mod get_program;
 mod get_program_info_log;
@@ -105,6 +106,8 @@ pub use gen_framebuffer::*;
 pub use gen_texture::*;
 #[doc(inline)]
 pub use gen_vertex_array::*;
+#[doc(inline)]
+pub use generate_mipmap::*;
 #[doc(inline)]
 pub use get_error::*;
 #[doc(inline)]
