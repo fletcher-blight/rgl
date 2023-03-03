@@ -31,13 +31,6 @@ fn main() -> anyhow::Result<()> {
         let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment).unwrap();
         rgl::shader_source(fragment_shader, include_bytes!("shader.frag"))?;
         rgl::compile_shader(fragment_shader)?;
-        {
-            let mut buffer = [0; 1024];
-            let size = rgl::get_shader_info_log(fragment_shader, &mut buffer)? as usize;
-            let buffer = &buffer[0..size];
-            let info_log: String = String::from_utf8_lossy(buffer).into_owned();
-            dbg!(info_log);
-        }
         assert!(rgl::get_shader_compile_status(fragment_shader)?);
 
         let shader_program = rgl::create_program().unwrap();
@@ -251,7 +244,22 @@ fn main() -> anyhow::Result<()> {
         rgl::uniform_3f32(light_specular, 1.0, 1.0, 1.0)?;
     };
 
+    rgl::clear_colour(0.1, 0.1, 0.1, 0.1);
+
     // ============================================================================================
+
+    let cube_positions = [
+        [0.0f32, 0.0, 0.0],
+        [2.0, 5.0, -15.0],
+        [-1.5, -2.2, -2.5],
+        [-3.8, -2.0, -12.3],
+        [2.4, -0.4, -3.5],
+        [-1.7, 3.0, -7.5],
+        [1.3, -2.0, -2.5],
+        [1.5, 2.0, -2.5],
+        [1.5, 0.2, -1.5],
+        [-1.3, 1.0, -1.5],
+    ];
 
     let mut camera_position = glm::vec3(0.0, 0.0, 3.0f32);
     let camera_up = glm::vec3(0.0, 1.0, 0.0);
@@ -322,7 +330,7 @@ fn main() -> anyhow::Result<()> {
                 * (direction_request[3] - direction_request[2]))
                 + (camera_front * (direction_request[0] - direction_request[1]));
 
-            camera_position += 2.5 * frame_duration.as_secs_f32() * camera_position_diff;
+            camera_position += 5.0 * frame_duration.as_secs_f32() * camera_position_diff;
         }
 
         rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
@@ -330,12 +338,10 @@ fn main() -> anyhow::Result<()> {
 
         let light_dir = glm::rotate_vec3(
             &glm::vec3(0.0, -1.0, 0.0),
-            total_duration.as_secs_f32(),
-            &glm::vec3(1.0, 1.0, 1.0),
+            total_duration.as_secs_f32() / 2.0,
+            &glm::vec3(1.0, 0.0, 0.0),
         );
         rgl::uniform_3f32(light_direction, light_dir[0], light_dir[1], light_dir[2])?;
-
-        rgl::uniform_matrix_4f32v(model, true, &[from_glm(&glm::one())])?;
         rgl::uniform_matrix_4f32v(
             view,
             true,
@@ -366,7 +372,19 @@ fn main() -> anyhow::Result<()> {
         rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(diffuse_texture))?;
         rgl::active_texture(1)?;
         rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(specular_texture))?;
-        rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
+
+        for (i, cube_position) in cube_positions.iter().enumerate() {
+            rgl::uniform_matrix_4f32v(
+                model,
+                true,
+                &[from_glm(&glm::rotate(
+                    &glm::translate(&glm::one(), &glm::make_vec3(cube_position)),
+                    (i as f32 * 20.0).to_radians(),
+                    &glm::vec3(1.0, 0.3, 0.5),
+                ))],
+            )?;
+            rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
+        }
 
         window.gl_swap_window();
     }
