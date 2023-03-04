@@ -22,14 +22,14 @@ fn main() -> anyhow::Result<()> {
 
     rgl::enable(rgl::Capability::DepthTest);
 
-    let shader_program = {
+    let cube_shader_program = {
         let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex).unwrap();
-        rgl::shader_source(vertex_shader, include_bytes!("shader.vert"))?;
+        rgl::shader_source(vertex_shader, include_bytes!("cube.vert"))?;
         rgl::compile_shader(vertex_shader)?;
         assert!(rgl::get_shader_compile_status(vertex_shader)?);
 
         let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment).unwrap();
-        rgl::shader_source(fragment_shader, include_bytes!("shader.frag"))?;
+        rgl::shader_source(fragment_shader, include_bytes!("cube.frag"))?;
         rgl::compile_shader(fragment_shader)?;
         assert!(rgl::get_shader_compile_status(fragment_shader)?);
 
@@ -46,7 +46,32 @@ fn main() -> anyhow::Result<()> {
 
         shader_program
     };
-    rgl::use_program(shader_program)?;
+    rgl::use_program(cube_shader_program)?;
+
+    let light_shader_program = {
+        let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex).unwrap();
+        rgl::shader_source(vertex_shader, include_bytes!("light.vert"))?;
+        rgl::compile_shader(vertex_shader)?;
+        assert!(rgl::get_shader_compile_status(vertex_shader)?);
+
+        let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment).unwrap();
+        rgl::shader_source(fragment_shader, include_bytes!("light.frag"))?;
+        rgl::compile_shader(fragment_shader)?;
+        assert!(rgl::get_shader_compile_status(fragment_shader)?);
+
+        let shader_program = rgl::create_program().unwrap();
+        rgl::attach_shader(shader_program, vertex_shader)?;
+        rgl::attach_shader(shader_program, fragment_shader)?;
+        rgl::link_program(shader_program)?;
+        assert!(rgl::get_program_link_status(shader_program)?);
+
+        rgl::detach_shader(shader_program, vertex_shader)?;
+        rgl::detach_shader(shader_program, fragment_shader)?;
+        rgl::delete_shader(vertex_shader)?;
+        rgl::delete_shader(fragment_shader)?;
+
+        shader_program
+    };
 
     let diffuse_texture = {
         let texture = rgl::gen_texture();
@@ -82,7 +107,7 @@ fn main() -> anyhow::Result<()> {
             image.as_bytes(),
         )?;
         let loc = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"material.diffuse\0")?,
         )?;
         rgl::uniform_1i32(loc, 0)?;
@@ -123,7 +148,7 @@ fn main() -> anyhow::Result<()> {
             image.as_bytes(),
         )?;
         let loc = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"material.specular\0")?,
         )?;
         rgl::uniform_1i32(loc, 1)?;
@@ -197,56 +222,69 @@ fn main() -> anyhow::Result<()> {
     )?;
     rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
 
-    let model = rgl::get_uniform_location(
-        shader_program,
+    rgl::use_program(light_shader_program)?;
+    let light_model = rgl::get_uniform_location(
+        light_shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"model\0")?,
     )?;
-    let view = rgl::get_uniform_location(
-        shader_program,
+    let light_view = rgl::get_uniform_location(
+        light_shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"view\0")?,
     )?;
-    let projection = rgl::get_uniform_location(
-        shader_program,
+    let light_projection = rgl::get_uniform_location(
+        light_shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"projection\0")?,
     )?;
-    let view_position = rgl::get_uniform_location(
-        shader_program,
+
+    rgl::use_program(cube_shader_program)?;
+    let cube_model = rgl::get_uniform_location(
+        cube_shader_program,
+        std::ffi::CStr::from_bytes_with_nul(b"model\0")?,
+    )?;
+    let cube_view = rgl::get_uniform_location(
+        cube_shader_program,
+        std::ffi::CStr::from_bytes_with_nul(b"view\0")?,
+    )?;
+    let cube_projection = rgl::get_uniform_location(
+        cube_shader_program,
+        std::ffi::CStr::from_bytes_with_nul(b"projection\0")?,
+    )?;
+    let cube_view_position = rgl::get_uniform_location(
+        cube_shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"view_position\0")?,
     )?;
-    let light_position = rgl::get_uniform_location(
-        shader_program,
+    let cube_light_position = rgl::get_uniform_location(
+        cube_shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"point_light.position\0")?,
     )?;
 
     {
-        rgl::use_program(shader_program)?;
-
         let material_shininess = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"material.shininess\0")?,
         )?;
         let light_ambient = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"point_light.ambient\0")?,
         )?;
         let light_diffuse = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"point_light.diffuse\0")?,
         )?;
         let light_specular = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"point_light.specular\0")?,
         )?;
         let light_attenuation_constant = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"point_light.attenuation.constant\0")?,
         )?;
         let light_attenuation_linear = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"point_light.attenuation.linear\0")?,
         )?;
         let light_attenuation_quadratic = rgl::get_uniform_location(
-            shader_program,
+            cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"point_light.attenuation.quadratic\0")?,
         )?;
 
@@ -348,54 +386,76 @@ fn main() -> anyhow::Result<()> {
             camera_position += 5.0 * frame_duration.as_secs_f32() * camera_position_diff;
         }
 
-        rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
-        rgl::use_program(shader_program)?;
-
-        let light_pos = glm::rotate_vec3(
+        let light_position = glm::rotate_vec3(
             &glm::vec3(0.0, 5.0, 0.0),
             total_duration.as_secs_f32() / 2.0,
             &glm::vec3(1.0, 0.0, 0.0),
         );
-        rgl::uniform_3f32(light_position, light_pos[0], light_pos[1], light_pos[2])?;
-        rgl::uniform_matrix_4f32v(
-            view,
-            true,
-            &[from_glm(&glm::look_at(
-                &camera_position,
-                &(camera_position + camera_front),
-                &camera_up,
-            ))],
-        )?;
-        rgl::uniform_matrix_4f32v(
-            projection,
-            true,
-            &[from_glm(&glm::perspective(
-                window.size().0 as f32 / window.size().1 as f32,
-                45.0f32.to_radians(),
-                0.1,
-                100.0,
-            ))],
-        )?;
-        rgl::uniform_3f32(
-            view_position,
-            camera_position[0],
-            camera_position[1],
-            camera_position[2],
-        )?;
 
-        rgl::active_texture(0)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(diffuse_texture))?;
-        rgl::active_texture(1)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(specular_texture))?;
+        let view = glm::look_at(
+            &camera_position,
+            &(camera_position + camera_front),
+            &camera_up,
+        );
+        let projection = glm::perspective(
+            window.size().0 as f32 / window.size().1 as f32,
+            45.0f32.to_radians(),
+            0.1,
+            100.0,
+        );
 
-        for (i, cube_position) in cube_positions.iter().enumerate() {
+        rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
+
+        {
+            rgl::use_program(cube_shader_program)?;
+            rgl::bind_vertex_array(Some(vao))?;
+
+            rgl::uniform_3f32(
+                cube_light_position,
+                light_position[0],
+                light_position[1],
+                light_position[2],
+            )?;
+
+            rgl::uniform_matrix_4f32v(cube_view, true, &[from_glm(&view)])?;
+            rgl::uniform_matrix_4f32v(cube_projection, true, &[from_glm(&projection)])?;
+            rgl::uniform_3f32(
+                cube_view_position,
+                camera_position[0],
+                camera_position[1],
+                camera_position[2],
+            )?;
+
+            rgl::active_texture(0)?;
+            rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(diffuse_texture))?;
+            rgl::active_texture(1)?;
+            rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(specular_texture))?;
+
+            for (i, cube_position) in cube_positions.iter().enumerate() {
+                rgl::uniform_matrix_4f32v(
+                    cube_model,
+                    true,
+                    &[from_glm(&glm::rotate(
+                        &glm::translate(&glm::one(), &glm::make_vec3(cube_position)),
+                        (i as f32 * 20.0).to_radians(),
+                        &glm::vec3(1.0, 0.3, 0.5),
+                    ))],
+                )?;
+                rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
+            }
+        }
+
+        {
+            rgl::use_program(light_shader_program)?;
+            rgl::bind_vertex_array(Some(vao))?;
+            rgl::uniform_matrix_4f32v(light_view, true, &[from_glm(&view)])?;
+            rgl::uniform_matrix_4f32v(light_projection, true, &[from_glm(&projection)])?;
             rgl::uniform_matrix_4f32v(
-                model,
+                light_model,
                 true,
-                &[from_glm(&glm::rotate(
-                    &glm::translate(&glm::one(), &glm::make_vec3(cube_position)),
-                    (i as f32 * 20.0).to_radians(),
-                    &glm::vec3(1.0, 0.3, 0.5),
+                &[from_glm(&glm::scale(
+                    &glm::translate(&glm::one(), &light_position),
+                    &glm::vec3(0.2, 0.2, 0.2),
                 ))],
             )?;
             rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
