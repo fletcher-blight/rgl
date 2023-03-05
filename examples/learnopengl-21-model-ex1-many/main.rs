@@ -11,7 +11,7 @@ fn main() -> anyhow::Result<()> {
     }
     sdl.mouse().set_relative_mouse_mode(true);
     let window = video
-        .window("LearnOpenGL: Model", 1920, 1080)
+        .window("LearnOpenGL: Model Ex - Many", 1920, 1080)
         .opengl()
         .resizable()
         .build()?;
