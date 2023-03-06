@@ -18,6 +18,16 @@ pub enum BufferAccess {
     ReadWrite,
 }
 
+impl From<BufferAccess> for u32 {
+    fn from(value: BufferAccess) -> Self {
+        match value {
+            BufferAccess::ReadOnly => gl::READ_ONLY,
+            BufferAccess::WriteOnly => gl::WRITE_ONLY,
+            BufferAccess::ReadWrite => gl::READ_WRITE,
+        }
+    }
+}
+
 /// # The target to which a buffer object is bound
 /// see [bind_buffer]
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -96,6 +106,19 @@ pub enum BufferError {
     ImmutableBufferTarget(BufferBindingTarget),
 }
 
+bitflags::bitflags! {
+    pub struct BufferMapFlags: u32 {
+        const READ = gl::MAP_READ_BIT;
+        const WRITE = gl::MAP_WRITE_BIT;
+        const PERSISTENT = gl::MAP_PERSISTENT_BIT;
+        const COHERENT = gl::MAP_COHERENT_BIT;
+        const INVALIDATE_RANGE = gl::MAP_INVALIDATE_RANGE_BIT;
+        const INVALID_BUFFER = gl::MAP_INVALIDATE_BUFFER_BIT;
+        const FLUSH_EXPLICIT = gl::MAP_FLUSH_EXPLICIT_BIT;
+        const UNSYNCHRONISED = gl::MAP_UNSYNCHRONIZED_BIT;
+    }
+}
+
 /// # The frequency of buffer access (modification and usage)
 /// see [buffer_data]
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -142,8 +165,8 @@ impl From<BufferUsage> for GLenum {
 
 /// # Buffered data requirements
 /// see:
-/// * [bind_buffer]
-/// * [named_bind_buffer]
+/// * [buffer_data]
+/// * [named_buffer_data]
 pub trait BufferData {
     fn get_size(&self) -> u64;
     fn get_raw_data_pointer(&self) -> *const std::os::raw::c_void;
@@ -340,6 +363,8 @@ pub fn bind_buffer_checked(target: BufferBindingTarget, buffer: Buffer) -> Resul
 /// ```no_run
 /// # use rgl::prelude::*;
 /// buffer_data(BufferBindingTarget::Array, &[1, 2, 3], BufferUsageFrequency::Static, BufferUsageNature::Draw);
+///
+/// named_buffer_data(Buffer(42), &[1, 2, 3], BufferUsageFrequency::Static, BufferUsageNature::Draw);
 /// ```
 ///
 /// # Description
@@ -350,7 +375,7 @@ pub fn bind_buffer_checked(target: BufferBindingTarget, buffer: Buffer) -> Resul
 /// While creating the new storage, any pre-existing data store is deleted. The new data store is
 /// created with the specified [BufferData::get_size] in bytes and usage. If `data` is a slice, the
 /// data store is initialized with data from that view. In its initial state, the new data store is
-/// not mapped, it has a NULL mapped pointer, and its mapped access is [BufferAccess::ReadWrite].
+/// not mapped, it has a null mapped pointer, and its mapped access is [BufferAccess::ReadWrite].
 ///
 /// usage ([BufferUsageFrequency], [BufferUsageNature]) is a hint to the GL implementation as to
 /// how a buffer object's data store will be accessed. This enables the GL implementation to make
@@ -375,7 +400,7 @@ pub fn bind_buffer_checked(target: BufferBindingTarget, buffer: Buffer) -> Resul
 /// `target`
 /// * [Error::InvalidOperation] - by [named_buffer_data] if `buffer` is not the name of an existing
 /// buffer object.
-/// * [Error::InvalidOperation] - if [get_buffer_immutable_storage] of the buffer object is true.
+/// * [Error::InvalidOperation] - if [is_buffer_immutable_storage] of the buffer object is true.
 /// * [Error::OutOfMemory] - if the GL is unable to create a data store with the specified
 /// [BufferData::get_size].
 ///
@@ -525,7 +550,7 @@ pub fn delete_buffers(buffers: &[Buffer]) {
 ///
 /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
 /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-/// | [my_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [gen_buffers] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
 ///
 /// # See Also
 /// * [bind_buffer]
@@ -542,6 +567,7 @@ pub fn gen_buffers(buffers: &mut [Buffer]) {
 fn get_buffer_parameter_i32(target: BufferBindingTarget, value: GLenum) -> i32 {
     let target = GLenum::from(target);
     let mut param: i32 = 0;
+
     // SAFE: `param` is an out-param and not retained
     unsafe { gl::GetBufferParameteriv(target, value, &mut param) };
     param
@@ -550,6 +576,7 @@ fn get_buffer_parameter_i32(target: BufferBindingTarget, value: GLenum) -> i32 {
 fn get_buffer_parameter_i64(target: BufferBindingTarget, value: GLenum) -> i64 {
     let target = GLenum::from(target);
     let mut param: i64 = 0;
+
     // SAFE: `param` is an out-param and not retained
     unsafe { gl::GetBufferParameteri64v(target, value, &mut param) };
     param
@@ -582,7 +609,7 @@ fn get_buffer_parameter_i64(target: BufferBindingTarget, value: GLenum) -> i64 {
 /// * 4.4 - [BufferBindingTarget::Query]
 ///
 /// # Errors
-/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+/// * [Error::InvalidOperation] - if zero is bound to `target`
 ///
 /// # Version Support
 ///
@@ -627,7 +654,7 @@ pub fn get_buffer_access(target: BufferBindingTarget) -> Result<BufferAccess, Bu
 /// * 4.4 - [BufferBindingTarget::Query]
 ///
 /// # Errors
-/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+/// * [Error::InvalidOperation] - if zero is bound to `target`
 ///
 /// # Version Support
 ///
@@ -671,7 +698,7 @@ pub fn is_buffer_immutable_storage(target: BufferBindingTarget) -> Result<bool, 
 /// * 4.4 - [BufferBindingTarget::Query]
 ///
 /// # Errors
-/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+/// * [Error::InvalidOperation] - if zero is bound to `target`
 ///
 /// # Version Support
 ///
@@ -716,7 +743,7 @@ pub fn is_buffer_mapped(target: BufferBindingTarget) -> Result<bool, BufferError
 /// * 4.4 - [BufferBindingTarget::Query]
 ///
 /// # Errors
-/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+/// * [Error::InvalidOperation] - if zero is bound to `target`
 ///
 /// # Version Support
 ///
@@ -757,7 +784,7 @@ pub fn get_buffer_map_length(target: BufferBindingTarget) -> u64 {
 /// * 4.4 - [BufferBindingTarget::Query]
 ///
 /// # Errors
-/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+/// * [Error::InvalidOperation] - if zero is bound to `target`
 ///
 /// # Version Support
 ///
@@ -797,7 +824,7 @@ pub fn get_buffer_map_offset(target: BufferBindingTarget) -> u64 {
 /// * 4.4 - [BufferBindingTarget::Query]
 ///
 /// # Errors
-/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+/// * [Error::InvalidOperation] - if zero is bound to `target`
 ///
 /// # Version Support
 ///
@@ -841,7 +868,7 @@ pub fn get_buffer_size(target: BufferBindingTarget) -> u64 {
 /// * 4.4 - [BufferBindingTarget::Query]
 ///
 /// # Errors
-/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+/// * [Error::InvalidOperation] - if zero is bound to `target`
 ///
 /// # Version Support
 ///
@@ -906,5 +933,179 @@ pub fn get_buffer_usage(
 pub fn is_buffer(buffer: Buffer) -> bool {
     let buffer = buffer.0;
     let val = unsafe { gl::IsBuffer(buffer) };
+    val == gl::TRUE
+}
+
+/// # Map all of a buffer object's data store into the client's address space
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMapBuffer.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+/// * `access` - Specifies the access policy, indicating whether it will be possible to read from,
+/// write to, or both read from and write to the buffer object's mapped data store.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let data: *const std::os::raw::c_void = map_buffer(BufferBindingTarget::Array, BufferAccess::ReadOnly);
+/// let data: *const std::os::raw::c_void = map_named_buffer(Buffer(42), BufferAccess::ReadOnly);
+/// ```
+///
+/// # Description
+/// [map_buffer] and [map_named_buffer] map the entire data store of a specified buffer object into
+/// the client's address space. The data can then be directly read and/or written relative to the
+/// returned pointer, depending on the specified access policy.
+///
+/// A pointer to the beginning of the mapped range is returned once all pending operations on that
+/// buffer object have completed, and may be used to modify and/or query the corresponding range of
+/// the data store according to the value of access.
+///
+/// If an error is generated, a null pointer is returned.
+///
+/// If no error occurs, the returned pointer will reflect an allocation aligned to the value of
+/// [get_min_map_buffer_alignment] basic machine units.
+///
+/// The returned pointer values may not be passed as parameter values to GL commands. For example,
+/// they may not be used to specify array pointers, or to specify or query pixel or texture image
+/// data; such actions produce undefined results, although implementations may not check for such
+/// behavior for performance reasons.
+///
+/// No GL error is generated if the returned pointer is accessed in a way inconsistent with access
+/// (e.g. used to read from a mapping made with access [BufferAccess::WriteOnly] or write to a
+/// mapping made with access [BufferAccess::ReadOnly]), but the result is undefined and system
+/// errors (possibly including program termination) may occur.
+///
+/// Mappings to the data stores of buffer objects may have nonstandard performance characteristics.
+/// For example, such mappings may be marked as uncacheable regions of memory, and in such cases
+/// reading from them may be very slow. To ensure optimal performance, the client should use the
+/// mapping in a fashion consistent with the values of [get_buffer_usage] for the buffer object and
+/// of access. Using a mapping in a fashion inconsistent with these values is liable to be multiple
+/// orders of magnitude slower than using normal memory.
+///
+/// # Compatability
+/// * 4.2 - Alignment of the returned pointer is guaranteed, and
+/// [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if zero is bound to `target`
+///
+/// # Associated Gets
+/// * [get_buffer_pointer]
+/// * [is_buffer_mapped], [get_buffer_access], [get_buffer_usage]
+/// * [get_min_map_buffer_alignment]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [map_buffer] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [map_named_buffer] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [bind_buffer_base]
+/// * [bind_buffer_range]
+/// * [buffer_data]
+/// * [buffer_sub_data]
+/// * [delete_buffers]
+/// * [map_buffer_range]
+/// * [unmap_buffer]
+pub fn map_buffer(
+    target: BufferBindingTarget,
+    access: BufferAccess,
+) -> *const std::os::raw::c_void {
+    let target = GLenum::from(target);
+    let access = GLenum::from(access);
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::MapBuffer(target, access) }
+}
+
+/// # Map all of a buffer object's data store into the client's address space
+/// see [map_buffer]
+///
+/// # Arguments
+/// * `buffer` - Specifies the name of the buffer object.
+pub fn map_named_buffer(buffer: Buffer, access: BufferAccess) -> *const std::os::raw::c_void {
+    let buffer = buffer.0;
+    let access = GLenum::from(access);
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::MapNamedBuffer(buffer, access) }
+}
+
+/// # Release the mapping of a buffer object's data store into the client's address space
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glUnmapBuffer.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert!(unmap_buffer(BufferBindingTarget::ElementArray));
+/// assert!(unmap_named_buffer(Buffer(42)));
+/// ```
+///
+/// # Description
+/// [unmap_buffer] and [unmap_named_buffer] unmap (release) any mapping of a specified buffer object
+/// into the client's address space (see [map_buffer_range] and [map_buffer]).
+///
+/// If a mapping is not unmapped before the corresponding buffer object's data store is used by the
+/// GL, an error will be generated by any GL command that attempts to dereference the buffer
+/// object's data store, unless the buffer was successfully mapped with [BufferMapFlags::PERSISTENT]
+/// (see [map_buffer_range]). When a data store is unmapped, the mapped pointer becomes invalid.
+///
+/// [unmap_buffer] returns true unless the data store contents have become corrupt during the time
+/// the data store was mapped. This can occur for system-specific reasons that affect the
+/// availability of graphics memory, such as screen mode changes. In such situations, false is
+/// returned and the data store contents are undefined. An application must detect this rare
+/// condition and reinitialize the data store.
+///
+/// A buffer object's mapped data store is automatically unmapped when the buffer object is deleted
+/// or its data store is recreated with [buffer_data].
+///
+/// If an error is generated, [unmap_buffer] returns false.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if zero is bound to `target`
+/// * [Error::InvalidOperation] - if the buffer object is not in a mapped state.
+///
+/// # Associated Gets
+/// * [is_buffer_mapped]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [unmap_buffer] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [unmap_named_buffer] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+pub fn unmap_buffer(target: BufferBindingTarget) -> bool {
+    let target = GLenum::from(target);
+
+    // SAFE: synchronous integer copy
+    let val = unsafe { gl::UnmapBuffer(target) };
+    val == gl::TRUE
+}
+
+/// # Release the mapping of a buffer object's data store into the client's address space
+/// see [unmap_buffer]
+///
+/// # Arguments
+/// * `buffer` - Specifies the name of the buffer object.
+pub fn unmap_named_buffer(buffer: Buffer) -> bool {
+    let buffer = buffer.0;
+
+    // SAFE: synchronous integer copy
+    let val = unsafe { gl::UnmapNamedBuffer(buffer) };
     val == gl::TRUE
 }
