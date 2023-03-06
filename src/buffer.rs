@@ -872,3 +872,39 @@ pub fn get_buffer_usage(
         other => Err(BufferError::InvalidParameterValue(other as i64)),
     }
 }
+
+/// # Determine if a name corresponds to a buffer object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glIsBuffer.xhtml>
+///
+/// # Arguments
+/// * `buffer` - Specifies a value that may be the name of a buffer object.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert!(is_buffer(Buffer(42)));
+/// ```
+///
+/// # Description
+/// [is_buffer] returns true if `buffer` is currently the name of a buffer object. If `buffer` is
+/// zero, or is a non-zero value that is not currently the name of a buffer object, or if an error
+/// occurs, [is_buffer] returns false.
+///
+/// A name returned by [gen_buffers], but not yet associated with a buffer object by calling
+/// [bind_buffer], is not the name of a buffer object.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [is_buffer] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [delete_buffers]
+/// * [gen_buffers]
+pub fn is_buffer(buffer: Buffer) -> bool {
+    let buffer = buffer.0;
+    let val = unsafe { gl::IsBuffer(buffer) };
+    val == gl::TRUE
+}
