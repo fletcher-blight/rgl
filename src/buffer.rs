@@ -18,16 +18,6 @@ pub enum BufferAccess {
     ReadWrite,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum BufferError {
-    Unexpected(Error),
-
-    UnboundTarget(BufferBindingTarget),
-    InvalidBuffer(Buffer),
-    InvalidParameterValue(i64),
-    ImmutableBufferTarget(BufferBindingTarget),
-}
-
 /// # The target to which a buffer object is bound
 /// see [bind_buffer]
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -96,10 +86,20 @@ impl From<BufferBindingTarget> for GLenum {
     }
 }
 
-/// # The frequency of access (modification and usage)
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum BufferError {
+    Unexpected(Error),
+
+    UnboundTarget(BufferBindingTarget),
+    InvalidBuffer(Buffer),
+    InvalidParameterValue(i64),
+    ImmutableBufferTarget(BufferBindingTarget),
+}
+
+/// # The frequency of buffer access (modification and usage)
 /// see [buffer_data]
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum BufferAccessFrequency {
+pub enum BufferUsageFrequency {
     /// The data store contents will be modified once and used at most a few times.
     Stream,
 
@@ -110,9 +110,9 @@ pub enum BufferAccessFrequency {
     Dynamic,
 }
 
-/// # The nature of the access
+/// # The nature of the buffer access
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum BufferAccessNature {
+pub enum BufferUsageNature {
     /// The data store contents are modified by the application, and used as the source for GL drawing and image specification commands.
     Draw,
 
@@ -123,19 +123,19 @@ pub enum BufferAccessNature {
     Copy,
 }
 
-struct BufferUsage(BufferAccessFrequency, BufferAccessNature);
+struct BufferUsage(BufferUsageFrequency, BufferUsageNature);
 impl From<BufferUsage> for GLenum {
     fn from(BufferUsage(frequency, nature): BufferUsage) -> Self {
         match (frequency, nature) {
-            (BufferAccessFrequency::Stream, BufferAccessNature::Draw) => gl::STREAM_DRAW,
-            (BufferAccessFrequency::Stream, BufferAccessNature::Read) => gl::STREAM_READ,
-            (BufferAccessFrequency::Stream, BufferAccessNature::Copy) => gl::STREAM_COPY,
-            (BufferAccessFrequency::Static, BufferAccessNature::Draw) => gl::STATIC_DRAW,
-            (BufferAccessFrequency::Static, BufferAccessNature::Read) => gl::STATIC_READ,
-            (BufferAccessFrequency::Static, BufferAccessNature::Copy) => gl::STATIC_COPY,
-            (BufferAccessFrequency::Dynamic, BufferAccessNature::Draw) => gl::DYNAMIC_DRAW,
-            (BufferAccessFrequency::Dynamic, BufferAccessNature::Read) => gl::DYNAMIC_READ,
-            (BufferAccessFrequency::Dynamic, BufferAccessNature::Copy) => gl::DYNAMIC_COPY,
+            (BufferUsageFrequency::Stream, BufferUsageNature::Draw) => gl::STREAM_DRAW,
+            (BufferUsageFrequency::Stream, BufferUsageNature::Read) => gl::STREAM_READ,
+            (BufferUsageFrequency::Stream, BufferUsageNature::Copy) => gl::STREAM_COPY,
+            (BufferUsageFrequency::Static, BufferUsageNature::Draw) => gl::STATIC_DRAW,
+            (BufferUsageFrequency::Static, BufferUsageNature::Read) => gl::STATIC_READ,
+            (BufferUsageFrequency::Static, BufferUsageNature::Copy) => gl::STATIC_COPY,
+            (BufferUsageFrequency::Dynamic, BufferUsageNature::Draw) => gl::DYNAMIC_DRAW,
+            (BufferUsageFrequency::Dynamic, BufferUsageNature::Read) => gl::DYNAMIC_READ,
+            (BufferUsageFrequency::Dynamic, BufferUsageNature::Copy) => gl::DYNAMIC_COPY,
         }
     }
 }
@@ -214,8 +214,8 @@ pub struct Buffer(pub u32);
 /// [gen_buffers] must be used to generate a set of unused buffer object names.
 ///
 /// The state of a buffer object immediately after it is first bound is an unmapped zero-sized
-/// memory buffer with [BufferAccess::ReadWrite] access and ([BufferAccessFrequency::Static],
-/// [BufferAccessNature::Draw]) usage.
+/// memory buffer with [BufferAccess::ReadWrite] access and ([BufferUsageFrequency::Static],
+/// [BufferUsageNature::Draw]) usage.
 ///
 /// While a non-zero buffer object name is bound, GL operations on the target to which it is bound
 /// affect the bound buffer object, and queries of the target to which it is bound return state from
@@ -339,7 +339,7 @@ pub fn bind_buffer_checked(target: BufferBindingTarget, buffer: Buffer) -> Resul
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
-/// buffer_data(BufferBindingTarget::Array, &[1, 2, 3], BufferAccessFrequency::Static, BufferAccessNature::Draw);
+/// buffer_data(BufferBindingTarget::Array, &[1, 2, 3], BufferUsageFrequency::Static, BufferUsageNature::Draw);
 /// ```
 ///
 /// # Description
@@ -352,7 +352,7 @@ pub fn bind_buffer_checked(target: BufferBindingTarget, buffer: Buffer) -> Resul
 /// data store is initialized with data from that view. In its initial state, the new data store is
 /// not mapped, it has a NULL mapped pointer, and its mapped access is [BufferAccess::ReadWrite].
 ///
-/// usage ([BufferAccessFrequency], [BufferAccessNature]) is a hint to the GL implementation as to
+/// usage ([BufferUsageFrequency], [BufferUsageNature]) is a hint to the GL implementation as to
 /// how a buffer object's data store will be accessed. This enables the GL implementation to make
 /// more intelligent decisions that may significantly impact buffer object performance. It does not,
 /// however, constrain the actual usage of the data store. Usage can be broken down into two parts:
@@ -398,8 +398,8 @@ pub fn bind_buffer_checked(target: BufferBindingTarget, buffer: Buffer) -> Resul
 pub fn buffer_data<Data: BufferData>(
     target: BufferBindingTarget,
     data: Data,
-    access_frequency: BufferAccessFrequency,
-    access_nature: BufferAccessNature,
+    access_frequency: BufferUsageFrequency,
+    access_nature: BufferUsageNature,
 ) {
     let target = GLenum::from(target);
     let size = data.get_size() as GLsizeiptr;
@@ -415,14 +415,14 @@ pub fn buffer_data<Data: BufferData>(
 pub fn buffer_data_checked<Data: BufferData>(
     target: BufferBindingTarget,
     data: Data,
-    access_frequency: BufferAccessFrequency,
-    access_nature: BufferAccessNature,
+    access_frequency: BufferUsageFrequency,
+    access_nature: BufferUsageNature,
 ) -> Result<(), BufferError> {
     buffer_data(target, data, access_frequency, access_nature);
     match get_error() {
         Error::NoError => Ok(()),
         Error::InvalidEnum => {
-            if get_buffer_immutable_storage(target) {
+            if is_buffer_immutable_storage(target)? {
                 Err(BufferError::ImmutableBufferTarget(target))
             } else {
                 Err(BufferError::UnboundTarget(target))
@@ -441,8 +441,8 @@ pub fn buffer_data_checked<Data: BufferData>(
 pub fn named_buffer_data<Data: BufferData>(
     buffer: Buffer,
     data: Data,
-    access_frequency: BufferAccessFrequency,
-    access_nature: BufferAccessNature,
+    access_frequency: BufferUsageFrequency,
+    access_nature: BufferUsageNature,
 ) {
     let buffer = buffer.0;
     let size = data.get_size() as GLsizeiptr;
@@ -547,58 +547,328 @@ fn get_buffer_parameter_i32(target: BufferBindingTarget, value: GLenum) -> i32 {
     param
 }
 
-pub fn get_buffer_immutable_storage(target: BufferBindingTarget) -> bool {
-    todo!()
+fn get_buffer_parameter_i64(target: BufferBindingTarget, value: GLenum) -> i64 {
+    let target = GLenum::from(target);
+    let mut param: i64 = 0;
+    // SAFE: `param` is an out-param and not retained
+    unsafe { gl::GetBufferParameteri64v(target, value, &mut param) };
+    param
+}
+
+/// # Returns the access policy
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert_eq!(
+///     get_buffer_access(BufferBindingTarget::ElementArray),
+///     Ok(BufferAccess::ReadWrite)
+/// );
+/// ```
+///
+/// # Description
+/// returns the access policy set while mapping the buffer object (the value of the access parameter
+/// enum passed to [map_buffer]). If the buffer was mapped with [map_buffer_range], the access
+/// policy is determined by translating the bits in that access parameter to one of the supported
+/// enums for [map_buffer] as described in the OpenGL Specification.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [get_buffer_access] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [get_buffer_pointer]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn get_buffer_access(target: BufferBindingTarget) -> Result<BufferAccess, BufferError> {
+    let val = get_buffer_parameter_i32(target, gl::BUFFER_ACCESS);
+    match val as u32 {
+        gl::READ_ONLY => Ok(BufferAccess::ReadOnly),
+        gl::WRITE_ONLY => Ok(BufferAccess::WriteOnly),
+        gl::READ_WRITE => Ok(BufferAccess::ReadWrite),
+        _ => Err(BufferError::InvalidParameterValue(val as i64)),
+    }
+}
+
+/// # Check if buffer object is immutable
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert!(is_buffer_immutable_storage(BufferBindingTarget::ElementArray).unwrap());
+/// ```
+///
+/// # Description
+/// returns a boolean indicating whether the buffer object is immutable. The initial value is false.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [is_buffer_immutable_storage] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [get_buffer_pointer]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn is_buffer_immutable_storage(target: BufferBindingTarget) -> Result<bool, BufferError> {
+    let val = get_buffer_parameter_i32(target, gl::BUFFER_IMMUTABLE_STORAGE);
+    match val as u8 {
+        gl::FALSE => Ok(false),
+        gl::TRUE => Ok(true),
+        _ => Err(BufferError::InvalidParameterValue(val as i64)),
+    }
+}
+
+/// # Check if buffer object is mapped
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert!(is_buffer_immutable_storage(BufferBindingTarget::ElementArray).unwrap());
+/// ```
+///
+/// # Description
+/// returns a boolean indicating whether the buffer object is mapped. The initial value is false.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [is_buffer_mapped] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [get_buffer_pointer]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn is_buffer_mapped(target: BufferBindingTarget) -> Result<bool, BufferError> {
+    let val = get_buffer_parameter_i32(target, gl::BUFFER_MAPPED);
+    match val as u8 {
+        gl::FALSE => Ok(false),
+        gl::TRUE => Ok(true),
+        _ => Err(BufferError::InvalidParameterValue(val as i64)),
+    }
+}
+
+/// # Returns the length of the mapping
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert_eq!(get_buffer_map_length(BufferBindingTarget::ElementArray), 42);
+/// ```
+///
+/// # Description
+/// returns the length of the mapping into the buffer object established with [map_buffer]. The
+/// initial value is zero.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [get_buffer_map_length] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [get_buffer_pointer]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn get_buffer_map_length(target: BufferBindingTarget) -> u64 {
+    let val = get_buffer_parameter_i64(target, gl::BUFFER_MAP_LENGTH);
+    val as u64
+}
+
+/// # Returns the offset of the mapping
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert_eq!(get_buffer_map_offset(BufferBindingTarget::ElementArray), 42);
+/// ```
+///
+/// # Description
+/// returns the offset of the mapping into the buffer object established with [map_buffer]. The
+/// initial value is zero.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [get_buffer_map_offset] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [get_buffer_pointer]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn get_buffer_map_offset(target: BufferBindingTarget) -> u64 {
+    let val = get_buffer_parameter_i64(target, gl::BUFFER_MAP_OFFSET);
+    val as u64
+}
+
+/// # Size of buffer
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert_eq!(get_buffer_size(BufferBindingTarget::ElementArray), 42);
+/// ```
+///
+/// # Description
+/// returns the size of the buffer object, measured in bytes. The initial value is 0.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [get_buffer_size] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [get_buffer_pointer]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn get_buffer_size(target: BufferBindingTarget) -> u64 {
+    let val = get_buffer_parameter_i64(target, gl::BUFFER_SIZE);
+    val as u64
 }
 
 /// # Returns the buffer object's usage pattern
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
 ///
-/// # Description
-/// The initial value is ([BufferAccessFrequency::Static], [BufferAccessNature::Draw]).
-///
 /// # Arguments
 /// * `target` - Specifies the target to which the buffer object is bound
-///
-/// # Compatability
-///
-/// # Errors
 ///
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
 /// assert_eq!(
 ///     get_buffer_usage(BufferBindingTarget::Array),
-///     Ok((BufferAccessFrequency::Static, BufferAccessNature::Draw))
+///     Ok((BufferUsageFrequency::Static, BufferUsageNature::Draw))
 /// );
 /// ```
+///
+/// # Description
+/// Returns the buffer object's usage pattern. The initial value is ([BufferUsageFrequency::Static],
+/// [BufferUsageNature::Draw]).
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [get_buffer_usage] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [get_buffer_pointer]
+/// * [map_buffer]
+/// * [unmap_buffer]
 pub fn get_buffer_usage(
     target: BufferBindingTarget,
-) -> Result<(BufferAccessFrequency, BufferAccessNature), BufferError> {
-    let param = get_buffer_parameter_i32(target, gl::BUFFER_ACCESS);
+) -> Result<(BufferUsageFrequency, BufferUsageNature), BufferError> {
+    let param = get_buffer_parameter_i32(target, gl::BUFFER_USAGE);
     match param as u32 {
-        gl::STREAM_DRAW => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
-        gl::STREAM_READ => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
-        gl::STREAM_COPY => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
-        gl::STATIC_DRAW => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
-        gl::STATIC_READ => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
-        gl::STATIC_COPY => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
-        gl::DYNAMIC_DRAW => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
-        gl::DYNAMIC_READ => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
-        gl::DYNAMIC_COPY => Ok((BufferAccessFrequency::Stream, BufferAccessNature::Draw)),
+        gl::STREAM_DRAW => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
+        gl::STREAM_READ => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
+        gl::STREAM_COPY => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
+        gl::STATIC_DRAW => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
+        gl::STATIC_READ => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
+        gl::STATIC_COPY => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
+        gl::DYNAMIC_DRAW => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
+        gl::DYNAMIC_READ => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
+        gl::DYNAMIC_COPY => Ok((BufferUsageFrequency::Stream, BufferUsageNature::Draw)),
         other => Err(BufferError::InvalidParameterValue(other as i64)),
-    }
-}
-
-/// # Error mapped buffer usage
-/// see [get_buffer_usage]
-pub fn get_buffer_usage_checked(
-    target: BufferBindingTarget,
-) -> Result<(BufferAccessFrequency, BufferAccessNature), BufferError> {
-    let buffer_access = get_buffer_usage(target)?;
-    match get_error() {
-        Error::NoError => Ok(buffer_access),
-        Error::InvalidOperation => Err(BufferError::UnboundTarget(target)),
-        other => Err(BufferError::Unexpected(other)),
     }
 }
