@@ -25,10 +25,11 @@ pub enum BufferError {
     UnboundTarget(BufferBindingTarget),
     InvalidBuffer(Buffer),
     InvalidParameterValue(i64),
+    ImmutableBufferTarget(BufferBindingTarget),
 }
 
 /// # The target to which a buffer object is bound
-/// see [bind_buffer] for more details
+/// see [bind_buffer]
 #[derive(Debug, Copy, Clone)]
 pub enum BufferBindingTarget {
     /// Vertex attributes
@@ -95,15 +96,28 @@ impl From<BufferBindingTarget> for GLenum {
     }
 }
 
+/// # The frequency of access (modification and usage)
+/// see [buffer_data]
 pub enum BufferAccessFrequency {
+    /// The data store contents will be modified once and used at most a few times.
     Stream,
+
+    /// The data store contents will be modified once and used many times.
     Static,
+
+    /// The data store contents will be modified repeatedly and used many times.
     Dynamic,
 }
 
+/// # The nature of the access
 pub enum BufferAccessNature {
+    /// The data store contents are modified by the application, and used as the source for GL drawing and image specification commands.
     Draw,
+
+    /// The data store contents are modified by reading data from the GL, and used to return that data when queried by the application.
     Read,
+
+    /// The data store contents are modified by reading data from the GL, and used as the source for GL drawing and image specification commands.
     Copy,
 }
 
@@ -124,6 +138,35 @@ impl From<BufferUsage> for GLenum {
     }
 }
 
+/// # Buffered data requirements
+/// see:
+/// * [bind_buffer]
+/// * [named_bind_buffer]
+pub trait BufferData {
+    fn get_size(&self) -> u64;
+    fn get_raw_data_pointer(&self) -> *const std::os::raw::c_void;
+}
+
+impl<DataType: Sized> BufferData for &[DataType] {
+    fn get_size(&self) -> u64 {
+        self.len() as u64
+    }
+
+    fn get_raw_data_pointer(&self) -> *const std::os::raw::c_void {
+        self.as_ptr() as *const std::os::raw::c_void
+    }
+}
+
+impl BufferData for u64 {
+    fn get_size(&self) -> u64 {
+        *self
+    }
+
+    fn get_raw_data_pointer(&self) -> *const std::os::raw::c_void {
+        std::ptr::null()
+    }
+}
+
 #[derive(Default, Debug, Copy, Clone)]
 #[repr(transparent)]
 pub struct Buffer(pub u32);
@@ -134,6 +177,12 @@ pub struct Buffer(pub u32);
 /// # Arguments
 /// * `target` - Specifies the target to which the buffer object is bound
 /// * `buffer` - Specifies the name of a buffer object
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// bind_buffer(BufferBindingTarget::Array, Buffer(0));
+/// ```
 ///
 /// # Description
 /// [bind_buffer]] binds a buffer object to the specified buffer binding point. Calling
@@ -230,12 +279,6 @@ pub struct Buffer(pub u32);
 /// * [Error::InvalidValue] - if buffer is not a name previously returned from a call to
 /// [gen_buffers].
 ///
-/// # Example
-/// ```no_run
-/// # use rgl::prelude::*;
-/// bind_buffer(BufferBindingTarget::Array, Buffer(0));
-/// ```
-///
 /// # Associated Gets
 /// TODO
 ///
@@ -261,8 +304,9 @@ pub fn bind_buffer(target: BufferBindingTarget, buffer: Buffer) {
     unsafe { gl::BindBuffer(target, buffer) }
 }
 
-/// # Error handled [bind_buffer]
-pub fn checked_bind_buffer(target: BufferBindingTarget, buffer: Buffer) -> Result<(), BufferError> {
+/// # Error mapped bind buffer
+/// see [bind_buffer]
+pub fn bind_buffer_checked(target: BufferBindingTarget, buffer: Buffer) -> Result<(), BufferError> {
     bind_buffer(target, buffer);
     match get_error() {
         Error::NoError => Ok(()),
@@ -274,47 +318,127 @@ pub fn checked_bind_buffer(target: BufferBindingTarget, buffer: Buffer) -> Resul
 /// # Creates and initializes a buffer object's data store
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBufferData.xhtml>
 ///
-/// # Description
-///
 /// # Arguments
-///
-/// # Compatability
-///
-/// # Errors
+/// * `target` - Specifies the target to which the buffer object is bound for [buffer_data]
+/// * `data` - Specifies some data that will be copied into the data store for initialization,
+/// or a size reservation if no data is to be copied.
+/// * `access_frequency`, `access_nature` - Specifies the expected usage pattern of the data store.
 ///
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
 /// buffer_data(BufferBindingTarget::Array, &[1, 2, 3], BufferAccessFrequency::Static, BufferAccessNature::Draw);
 /// ```
-pub fn buffer_data<DataType: Sized>(
+///
+/// # Description
+/// [buffer_data] and [named_buffer_data] create a new data store for a buffer object. In case of
+/// [buffer_data], the buffer object currently bound to `target` is used. For [named_buffer_data], a
+/// buffer object associated with ID specified by the caller in `buffer` will be used instead.
+///
+/// While creating the new storage, any pre-existing data store is deleted. The new data store is
+/// created with the specified [BufferData::get_size] in bytes and usage. If `data` is a slice, the
+/// data store is initialized with data from that view. In its initial state, the new data store is
+/// not mapped, it has a NULL mapped pointer, and its mapped access is [BufferAccess::ReadWrite].
+///
+/// usage ([BufferAccessFrequency], [BufferAccessNature]) is a hint to the GL implementation as to
+/// how a buffer object's data store will be accessed. This enables the GL implementation to make
+/// more intelligent decisions that may significantly impact buffer object performance. It does not,
+/// however, constrain the actual usage of the data store. Usage can be broken down into two parts:
+/// first, the frequency of access (modification and usage), and second, the nature of that access.
+///
+/// If `data` is just a size, a data store of the specified size is still created, but its contents
+/// remain uninitialized and thus undefined.
+///
+/// Clients must align data elements consistently with the requirements of the client platform, with
+/// an additional base-level requirement that an offset within a buffer to a datum comprising N
+/// bytes be a multiple of N.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - by [buffer_data] if the reserved buffer object name 0 is bound to
+/// `target`
+/// * [Error::InvalidOperation] - by [named_buffer_data] if `buffer` is not the name of an existing
+/// buffer object.
+/// * [Error::InvalidOperation] - if [get_buffer_immutable_storage] of the buffer object is true.
+/// * [Error::OutOfMemory] - if the GL is unable to create a data store with the specified
+/// [BufferData::get_size].
+///
+/// # Associated Gets
+/// * [get_buffer_sub_data]
+/// * [get_buffer_size], [get_buffer_usage]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [buffer_data] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [named_buffer_data] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_sub_data]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn buffer_data<Data: BufferData>(
     target: BufferBindingTarget,
-    data: &[DataType],
+    data: Data,
     access_frequency: BufferAccessFrequency,
     access_nature: BufferAccessNature,
 ) {
     let target = GLenum::from(target);
-    let size = data.len() as GLsizeiptr;
-    let data = data.as_ptr() as *const std::os::raw::c_void;
+    let size = data.get_size() as GLsizeiptr;
+    let data = data.get_raw_data_pointer();
     let usage = GLenum::from(BufferUsage(access_frequency, access_nature));
 
     // SAFE: the data memory is synchronously copied into the GL context, never holding onto `data`
     unsafe { gl::BufferData(target, size, data, usage) };
 }
 
-pub fn checked_buffer_data<DataType: Sized>(
+/// # Error mapped buffer data
+/// see [buffer_data]
+pub fn buffer_data_checked<Data: BufferData>(
     target: BufferBindingTarget,
-    data: &[DataType],
+    data: Data,
     access_frequency: BufferAccessFrequency,
     access_nature: BufferAccessNature,
 ) -> Result<(), BufferError> {
     buffer_data(target, data, access_frequency, access_nature);
     match get_error() {
         Error::NoError => Ok(()),
-        Error::InvalidEnum => checked_get_buffer_access(target).map(|_| ()),
+        Error::InvalidEnum => {
+            if get_buffer_immutable_storage(target) {
+                Err(BufferError::ImmutableBufferTarget(target))
+            } else {
+                Err(BufferError::UnboundTarget(target))
+            }
+        }
         Error::InvalidOperation => Err(BufferError::UnboundTarget(target)),
         other => Err(BufferError::Unexpected(other)),
     }
+}
+
+/// # Creates and initializes a buffer object's data store
+/// See [buffer_data]
+///
+/// # Arguments
+/// * `buffer` - Specifies the target to which the buffer object is bound for [named_buffer_data]
+pub fn named_buffer_data<Data: BufferData>(
+    buffer: Buffer,
+    data: Data,
+    access_frequency: BufferAccessFrequency,
+    access_nature: BufferAccessNature,
+) {
+    let buffer = buffer.0;
+    let size = data.get_size() as GLsizeiptr;
+    let data = data.get_raw_data_pointer();
+    let usage = GLenum::from(BufferUsage(access_frequency, access_nature));
+
+    // SAFE: the data memory is synchronously copied into the GL context, never holding onto `data`
+    unsafe { gl::NamedBufferData(buffer, size, data, usage) };
 }
 
 fn get_buffer_parameter_i32(target: BufferBindingTarget, value: GLenum) -> i32 {
@@ -325,12 +449,18 @@ fn get_buffer_parameter_i32(target: BufferBindingTarget, value: GLenum) -> i32 {
     param
 }
 
-/// # Get Buffer Object Access Usage
+pub fn get_buffer_immutable_storage(target: BufferBindingTarget) -> bool {
+    todo!()
+}
+
+/// # Returns the buffer object's usage pattern
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
 ///
 /// # Description
+/// The initial value is ([BufferAccessFrequency::Static], [BufferAccessNature::Draw]).
 ///
 /// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
 ///
 /// # Compatability
 ///
@@ -341,7 +471,7 @@ fn get_buffer_parameter_i32(target: BufferBindingTarget, value: GLenum) -> i32 {
 /// # use rgl::prelude::*;
 /// assert_eq!(get_buffer_access(BufferBindingTarget::Array), (BufferAccessFrequency::Static, BufferAccessNature::Draw));
 /// ```
-pub fn get_buffer_access(
+pub fn get_buffer_usage(
     target: BufferBindingTarget,
 ) -> Result<(BufferAccessFrequency, BufferAccessNature), BufferError> {
     let param = get_buffer_parameter_i32(target, gl::BUFFER_ACCESS);
@@ -359,10 +489,12 @@ pub fn get_buffer_access(
     }
 }
 
-pub fn checked_get_buffer_access(
+/// # Error mapped buffer usage
+/// see [get_buffer_usage]
+pub fn get_buffer_usage_checked(
     target: BufferBindingTarget,
 ) -> Result<(BufferAccessFrequency, BufferAccessNature), BufferError> {
-    let buffer_access = get_buffer_access(target)?;
+    let buffer_access = get_buffer_usage(target)?;
     match get_error() {
         Error::NoError => Ok(buffer_access),
         Error::InvalidOperation => Err(BufferError::UnboundTarget(target)),

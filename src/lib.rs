@@ -9,16 +9,16 @@
 ///
 /// # Arguments
 ///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// ```
+///
 /// # Description
 ///
 /// # Compatability
 ///
 /// # Errors
-///
-/// # Example
-/// ```no_run
-/// # use rgl::prelude::*;
-/// ```
 ///
 /// # Associated Gets
 ///
