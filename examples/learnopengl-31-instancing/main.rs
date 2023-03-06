@@ -12,7 +12,7 @@ fn main() -> anyhow::Result<()> {
     }
     sdl.mouse().set_relative_mouse_mode(true);
     let window = video
-        .window("LearnOpenGL: Model Ex - Many", 1920, 1080)
+        .window("LearnOpenGL: Instancing", 1920, 1080)
         .opengl()
         .resizable()
         .build()?;
@@ -41,18 +41,18 @@ fn main() -> anyhow::Result<()> {
     let mut rng = rand::thread_rng();
     let asteroid_model_mats: Vec<f32> = (0..NUM_ASTEROIDS)
         .flat_map(|_| {
-            let scale_factor = 0.5 * rng.gen::<f32>();
+            let scale_factor = 0.1 * rng.gen::<f32>();
             let angle: f32 = 360.0 * rng.gen::<f32>();
             let tilt_angle: f32 = 360.0 * rng.gen::<f32>();
             let tilt_axis = glm::vec3(rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>());
 
-            let horizontal_position = glm::rotate_y_vec3(&glm::vec3(400.0, 0.0, 0.0), angle);
+            let horizontal_position = glm::rotate_y_vec3(&glm::vec3(100.0, 0.0, 0.0), angle);
 
             let fuzz_dir = glm::vec3(angle.to_radians().sin(), 0.0, angle.to_radians().cos());
-            let fuzz_offset = fuzz_dir * rng.gen::<f32>() * 70.0;
+            let fuzz_offset = fuzz_dir * rng.gen::<f32>() * 10.0;
             let vertical_fuzz = glm::vec3(
                 0.0,
-                (10.0 * rng.gen::<f32>()) - 5.0 + (2.0 * rng.gen::<f32>()),
+                (2.0 * rng.gen::<f32>()) - 1.0 + (0.1 * rng.gen::<f32>()),
                 0.0,
             );
 
