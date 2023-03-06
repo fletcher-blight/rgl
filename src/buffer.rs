@@ -11,14 +11,14 @@
 use crate::*;
 use gl::types::*;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BufferAccess {
     ReadOnly,
     WriteOnly,
     ReadWrite,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BufferError {
     Unexpected(Error),
 
@@ -30,7 +30,7 @@ pub enum BufferError {
 
 /// # The target to which a buffer object is bound
 /// see [bind_buffer]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BufferBindingTarget {
     /// Vertex attributes
     Array,
@@ -98,6 +98,7 @@ impl From<BufferBindingTarget> for GLenum {
 
 /// # The frequency of access (modification and usage)
 /// see [buffer_data]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BufferAccessFrequency {
     /// The data store contents will be modified once and used at most a few times.
     Stream,
@@ -110,6 +111,7 @@ pub enum BufferAccessFrequency {
 }
 
 /// # The nature of the access
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BufferAccessNature {
     /// The data store contents are modified by the application, and used as the source for GL drawing and image specification commands.
     Draw,
@@ -157,6 +159,16 @@ impl<DataType: Sized> BufferData for &[DataType] {
     }
 }
 
+impl<DataType: Sized, const N: usize> BufferData for &[DataType; N] {
+    fn get_size(&self) -> u64 {
+        self.len() as u64
+    }
+
+    fn get_raw_data_pointer(&self) -> *const std::os::raw::c_void {
+        self.as_ptr() as *const std::os::raw::c_void
+    }
+}
+
 impl BufferData for u64 {
     fn get_size(&self) -> u64 {
         *self
@@ -167,7 +179,7 @@ impl BufferData for u64 {
     }
 }
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 #[repr(transparent)]
 pub struct Buffer(pub u32);
 
@@ -441,6 +453,92 @@ pub fn named_buffer_data<Data: BufferData>(
     unsafe { gl::NamedBufferData(buffer, size, data, usage) };
 }
 
+/// # Delete named buffer objects
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteBuffers.xhtml>
+///
+/// # Arguments
+/// * `buffers` - Specifies a slice of buffer objects to be deleted.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// delete_buffers(&[Buffer(42), Buffer(7)]);
+/// ```
+///
+/// # Description
+/// [delete_buffers] deletes all buffer objects named by the elements of the slice `buffers`. After
+/// a buffer object is deleted, it has no contents, and its name is free for reuse (for example by
+/// [gen_buffers]). If a buffer object that is currently bound is deleted, the binding reverts to 0
+/// (the absence of any buffer object).
+///
+/// [delete_buffers] silently ignores 0's and names that do not correspond to existing buffer
+/// objects.
+///
+/// # Associated Gets
+/// * [is_buffer]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [delete_buffers] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [gen_buffers]
+pub fn delete_buffers(buffers: &[Buffer]) {
+    let n = buffers.len() as GLsizei;
+    let buffers = buffers.as_ptr() as *const u32;
+
+    // SAFE: synchronously reads `buffers`, where `n` is valid size, and the pointer is not retained
+    unsafe { gl::DeleteBuffers(n, buffers) }
+}
+
+/// # Generate buffer object names
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGenBuffers.xhtml>
+///
+/// # Arguments
+/// * `buffers` - Specifies a mutable slice in which the generated buffer object names are stored.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let mut buffer = Default::default();
+/// gen_buffers(std::slice::from_mut(&mut buffer));
+/// ```
+///
+/// # Description
+/// [gen_buffers] fills buffer object names in `buffers`. There is no guarantee that the names form
+/// a contiguous set of integers; however, it is guaranteed that none of the returned names was in
+/// use immediately before the call to [gen_buffers].
+///
+/// Buffer object names returned by a call to [gen_buffers] are not returned by subsequent calls,
+/// unless they are first deleted with [delete_buffers].
+///
+/// No buffer objects are associated with the returned buffer object names until they are first
+/// bound by calling [bind_buffer].
+///
+/// # Associated Gets
+/// * [is_buffer]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [my_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [delete_buffers]
+pub fn gen_buffers(buffers: &mut [Buffer]) {
+    let n = buffers.len() as GLsizei;
+    let buffers = buffers.as_ptr() as *mut u32;
+
+    // SAFE: synchronously writes to `buffers`, where `n` is valid size, and the pointer is not
+    // retained
+    unsafe { gl::GenBuffers(n, buffers) };
+}
+
 fn get_buffer_parameter_i32(target: BufferBindingTarget, value: GLenum) -> i32 {
     let target = GLenum::from(target);
     let mut param: i32 = 0;
@@ -469,7 +567,10 @@ pub fn get_buffer_immutable_storage(target: BufferBindingTarget) -> bool {
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
-/// assert_eq!(get_buffer_access(BufferBindingTarget::Array), (BufferAccessFrequency::Static, BufferAccessNature::Draw));
+/// assert_eq!(
+///     get_buffer_usage(BufferBindingTarget::Array),
+///     Ok((BufferAccessFrequency::Static, BufferAccessNature::Draw))
+/// );
 /// ```
 pub fn get_buffer_usage(
     target: BufferBindingTarget,

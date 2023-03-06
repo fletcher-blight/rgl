@@ -44,7 +44,7 @@ pub enum TextureTarget {
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
-/// let mut texture;
+/// let mut texture = Default::default();
 /// gen_textures(std::slice::from_mut(&mut texture));
 /// ```
 pub fn gen_textures(textures: &mut [Texture]) {

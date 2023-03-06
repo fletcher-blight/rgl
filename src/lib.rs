@@ -5,7 +5,7 @@
 //!
 
 /// # Template Function Documentation
-/// http://kronos/docs
+/// <http://kronos/docs>
 ///
 /// # Arguments
 ///
@@ -38,7 +38,7 @@ pub mod texture;
 
 use gl::types::*;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Error {
     NoError,
     InvalidEnum,
