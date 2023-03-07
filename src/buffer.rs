@@ -222,12 +222,58 @@ bitflags::bitflags! {
 }
 
 bitflags::bitflags! {
+    /// # Storage Bitfield Flags for a Buffer
+    /// see [buffer_storage]
+    ///
+    /// The allowed combinations of flags are subject to certain restrictions. They are as follows:
+    /// * If [BufferStorageFlags::PERSISTENT] is set, at least one of [BufferStorageFlags::READ] or
+    /// [BufferStorageFlags::WRITE] must be set.
+    /// * If [BufferStorageFlags::COHERENT] is set, [BufferStorageFlags::PERSISTENT] must also be
+    /// set.
     pub struct BufferStorageFlags: u32 {
+        /// The contents of the data store may be updated after creation through calls to
+        /// [buffer_sub_data]. If this bit is not set, the buffer content may not be directly
+        /// updated by the client. The data argument may be used to specify the initial content of
+        /// the buffer's data store regardless of the presence of the [BufferStorageFlags::DYNAMIC].
+        /// Regardless of the presence of this bit, buffers may always be updated with server-side
+        /// calls such as [copy_buffer_sub_data] and [clear_buffer_sub_data].
         const DYNAMIC = gl::DYNAMIC_STORAGE_BIT;
+
+        /// The data store may be mapped by the client for read access and a pointer in the client's
+        /// address space obtained that may be read from.
         const READ = gl::MAP_READ_BIT;
+
+        /// The data store may be mapped by the client for write access and a pointer in the
+        /// client's address space obtained that may be written through.
         const WRITE = gl::MAP_WRITE_BIT;
+
+        /// The client may request that the server read from or write to the buffer while it is
+        /// mapped. The client's pointer to the data store remains valid so long as the data store
+        /// is mapped, even during execution of drawing or dispatch commands.
         const PERSISTENT = gl::MAP_PERSISTENT_BIT;
+
+        /// Shared access to buffers that are simultaneously mapped for client access and are used
+        /// by the server will be coherent, so long as that mapping is performed using
+        /// [map_buffer_range]. That is, data written to the store by either the client or server
+        /// will be immediately visible to the other with no further action taken by the
+        /// application. In particular:
+        /// * If [BufferStorageFlags::COHERENT] is not set and the client performs a write followed
+        /// by a call to the [memory_barrier] command with [MemoryBarrierFlags::CLIENT_MAPPED] set,
+        /// then in subsequent commands the server will see the writes.
+        /// * If [BufferStorageFlags::COHERENT] is set and the client performs a write, then in
+        /// subsequent commands the server will see the writes.
+        /// * If [BufferStorageFlags::COHERENT] is not set and the server performs a write, the
+        /// application must call [memory_barrier] with [MemoryBarrierFlags::CLIENT_MAPPED] set and
+        /// then call [fence_sync] (or [finish]). Then the CPU will see the writes after the sync is
+        /// complete.
+        /// * If [BufferStorageFlags::COHERENT] is set and the server does a write, the app must
+        /// call [fence_sync] (or [finish]). Then the CPU will see the writes after the sync is
+        /// complete.
         const COHERENT = gl::MAP_COHERENT_BIT;
+
+        /// When all other criteria for the buffer storage allocation are met, this bit may be used
+        /// by an implementation to determine whether to use storage that is local to the server or
+        /// to the client to serve as the backing store for the buffer.
         const CLIENT = gl::CLIENT_STORAGE_BIT;
     }
 }
@@ -608,6 +654,7 @@ pub fn bind_buffer_range(
 /// ```no_run
 /// # use rgl::prelude::*;
 /// buffer_data(BufferBindingTarget::Array, &[1, 2, 3], BufferUsageFrequency::Static, BufferUsageNature::Draw);
+/// buffer_data(BufferBindingTarget::Array, 1024, BufferUsageFrequency::Static, BufferUsageNature::Draw);
 ///
 /// named_buffer_data(Buffer(42), &[1, 2, 3], BufferUsageFrequency::Static, BufferUsageNature::Draw);
 /// ```
@@ -721,6 +768,96 @@ pub fn named_buffer_data<Data: BufferData>(
 
     // SAFE: the data memory is synchronously copied into the GL context, never holding onto `data`
     unsafe { gl::NamedBufferData(buffer, size, data, usage) };
+}
+
+/// # Creates and initializes a buffer object's immutable data store
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBufferStorage.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+/// * `data` - Specifies data that will be copied into the data store for initialization,
+/// or a size if no data is to be copied.
+/// * `flags` - Specifies the intended usage of the buffer's data store.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// buffer_storage(BufferBindingTarget::Array, &[1, 2, 3], BufferStorageFlags::WRITE);
+/// buffer_storage(BufferBindingTarget::Array, 1024, BufferStorageFlags::WRITE | BufferStorageFlags::PERSISTENT);
+/// ```
+///
+/// # Description
+/// [buffer_storage] and [named_buffer_storage] create a new immutable data store. For
+/// [buffer_storage], the buffer object currently bound to target will be initialized. For
+/// [named_buffer_storage], `buffer` is the name of the buffer object that will be configured. The
+/// size of the data store is specified by `data`. If an initial data is available, its slice may
+/// be supplied in `data`. Otherwise, to create an uninitialized data store, `data` should be a
+/// size.
+///
+/// The `flags` parameters specifies the intended usage of the buffer's data store, see
+/// [BufferStorageFlags].
+///
+/// If `data` is just a size, a data store of the specified size is still created, but its contents
+/// remain uninitialized and thus undefined.
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if the reserved buffer object name 0 is bound to `target`.
+/// * [Error::OutOfMemory] - if the GL is unable to create a data store with the properties
+/// requested in `flags`.
+/// * [Error::InvalidValue] - if `flags` is an invalid bitfield (see [BufferStorageFlags])
+/// * [Error::InvalidOperation] - if [is_buffer_immutable_storage] of the buffer bound to `target`
+/// is true.
+///
+/// # Associated Gets
+/// * [get_buffer_sub_data]
+/// * [get_buffer_size], [get_buffer_usage]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [buffer_storage] | N | N | N | N | N | N | N | N | N | N | Y | Y |
+/// | [named_buffer_storage] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_sub_data]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn buffer_storage<Data: BufferData>(
+    target: BufferBindingTarget,
+    data: Data,
+    flags: BufferStorageFlags,
+) {
+    let target = GLenum::from(target);
+    let size = data.get_size() as GLsizeiptr;
+    let data = data.get_raw_data_pointer();
+    let flags = flags.bits;
+
+    // SAFE: the data memory is synchronously copied into the GL context, never holding onto `data`
+    unsafe { gl::BufferStorage(target, size, data, flags) }
+}
+
+/// # Creates and initializes a buffer object's immutable data store
+/// see [buffer_storage]
+///
+/// # Arguments
+/// * `buffer` - Specifies the name of the buffer object
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if `buffer` is not the name of an existing buffer object.
+pub fn named_buffer_storage<Data: BufferData>(
+    buffer: Buffer,
+    data: Data,
+    flags: BufferStorageFlags,
+) {
+    let buffer = buffer.0;
+    let size = data.get_size() as GLsizeiptr;
+    let data = data.get_raw_data_pointer();
+    let flags = flags.bits;
+
+    // SAFE: the data memory is synchronously copied into the GL context, never holding onto `data`
+    unsafe { gl::NamedBufferStorage(buffer, size, data, flags) }
 }
 
 /// # Updates a subset of a buffer object's data store
