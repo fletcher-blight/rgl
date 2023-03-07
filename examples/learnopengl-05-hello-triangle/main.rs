@@ -1,3 +1,5 @@
+use rgl::prelude as rgl;
+
 fn main() -> anyhow::Result<()> {
     let sdl = sdl2::init().unwrap();
     let video = sdl.video().unwrap();
@@ -17,45 +19,46 @@ fn main() -> anyhow::Result<()> {
 
     // ============================================================================================
 
-    let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex).unwrap();
-    rgl::shader_source(vertex_shader, include_bytes!("shader.vert"))?;
-    rgl::compile_shader(vertex_shader)?;
-    assert!(rgl::get_shader_compile_status(vertex_shader)?);
+    let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex);
+    rgl::shader_source(vertex_shader, include_str!("shader.vert"));
+    rgl::compile_shader(vertex_shader);
+    // assert!(rgl::get_shader_compile_status(vertex_shader));
 
-    let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment).unwrap();
-    rgl::shader_source(fragment_shader, include_bytes!("shader.frag"))?;
-    rgl::compile_shader(fragment_shader)?;
-    assert!(rgl::get_shader_compile_status(fragment_shader)?);
+    let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment);
+    rgl::shader_source(fragment_shader, include_str!("shader.frag"));
+    rgl::compile_shader(fragment_shader);
+    // assert!(rgl::get_shader_compile_status(fragment_shader));
 
-    let shader_program = rgl::create_program().unwrap();
-    rgl::attach_shader(shader_program, vertex_shader)?;
-    rgl::attach_shader(shader_program, fragment_shader)?;
-    rgl::link_program(shader_program)?;
-    assert!(rgl::get_program_link_status(shader_program)?);
+    let shader_program = rgl::create_program();
+    rgl::attach_shader(shader_program, vertex_shader);
+    rgl::attach_shader(shader_program, fragment_shader);
+    rgl::link_program(shader_program);
+    // assert!(rgl::get_program_link_status(shader_program));
 
-    let vao = rgl::gen_vertex_array();
-    let vbo = rgl::gen_buffer();
+    let mut vao = Default::default();
+    rgl::gen_vertex_arrays(std::slice::from_mut(&mut vao));
 
-    rgl::bind_vertex_array(Some(vao))?;
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(vbo))?;
+    let mut vbo = Default::default();
+    rgl::gen_buffers(std::slice::from_mut(&mut vbo));
+
+    rgl::bind_vertex_array(vao);
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, vbo);
     rgl::buffer_data(
         rgl::BufferBindingTarget::Array,
         &[[-0.5, -0.5], [0.0, 0.5], [0.5, -0.5f32]],
-        rgl::BufferUsage(
-            rgl::BufferUsageFrequency::Static,
-            rgl::BufferUsageNature::Draw,
-        ),
-    )?;
-    rgl::enable_vertex_attribute_array(0)?;
-    rgl::vertex_attribute_float_pointer(
+        rgl::BufferUsageFrequency::Static,
+        rgl::BufferUsageNature::Draw,
+    );
+    rgl::enable_vertex_attrib_array(0);
+    rgl::vertex_attrib_pointer(
         0,
-        rgl::VertexAttributeSize::Duple,
-        rgl::VertexAttributeFloatType::F32,
+        rgl::VertexAttribSize::Double,
+        rgl::VertexAttribFloatType::F32,
         false,
-        (std::mem::size_of::<f32>() * 2) as u32,
+        (std::mem::size_of::<f32>() * 2) as u64,
         0,
-    )?;
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
+    );
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, rgl::Buffer(0));
 
     // ============================================================================================
 
@@ -73,9 +76,11 @@ fn main() -> anyhow::Result<()> {
         }
 
         rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
-        rgl::use_program(shader_program)?;
-        rgl::bind_vertex_array(Some(vao))?;
-        rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 3)?;
+        rgl::use_program(shader_program);
+        rgl::bind_vertex_array(vao);
+        rgl::draw_arrays(rgl::DrawMode::Triangles, 0, 3);
+
+        assert_eq!(rgl::get_error(), rgl::Error::NoError);
         window.gl_swap_window();
     }
 
