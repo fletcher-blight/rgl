@@ -36,6 +36,7 @@ pub mod buffer;
 pub mod masks;
 pub mod prelude;
 pub mod shader_creation;
+pub mod shader_query;
 pub mod shader_state;
 pub mod texture;
 pub mod vertex_array;
