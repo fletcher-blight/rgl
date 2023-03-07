@@ -34,11 +34,14 @@ struct Stub;
 
 pub mod buffer;
 pub mod prelude;
+pub mod shader_creation;
 pub mod texture;
 pub mod vertex_array;
 pub mod vertex_render;
 
 use gl::types::*;
+
+pub use gl::load_with;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Error {
