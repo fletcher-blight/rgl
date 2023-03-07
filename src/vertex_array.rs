@@ -16,6 +16,77 @@ use gl::types::*;
 #[repr(transparent)]
 pub struct VertexArray(pub u32);
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum VertexAttribSize {
+    Single,
+    Double,
+    Triple,
+    Quad,
+    BGRA,
+}
+
+impl From<VertexAttribSize> for i32 {
+    fn from(value: VertexAttribSize) -> Self {
+        match value {
+            VertexAttribSize::Single => 1,
+            VertexAttribSize::Double => 2,
+            VertexAttribSize::Triple => 3,
+            VertexAttribSize::Quad => 4,
+            VertexAttribSize::BGRA => gl::BGRA as i32,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum VertexAttribIntegerType {
+    I8,
+    U8,
+    I16,
+    U16,
+    I32,
+    U32,
+}
+
+impl From<VertexAttribIntegerType> for GLenum {
+    fn from(value: VertexAttribIntegerType) -> Self {
+        match value {
+            VertexAttribIntegerType::I8 => gl::BYTE,
+            VertexAttribIntegerType::U8 => gl::UNSIGNED_BYTE,
+            VertexAttribIntegerType::I16 => gl::SHORT,
+            VertexAttribIntegerType::U16 => gl::UNSIGNED_SHORT,
+            VertexAttribIntegerType::I32 => gl::INT,
+            VertexAttribIntegerType::U32 => gl::UNSIGNED_SHORT,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum VertexAttribFloatType {
+    Integer(VertexAttribIntegerType),
+    F16,
+    F32,
+    F64,
+    Fixed,
+    I32a2b10g10r10,
+    U32a2b10g10r10,
+    U32b10fg11fr11f,
+}
+
+impl From<VertexAttribFloatType> for GLenum {
+    fn from(value: VertexAttribFloatType) -> Self {
+        match value {
+            VertexAttribFloatType::Integer(ty) => GLenum::from(ty),
+            VertexAttribFloatType::F16 => gl::HALF_FLOAT,
+            VertexAttribFloatType::F32 => gl::FLOAT,
+            VertexAttribFloatType::F64 => gl::DOUBLE,
+            VertexAttribFloatType::Fixed => gl::FIXED,
+            VertexAttribFloatType::I32a2b10g10r10 => gl::INT_2_10_10_10_REV,
+            VertexAttribFloatType::U32a2b10g10r10 => gl::UNSIGNED_INT_2_10_10_10_REV,
+            VertexAttribFloatType::U32b10fg11fr11f => gl::UNSIGNED_INT_10F_11F_11F_REV,
+        }
+    }
+}
+
 /// # Bind a vertex array object
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindVertexArray.xhtml>
 ///
@@ -260,6 +331,166 @@ pub fn gen_vertex_arrays(arrays: &mut [VertexArray]) {
 /// * [delete_vertex_arrays]
 pub fn is_vertex_array(array: VertexArray) -> bool {
     let array = array.0;
+
+    // SAFE: synchronous integer copy
     let val = unsafe { gl::IsVertexArray(array) };
     val == gl::TRUE
+}
+
+/// # Define an array of generic vertex attribute data
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glVertexAttribPointer.xhtml>
+///
+/// # Arguments
+/// * `index` - Specifies the index of the generic vertex attribute to be modified.
+/// * `size` - Specifies the number of components per generic vertex attribute.
+/// * `ty` - Specifies the data type of each component in the array.
+/// * `normalised` - Specifies whether fixed-point data values should be normalized (true) or converted
+/// directly as fixed-point values (false) when they are accessed.
+/// * `stride` - Specifies the byte offset between consecutive generic vertex attributes. If stride
+/// is 0, the generic vertex attributes are understood to be tightly packed in the array. The
+/// initial value is 0.
+/// * `offset` - Specifies a offset of the first component of the first generic vertex attribute in
+/// the array in the data store of the buffer currently bound to the [BufferBindingTarget::Array]
+/// target. The initial value is 0.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// vertex_attrib_pointer(
+///     0,
+///     VertexAttribSize::Triple,
+///     VertexAttribFloatType::F32,
+///     false,
+///     (std::mem::size_of::<f32>() * 3) as u64,
+///     0,
+/// );
+/// ```
+///
+/// # Description
+/// [vertex_attrib_pointer], [vertex_attrib_integer_pointer] and [vertex_attrib_f64_pointer] specify
+/// the location and data format of the array of generic vertex attributes at index `index` to use
+/// when rendering. `size` specifies the number of components per attribute. `type` specifies the
+/// data type of each component, and `stride` specifies the byte stride from one attribute to the
+/// next, allowing vertices and attributes to be packed into a single array or stored in separate
+/// arrays.
+///
+/// For [vertex_attrib_pointer], if normalized is set to true, it indicates that values stored in an
+/// integer format are to be mapped to the range [-1,1] (for signed values) or [0,1] (for unsigned
+/// values) when they are accessed and converted to floating point. Otherwise, values will be
+/// converted to floats directly without normalization.
+///
+/// For [vertex_attrib_integer_pointer], values are always left as integer values.
+///
+/// [vertex_attrib_f64_pointer] specifies state for a generic vertex attribute array associated with
+/// a shader attribute variable declared with 64-bit double precision components. `index`, `size`,
+/// and stride behave as described for [vertex_attrib_pointer] and [vertex_attrib_integer_pointer].
+///
+/// `offset` is treated as a byte offset into the buffer object's data store. The buffer object
+/// binding (GL_ARRAY_BUFFER_BINDING ?) is saved as generic vertex attribute array state
+/// (GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING?) for index `index`.
+///
+/// When a generic vertex attribute array is specified, size, type, normalized, stride, and `offset`
+/// are saved as vertex array state, in addition to the current vertex array buffer object binding.
+///
+/// To enable and disable a generic vertex attribute array, call [enable_vertex_attrib_array] and
+/// [disable_vertex_attrib_array] with index. If enabled, the generic vertex attribute array is used
+/// when [draw_arrays], [multi_draw_arrays], [draw_elements], [multi_draw_elements], or
+/// [draw_range_elements] is called.
+///
+/// Each generic vertex attribute array is initially disabled and isn't accessed when
+/// [draw_elements], [draw_range_elements], [draw_arrays], [multi_draw_arrays], or
+/// [multi_draw_elements] is called.
+///
+/// # Compatability
+/// * 4.4 - [VertexAttribFloatType::U32b10fg11fr11f]
+///
+/// # Errors
+/// * [Error::InvalidValue] - if `index` is greater than or equal to [get_max_vertex_attribs].
+/// * [Error::InvalidOperation] - if `size` is [VertexAttribSize::BGRA] and `ty` is not
+/// [VertexAttribIntegerType::U8], [VertexAttribFloatType::I32a2b10g10r10] or
+/// [VertexAttribFloatType::U32a2b10g10r10].
+/// * [Error::InvalidOperation] - if `ty` is [VertexAttribFloatType::I32a2b10g10r10] or
+/// [VertexAttribFloatType::U32a2b10g10r10] and `size` is not [VertexAttribSize::Quad] or
+/// [VertexAttribSize::BGRA].
+/// * [Error::InvalidOperation] - if `ty` is [VertexAttribFloatType::U32b10fg11fr11f] and `size` is
+/// not [VertexAttribSize::Triple].
+/// * [Error::InvalidOperation] - if `size` is [VertexAttribSize::BGRA] and `normalised` is false.
+/// * [Error::InvalidOperation] - if zero is bound to the [BufferBindingTarget::Array] buffer object
+/// binding point.
+///
+/// # Associated Gets
+/// * [get_max_vertex_attribs]
+/// * [get_vertex_attrib_array_enabled]
+/// * [get_vertex_attrib_array_size]
+/// * [get_vertex_attrib_array_type]
+/// * [get_vertex_attrib_array_normalised]
+/// * [get_vertex_attrib_array_stride]
+/// * [get_vertex_attrib_array_buffer_binding]
+/// * [get_array_buffer_binding]
+/// * [get_vertex_attrib_pointer]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [vertex_attrib_pointer] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [vertex_attrib_integer_pointer] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [vertex_attrib_f64_pointer] | N | N | N | N | N | N | N | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_attrib_location]
+/// * [bind_buffer]
+/// * [disable_vertex_attrib_array]
+/// * [draw_arrays]
+/// * [draw_elements]
+/// * [draw_range_elements]
+/// * [enable_vertex_attrib_array]
+/// * [multi_draw_arrays]
+/// * [multi_draw_elements]
+/// * [vertex_attrib]
+pub fn vertex_attrib_pointer(
+    index: u32,
+    size: VertexAttribSize,
+    ty: VertexAttribFloatType,
+    normalised: bool,
+    stride: u64,
+    offset: u64,
+) {
+    let size = GLint::from(size);
+    let type_ = GLenum::from(ty);
+    let normalized = GLboolean::from(normalised);
+    let stride = stride as GLsizei;
+    let pointer = offset as *const std::os::raw::c_void;
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::VertexAttribPointer(index, size, type_, normalized, stride, pointer) }
+}
+
+/// # Define an array of generic vertex attribute data
+/// see [vertex_attrib_pointer]
+pub fn vertex_attrib_integer_pointer(
+    index: u32,
+    size: VertexAttribSize,
+    ty: VertexAttribFloatType,
+    stride: u64,
+    offset: u64,
+) {
+    let size = GLint::from(size);
+    let type_ = GLenum::from(ty);
+    let stride = stride as GLsizei;
+    let pointer = offset as *const std::os::raw::c_void;
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::VertexAttribIPointer(index, size, type_, stride, pointer) }
+}
+
+/// # Define an array of generic vertex attribute data
+/// see [vertex_attrib_pointer]
+pub fn vertex_attrib_f64_pointer(index: u32, size: VertexAttribSize, stride: u64, offset: u64) {
+    let size = GLint::from(size);
+    let stride = stride as GLsizei;
+    let pointer = offset as *const std::os::raw::c_void;
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::VertexAttribLPointer(index, size, gl::DOUBLE, stride, pointer) }
 }
