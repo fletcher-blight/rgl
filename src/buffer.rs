@@ -1329,6 +1329,78 @@ pub fn is_buffer(buffer: Buffer) -> bool {
     val == gl::TRUE
 }
 
+/// # Return the pointer to a mapped buffer object's data store
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferPointerv.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let data: *const std::os::raw::c_void = get_buffer_pointer(BufferBindingTarget::Array);
+/// ```
+///
+/// # Description
+/// [get_buffer_pointer] and [get_named_buffer_pointer] return the buffer pointer. The single buffer
+/// map pointer is returned. A null pointer is returned if the buffer object's data store is not
+/// currently mapped; or if the requesting context did not map the buffer object's data store, and
+/// the implementation is unable to support mappings on multiple clients.
+///
+/// The initial value for the pointer is null.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if zero is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [get_buffer_pointer] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [get_named_buffer_pointer] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [map_buffer]
+pub fn get_buffer_pointer(target: BufferBindingTarget) -> *const std::os::raw::c_void {
+    let target = GLenum::from(target);
+    let mut params: *mut std::os::raw::c_void = std::ptr::null_mut();
+    unsafe {
+        gl::GetBufferPointerv(
+            target,
+            gl::BUFFER_MAP_POINTER,
+            &mut params as *const *mut std::os::raw::c_void,
+        )
+    }
+    params
+}
+
+/// # Return the pointer to a mapped buffer object's data store
+/// see [get_buffer_pointer]
+///
+/// # Arguments
+/// * `buffer` - Specifies the name of the buffer object
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if `buffer` is not the name of an existing buffer object.
+pub fn get_named_buffer_pointer(buffer: Buffer) -> *const std::os::raw::c_void {
+    let buffer = buffer.0;
+    let mut params: *mut std::os::raw::c_void = std::ptr::null_mut();
+    unsafe {
+        gl::GetNamedBufferPointerv(
+            buffer,
+            gl::BUFFER_MAP_POINTER,
+            &mut params as *const *mut std::os::raw::c_void,
+        )
+    }
+    params
+}
+
 /// # Map all of a buffer object's data store into the client's address space
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMapBuffer.xhtml>
 ///
