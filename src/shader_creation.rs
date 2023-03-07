@@ -20,6 +20,41 @@ pub struct Program(u32);
 #[repr(transparent)]
 pub struct Shader(u32);
 
+/// # indicates the type of shader
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum ShaderType {
+    /// shader that is intended to run on the programmable compute processor
+    Compute,
+
+    /// shader that is intended to run on the programmable vertex processor
+    Vertex,
+
+    /// shader that is intended to run on the programmable tessellation processor in the control stage
+    TessControl,
+
+    /// shader that is intended to run on the programmable tessellation processor in the evaluation stage
+    TessEvaluation,
+
+    /// shader that is intended to run on the programmable geometry processor
+    Geometry,
+
+    /// shader that is intended to run on the programmable fragment processor
+    Fragment,
+}
+
+impl From<ShaderType> for u32 {
+    fn from(value: ShaderType) -> Self {
+        match value {
+            ShaderType::Compute => gl::COMPUTE_SHADER,
+            ShaderType::Vertex => gl::VERTEX_SHADER,
+            ShaderType::TessControl => gl::TESS_CONTROL_SHADER,
+            ShaderType::TessEvaluation => gl::TESS_EVALUATION_SHADER,
+            ShaderType::Geometry => gl::GEOMETRY_SHADER,
+            ShaderType::Fragment => gl::FRAGMENT_SHADER,
+        }
+    }
+}
+
 /// # Attaches a shader object to a program object
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glAttachShader.xhtml>
 ///
@@ -200,4 +235,59 @@ pub fn compile_shader(shader: Shader) {
 pub fn create_program() -> Program {
     let val = unsafe { gl::CreateProgram() };
     Program(val)
+}
+
+/// # Creates a shader object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glCreateShader.xhtml>
+///
+/// # Arguments
+/// * `shader_type` - Specifies the type of shader to be created
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let shader: Shader = create_shader(ShaderType::Vertex);
+/// assert_ne!(shader, Shader(0));
+/// ```
+///
+/// # Description
+/// [create_shader] creates an empty shader object and returns a non-zero value by which it can be
+/// referenced. A shader object is used to maintain the source code strings that define a shader.
+///
+/// Like buffer and texture objects, the name space for shader objects may be shared across a set of
+/// contexts, as long as the server sides of the contexts share the same address space. If the name
+/// space is shared across contexts, any attached objects and the data associated with those
+/// attached objects are shared as well.
+///
+/// Applications are responsible for providing the synchronization across API calls when objects are
+/// accessed from different execution threads.
+///
+/// # Compatability
+/// * 4.3 - [ShaderType::Compute]
+///
+/// # Errors
+/// * This function returns 0 if an error occurs creating the shader object.
+///
+/// # Associated Gets
+/// * all `get_shader_*` variants
+/// * [get_shader_info_log]
+/// * [get_shader_source]
+/// * [is_shader]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [create_shader] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [attach_shader]
+/// * [compile_shader]
+/// * [delete_shader]
+/// * [detach_shader]
+/// * [shader_source]
+pub fn create_shader(shader_type: ShaderType) -> Shader {
+    let shader_type = GLenum::from(shader_type);
+    let val = unsafe { gl::CreateShader(shader_type) };
+    Shader(val)
 }
