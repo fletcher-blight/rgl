@@ -502,3 +502,44 @@ pub fn is_program(program: Program) -> bool {
     let val = unsafe { gl::IsProgram(program) };
     val == gl::TRUE
 }
+
+/// # Determines if a name corresponds to a shader object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glIsShader.xhtml>
+///
+/// # Arguments
+/// * `shader` - Specifies a potential shader object.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert!(is_shader(Shader(42)));
+/// ```
+///
+/// # Description
+/// [is_shader] returns true if `shader` is the name of a shader object previously created with
+/// [create_shader] and not yet deleted with [delete_shader]. If `shader` is zero or a non-zero
+/// value that is not the name of a shader object, or if an error occurs, [is_shader] returns false.
+///
+/// No error is generated if `shader` is not a valid shader object name.
+///
+/// A shader object marked for deletion with [delete_shader] but still attached to a program object
+/// is still considered a shader object and [is_shader] will return true.
+///
+/// # Associated Gets
+/// * [get_attached_shaders] with a valid program object
+/// * all `get_shader_*` variants
+/// * [get_shader_info_log]
+/// * [get_shader_source]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [my_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+pub fn is_shader(shader: Shader) -> bool {
+    let shader = shader.0;
+    let val = unsafe { gl::IsShader(shader) };
+    val == gl::TRUE
+}
