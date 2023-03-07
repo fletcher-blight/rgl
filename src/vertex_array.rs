@@ -494,3 +494,44 @@ pub fn vertex_attrib_f64_pointer(index: u32, size: VertexAttribSize, stride: u64
     // SAFE: synchronous integer copy
     unsafe { gl::VertexAttribLPointer(index, size, gl::DOUBLE, stride, pointer) }
 }
+
+/// # Modify the rate at which generic vertex attributes advance during instanced rendering
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glVertexAttribDivisor.xhtml>
+///
+/// # Arguments
+/// * `index` - Specify the index of the generic vertex attribute.
+/// * `divisor` - Specify the number of instances that will pass between updates of the generic
+/// attribute at slot `index`.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// vertex_attrib_divisor(3, 1);
+/// ```
+///
+/// # Description
+/// [vertex_attrib_divisor] modifies the rate at which generic vertex attributes advance when
+/// rendering multiple instances of primitives in a single draw call. If `divisor` is zero, the
+/// attribute at slot `index` advances once per vertex. If `divisor` is non-zero, the attribute
+/// advances once per `divisor` instances of the set(s) of vertices being rendered. An attribute is
+/// referred to as instanced if its [get_vertex_attrib_divisor] value is non-zero.
+///
+/// # Compatability
+/// 3.3 - [vertex_attrib_divisor]
+///
+/// # Errors
+/// * [Error::InvalidValue] - if `index` is greater than or equal to [get_max_vertex_attribs]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [vertex_attrib_divisor] | N | N | N | N | N | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [vertex_attrib_pointer]
+/// * [enable_vertex_attrib_array]
+/// * [disable_vertex_attrib_array]
+pub fn vertex_attrib_divisor(index: u32, divisor: u32) {
+    unsafe { gl::VertexAttribDivisor(index, divisor) }
+}
