@@ -22,18 +22,18 @@ fn main() -> anyhow::Result<()> {
     let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex);
     rgl::shader_source(vertex_shader, include_str!("shader.vert"));
     rgl::compile_shader(vertex_shader);
-    // assert!(rgl::get_shader_compile_status(vertex_shader));
+    assert!(rgl::get_shader_compile_status(vertex_shader));
 
     let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment);
     rgl::shader_source(fragment_shader, include_str!("shader.frag"));
     rgl::compile_shader(fragment_shader);
-    // assert!(rgl::get_shader_compile_status(fragment_shader));
+    assert!(rgl::get_shader_compile_status(fragment_shader));
 
     let shader_program = rgl::create_program();
     rgl::attach_shader(shader_program, vertex_shader);
     rgl::attach_shader(shader_program, fragment_shader);
     rgl::link_program(shader_program);
-    // assert!(rgl::get_program_link_status(shader_program));
+    assert!(rgl::get_program_link_status(shader_program));
 
     let mut vao = Default::default();
     rgl::gen_vertex_arrays(std::slice::from_mut(&mut vao));
