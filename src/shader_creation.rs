@@ -446,3 +446,59 @@ pub fn detach_shader(program: Program, shader: Shader) {
     // SAFE: synchronous integer copy
     unsafe { gl::DetachShader(program, shader) }
 }
+
+/// # Determines if a name corresponds to a program object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glIsProgram.xhtml>
+///
+/// # Arguments
+/// * `program` - Specifies a potential program object.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert!(is_program(Program(42)));
+/// ```
+///
+/// # Description
+/// [is_program] returns true if `program` is the name of a program object previously created with
+/// [create_program] and not yet deleted with [delete_program]. If `program` is zero or a non-zero
+/// value that is not the name of a program object, or if an error occurs, [is_program] returns
+/// false.
+///
+/// No error is generated if `program` is not a valid program object name.
+///
+/// A program object marked for deletion with [delete_program] but still in use as part of current
+/// rendering state is still considered a program object and [is_program] will return true.
+///
+/// # Associated Gets
+/// * [get_current_program]
+/// * [get_active_attrib] with arguments `program` and the index of an active attribute variable
+/// * [get_active_uniform] with arguments `program` and the index of an active uniform variable
+/// * [get_attached_shaders] with arguments `program`
+/// * [get_attrib_location] with arguments `program` and the name of an attribute variable
+/// * all `get_program_*` variants
+/// * [get_program_info_log] with arguments `program`
+/// * [get_uniform] with arguments `program` and the location of a uniform variable
+/// * [get_uniform_location] with arguments `program` and the name of a uniform variable
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [is_program] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [attach_shader]
+/// * [bind_attrib_location]
+/// * [create_program]
+/// * [delete_program]
+/// * [detach_shader]
+/// * [link_progrma]
+/// * all `uniform_*` variants
+/// * [use_program]
+/// * [validate_program]
+pub fn is_program(program: Program) -> bool {
+    let program = program.0;
+    let val = unsafe { gl::IsProgram(program) };
+    val == gl::TRUE
+}
