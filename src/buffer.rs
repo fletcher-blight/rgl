@@ -75,6 +75,58 @@ pub enum BufferBindingTarget {
     Uniform,
 }
 
+/// # The target to which a buffer object is bound for range based bindings
+/// see [bind_buffer]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum BufferBindingRangeTarget {
+    /// Atomic counter storage
+    AtomicCounter,
+
+    /// Read-write storage for shaders
+    ShaderStorage,
+
+    /// Transform feedback buffer
+    TransformFeedback,
+
+    /// Uniform block storage
+    Uniform,
+}
+
+impl From<BufferBindingRangeTarget> for BufferBindingTarget {
+    fn from(value: BufferBindingRangeTarget) -> Self {
+        match value {
+            BufferBindingRangeTarget::AtomicCounter => BufferBindingTarget::AtomicCounter,
+            BufferBindingRangeTarget::ShaderStorage => BufferBindingTarget::ShaderStorage,
+            BufferBindingRangeTarget::TransformFeedback => BufferBindingTarget::TransformFeedback,
+            BufferBindingRangeTarget::Uniform => BufferBindingTarget::Uniform,
+        }
+    }
+}
+
+impl TryFrom<BufferBindingTarget> for BufferBindingRangeTarget {
+    type Error = ();
+    fn try_from(value: BufferBindingTarget) -> Result<Self, Self::Error> {
+        match value {
+            BufferBindingTarget::Array => Err(()),
+            BufferBindingTarget::AtomicCounter => Ok(BufferBindingRangeTarget::AtomicCounter),
+            BufferBindingTarget::CopyRead => Err(()),
+            BufferBindingTarget::CopyWrite => Err(()),
+            BufferBindingTarget::DispatchIndirect => Err(()),
+            BufferBindingTarget::DrawIndirect => Err(()),
+            BufferBindingTarget::ElementArray => Err(()),
+            BufferBindingTarget::PixelPack => Err(()),
+            BufferBindingTarget::PixelUnpack => Err(()),
+            BufferBindingTarget::Query => Err(()),
+            BufferBindingTarget::ShaderStorage => Ok(BufferBindingRangeTarget::ShaderStorage),
+            BufferBindingTarget::Texture => Err(()),
+            BufferBindingTarget::TransformFeedback => {
+                Ok(BufferBindingRangeTarget::TransformFeedback)
+            }
+            BufferBindingTarget::Uniform => Ok(BufferBindingRangeTarget::Uniform),
+        }
+    }
+}
+
 impl From<BufferBindingTarget> for GLenum {
     fn from(target: BufferBindingTarget) -> Self {
         match target {
@@ -116,6 +168,17 @@ bitflags::bitflags! {
         const INVALID_BUFFER = gl::MAP_INVALIDATE_BUFFER_BIT;
         const FLUSH_EXPLICIT = gl::MAP_FLUSH_EXPLICIT_BIT;
         const UNSYNCHRONISED = gl::MAP_UNSYNCHRONIZED_BIT;
+    }
+}
+
+bitflags::bitflags! {
+    pub struct BufferStorageFlags: u32 {
+        const DYNAMIC = gl::DYNAMIC_STORAGE_BIT;
+        const READ = gl::MAP_READ_BIT;
+        const WRITE = gl::MAP_WRITE_BIT;
+        const PERSISTENT = gl::MAP_PERSISTENT_BIT;
+        const COHERENT = gl::MAP_COHERENT_BIT;
+        const CLIENT = gl::CLIENT_STORAGE_BIT;
     }
 }
 
@@ -220,7 +283,7 @@ pub struct Buffer(pub u32);
 /// ```
 ///
 /// # Description
-/// [bind_buffer]] binds a buffer object to the specified buffer binding point. Calling
+/// [bind_buffer] binds a buffer object to the specified buffer binding point. Calling
 /// [bind_buffer] with `buffer` set to the name of a buffer object binds that buffer object name to
 /// the `target`. If no buffer object with name `buffer` exists, one is created with that name. When
 /// a buffer object is bound to a target, the previous binding for that target is automatically
@@ -350,6 +413,138 @@ pub fn bind_buffer_checked(target: BufferBindingTarget, buffer: Buffer) -> Resul
     }
 }
 
+/// # Bind a buffer object to an indexed buffer target
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindBufferBase.xhtml>
+///
+/// # Arguments
+/// * `target` - Specify the target of the bind operation.
+/// * `index` - Specify the index of the binding point within the array specified by `target`.
+/// * `buffer` - The name of a buffer object to bind to the specified binding point.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// bind_buffer_base(BufferBindingRangeTarget::ShaderStorage, 0, Buffer(42));
+/// ```
+///
+/// # Description
+/// [bind_buffer_base] binds the buffer object `buffer` to the binding point at `index` index of the
+/// array of targets specified by `target`. Each target represents an indexed array of buffer
+/// binding points, as well as a single general binding point that can be used by other buffer
+/// manipulation functions such as [bind_buffer] or [map_buffer]. In addition to binding `buffer` to
+/// the indexed buffer binding target, [bind_buffer_base] also binds `buffer` to the generic buffer
+/// binding point specified by `target`.
+///
+/// Calling [bind_buffer_base] is equivalent to calling [bind_buffer_range] like so:
+/// ```no_run
+/// # use rgl::prelude::*;
+/// fn equivalent_bind_buffer_base(target: BufferBindingRangeTarget, index: u32, buffer: Buffer) {
+///     bind_buffer_range(target, index, buffer, 0, get_buffer_size(BufferBindingTarget::from(target)))
+/// }
+/// ```
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingRangeTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingRangeTarget::ShaderStorage]
+///
+/// # Errors
+/// * [Error::InvalidValue] - if `index` is greater than or equal to the number of `target`-specific
+/// indexed binding points.
+/// * [Error::InvalidValue] - if `buffer` does not have an associated data store, or if the size of
+/// that store is zero.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [bind_buffer_base] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [gen_buffers]
+/// * [delete_buffers]
+/// * [bind_buffer]
+/// * [bind_buffer_range]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn bind_buffer_base(target: BufferBindingRangeTarget, index: u32, buffer: Buffer) {
+    let target = GLenum::from(BufferBindingTarget::from(target));
+    let buffer = buffer.0;
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::BindBufferBase(target, index, buffer) }
+}
+
+/// # Bind a range within a buffer object to an indexed buffer target
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindBufferRange.xhtml>
+///
+/// # Arguments
+/// * `target` - Specify the target of the bind operation.
+/// * `index` - Specify the index of the binding point within the array specified by `target`.
+/// * `buffer` - The name of a buffer object to bind to the specified binding point.
+/// * `offset` - The starting offset in basic machine units into the buffer object `buffer`.
+/// * `size` - The amount of data in machine units that can be read from the buffer object while
+/// used as an indexed target.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// bind_buffer_range(BufferBindingRangeTarget::Uniform, 0, Buffer(42), 7, 69);
+/// ```
+///
+/// # Description
+/// [bind_buffer_range] binds a range the buffer object `buffer` represented by `offset` and `size`
+/// to the binding point at index `index` of the array of targets specified by `target`. Each target
+/// represents an indexed array of buffer binding points, as well as a single general binding point
+/// that can be used by other buffer manipulation functions such as [bind_buffer] or [map_buffer].
+/// In addition to binding a range of buffer to the indexed buffer binding `target`,
+/// [bind_buffer_range] also binds the range to the generic buffer binding point specified by
+/// `target`.
+///
+/// `offset` specifies the offset in basic machine units into the buffer object `buffer` and `size`
+/// specifies the amount of data that can be read from the buffer object while used as an indexed
+/// target.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingRangeTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingRangeTarget::ShaderStorage]
+///
+/// # Errors
+/// * [Error::InvalidValue] - if `index` is greater than or equal to the number of `target`-specific
+/// indexed binding points.
+/// * [Error::InvalidValue] - if `size` is less than or equal to zero, or if `offset` + `size` is
+/// greater than the value of [get_buffer_size].
+/// * Additional errors may be generated if `offset` violates any `target`-specific alignment
+/// restrictions.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [bind_buffer_range] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [gen_buffers]
+/// * [delete_buffers]
+/// * [bind_buffer]
+/// * [bind_buffer_base]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn bind_buffer_range(
+    target: BufferBindingRangeTarget,
+    index: u32,
+    buffer: Buffer,
+    offset: i64,
+    size: u64,
+) {
+    let target = GLenum::from(BufferBindingTarget::from(target));
+    let buffer = buffer.0;
+    let offset = offset as GLintptr;
+    let size = size as GLsizeiptr;
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::BindBufferRange(target, index, buffer, offset, size) }
+}
+
 /// # Creates and initializes a buffer object's data store
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBufferData.xhtml>
 ///
@@ -476,6 +671,86 @@ pub fn named_buffer_data<Data: BufferData>(
 
     // SAFE: the data memory is synchronously copied into the GL context, never holding onto `data`
     unsafe { gl::NamedBufferData(buffer, size, data, usage) };
+}
+
+/// # Updates a subset of a buffer object's data store
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBufferSubData.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+/// * `offset` - Specifies the offset into the buffer object's data store where data replacement
+/// will begin, measured in bytes.
+/// * `data` - Specifies a slice to the new data that will be copied into the data store.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// buffer_sub_data(BufferBindingTarget::Array, 42, &[1, 2, 3]);
+/// ```
+///
+/// # Description
+/// [buffer_sub_data] and [named_buffer_sub_data] redefine some or all of the data store for the
+/// specified buffer object. Data starting at byte offset `offset` and extending for the size of
+/// `data` is copied to the data store from the memory pointed to by `data`. `offset` must define a
+/// range lying entirely within the buffer object's data store.
+///
+/// When replacing the entire data store, consider using [buffer_sub_data] rather than completely
+/// recreating the data store with [buffer_data]. This avoids the cost of reallocating the data
+/// store.
+///
+/// Consider using multiple buffer objects to avoid stalling the rendering pipeline during data
+/// store updates. If any rendering in the pipeline makes reference to data in the buffer object
+/// being updated by [buffer_sub_data], especially from the specific region being updated, that
+/// rendering must drain from the pipeline before the data store can be updated.
+///
+/// Clients must align data elements consistent with the requirements of the client platform, with
+/// an additional base-level requirement that an offset within a buffer to a datum comprising N
+/// bytes be a multiple of N.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if zero is bound to `target`
+/// * [Error::InvalidValue] - if `offset`+ size is greater than the value of [get_buffer_size] for
+/// the specified buffer object.
+/// * [Error::InvalidOperation] - if any part of the specified range of the buffer object is mapped
+/// with [map_buffer_range] or [map_buffer], unless it was mapped with the
+/// [BufferMapFlags::PERSISTENT] bit set in the [map_buffer_range] access flags.
+/// * [Error::InvalidOperation] - if [is_buffer_immutable_storage] and the value of
+/// [get_buffer_storage_flags] for the buffer object does not have the [BufferStorageFlags::DYNAMIC]
+/// bit set.
+///
+/// # Associated Gets
+/// * [get_buffer_sub_data]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [buffer_sub_data] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [named_buffer_sub_data] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [map_buffer]
+/// * [map_buffer_range]
+/// * [unmap_buffer]
+pub fn buffer_sub_data<DataType: Sized>(
+    target: BufferBindingTarget,
+    offset: u64,
+    data: &[DataType],
+) {
+    let target = GLenum::from(target);
+    let offset = offset as GLintptr;
+    let size = (data.len() * std::mem::size_of::<DataType>()) as GLsizeiptr;
+    let data = data.as_ptr() as *const std::os::raw::c_void;
+
+    // SAFE: synchronous read of data, and integer copy, no pointers retained
+    unsafe { gl::BufferSubData(target, offset, size, data) }
 }
 
 /// # Delete named buffer objects
@@ -749,7 +1024,7 @@ pub fn is_buffer_mapped(target: BufferBindingTarget) -> Result<bool, BufferError
 ///
 /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
 /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-/// | [get_buffer_map_length] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [get_buffer_map_length] | N | N | N | N | Y | Y | Y | Y | Y | Y | Y | Y |
 ///
 /// # See Also
 /// * [bind_buffer]
@@ -790,7 +1065,7 @@ pub fn get_buffer_map_length(target: BufferBindingTarget) -> u64 {
 ///
 /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
 /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-/// | [get_buffer_map_offset] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [get_buffer_map_offset] | N | N | N | N | Y | Y | Y | Y | Y | Y | Y | Y |
 ///
 /// # See Also
 /// * [bind_buffer]
@@ -830,7 +1105,7 @@ pub fn get_buffer_map_offset(target: BufferBindingTarget) -> u64 {
 ///
 /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
 /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-/// | [get_buffer_size] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [get_buffer_size] | N | N | N | N | Y | Y | Y | Y | Y | Y | Y | Y |
 ///
 /// # See Also
 /// * [bind_buffer]
@@ -841,6 +1116,56 @@ pub fn get_buffer_map_offset(target: BufferBindingTarget) -> u64 {
 pub fn get_buffer_size(target: BufferBindingTarget) -> u64 {
     let val = get_buffer_parameter_i64(target, gl::BUFFER_SIZE);
     val as u64
+}
+
+/// # Returns a bitfield indicating the storage flags
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferParameter.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert_eq!(
+///     get_buffer_storage_flags(BufferBindingTarget::Array),
+///     Ok(BufferStorageFlags::READ | BufferStorageFlags::WRITE)
+/// );
+/// ```
+///
+/// # Description
+/// Returns a bitfield indicating the storage flags for the buffer object. If the buffer object is
+/// immutable, the value returned will be that specified when the data store was established with
+/// [buffer_storage]. If the data store was established with [buffer_data], the value will be
+/// [BufferStorageFlags::READ] | [BufferStorageFlags::WRITE] | [BufferStorageFlags::DYNAMIC]. The
+/// initial value is zero.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if zero is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [get_buffer_storage_flags] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [get_buffer_pointer]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn get_buffer_storage_flags(
+    target: BufferBindingTarget,
+) -> Result<BufferStorageFlags, BufferError> {
+    let param = get_buffer_parameter_i32(target, gl::BUFFER_USAGE);
+    let storage_flags = BufferStorageFlags::from_bits(param as u32);
+    storage_flags.ok_or(BufferError::InvalidParameterValue(param as i64))
 }
 
 /// # Returns the buffer object's usage pattern
