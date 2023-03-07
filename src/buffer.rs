@@ -8,7 +8,7 @@
 //! [different uses of buffer objects](https://www.khronos.org/opengl/wiki/Buffer_Object#General_use)
 //! are not covered by these functions.
 
-use crate::*;
+use crate::prelude::*;
 use gl::types::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

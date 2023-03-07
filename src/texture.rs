@@ -6,6 +6,7 @@
 //! [textures](https://www.khronos.org/opengl/wiki/Texture) and
 //! [sampler](https://www.khronos.org/opengl/wiki/Sampler_Object) objects.
 
+use crate::prelude::*;
 use gl::types::*;
 
 #[derive(Debug, Copy, Clone)]

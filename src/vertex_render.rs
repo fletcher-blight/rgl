@@ -7,7 +7,7 @@
 //! [vertex arrays](https://www.khronos.org/opengl/wiki/Vertex_Specification) or change non-VAO
 //! state used to rendering of vertex data.
 
-use crate::*;
+use crate::prelude::*;
 use gl::types::*;
 
 pub enum DrawIndexType {

@@ -9,7 +9,7 @@
 //! These are a key component in
 //! [sending vertex data to the GPU](https://www.khronos.org/opengl/wiki/Vertex_Specification).
 
-use crate::*;
+use crate::prelude::*;
 use gl::types::*;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]

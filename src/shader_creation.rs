@@ -9,7 +9,7 @@
 //! These functions either directly create shader objects or affect how shaders and programs are
 //! compiled or linked together.
 
-use crate::*;
+use crate::prelude::*;
 use gl::types::*;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
