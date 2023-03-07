@@ -96,3 +96,94 @@ pub fn delete_vertex_arrays(arrays: &[VertexArray]) {
     // SAFE: synchronous read of `array`, nothing retained
     unsafe { gl::DeleteVertexArrays(n, arrays) }
 }
+
+/// # Enable a generic vertex attribute array
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glEnableVertexAttribArray.xhtml>
+///
+/// # Arguments
+/// `index` - Specifies the index of the generic vertex attribute to be enabled or disabled.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// enable_vertex_attrib_array(42);
+/// disable_vertex_attrib_array(42);
+/// enable_vertex_array_attrib(VertexArray(7), 42);
+/// disable_vertex_array_attrib(VertexArray(7), 42);
+/// ```
+///
+/// # Description
+/// [enable_vertex_attrib_array] and [enable_vertex_array_attrib] enable the generic vertex
+/// attribute array specified by `index`. [enable_vertex_attrib_array] uses currently bound vertex
+/// array object for the operation, whereas [enable_vertex_array_attrib] updates state of the vertex
+/// array object with ID `vaobj`.
+///
+/// [disable_vertex_attrib_array] and [disable_vertex_array_attrib] disable the generic vertex
+/// attribute array specified by `index`. [disable_vertex_attrib_array] uses currently bound vertex
+/// array object for the operation, whereas [disable_vertex_array_attrib] updates state of the
+/// vertex array object with ID `vaobj`.
+///
+/// By default, all client-side capabilities are disabled, including all generic vertex attribute
+/// arrays. If enabled, the values in the generic vertex attribute array will be accessed and used
+/// for rendering when calls are made to vertex array commands such as [draw_arrays],
+/// [draw_elements], [draw_range_elements], [multi_draw_elements], or [multi_draw_arrays].
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if no vertex array object is bound
+/// * [Error::InvalidValue] - if `index` is greater than or equal to [get_max_vertex_attribs]
+///
+/// # Associated Gets
+/// * [get_max_vertex_attribs]
+/// * [is_vertex_attrib_enabled] using `index`
+/// * [get_vertex_attrib_pointer] using `index`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [enable_vertex_attrib_array] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [disable_vertex_attrib_array] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [enable_vertex_array_attrib] | N | N | N | N | N | N | N | N | N | N | N | Y |
+/// | [disable_vertex_array_attrib] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+/// * [bind_attrib_location]
+/// * [draw_arrays]
+/// * [draw_elements]
+/// * [draw_range_elements]
+/// * [multi_draw_elements]
+/// * [vertex_attrib]
+/// * [vertex_attrib_pointer]
+pub fn enable_vertex_attrib_array(index: u32) {
+    // SAFE: synchronous integer copy
+    unsafe { gl::EnableVertexAttribArray(index) }
+}
+
+/// # Disable a generic vertex attribute array
+/// see [enable_vertex_attrib_array]
+pub fn disable_vertex_attrib_array(index: u32) {
+    // SAFE: synchronous integer copy
+    unsafe { gl::DisableVertexAttribArray(index) }
+}
+
+/// # Enable a generic vertex attribute array
+/// see [enable_vertex_attrib_array]
+///
+/// # Arguments
+/// * `vaobj` - Specifies the name of the vertex array object
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if `vaobj` is not the name of an existing vertex array object.
+pub fn enable_vertex_array_attrib(vaobj: VertexArray, index: u32) {
+    let vaobj = vaobj.0;
+    // SAFE: synchronous integer copy
+    unsafe { gl::EnableVertexArrayAttrib(vaobj, index) }
+}
+
+/// # Disable a generic vertex attribute array
+/// see [enable_vertex_attrib_array] and [enable_vertex_array_attrib]
+pub fn disable_vertex_array_attrib(vaobj: VertexArray, index: u32) {
+    let vaobj = vaobj.0;
+    // SAFE: synchronous integer copy
+    unsafe { gl::DisableVertexArrayAttrib(vaobj, index) }
+}
