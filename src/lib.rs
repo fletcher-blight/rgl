@@ -35,6 +35,7 @@ struct Stub;
 pub mod buffer;
 pub mod prelude;
 pub mod texture;
+pub mod vertex_array;
 pub mod vertex_render;
 
 use gl::types::*;
