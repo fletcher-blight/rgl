@@ -1538,6 +1538,93 @@ pub fn get_named_buffer_pointer(buffer: Buffer) -> *const std::os::raw::c_void {
     params
 }
 
+/// # Returns a subset of a buffer object's data store
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetBufferSubData.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+/// * `offset` - Specifies the offset into the buffer object's data store from which data will be
+/// returned, measured in bytes.
+/// * `data` - Specifies a mut slice to the location where buffer object data is returned.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let mut buffer = [0; 1024];
+/// get_buffer_sub_data(BufferBindingTarget::Array, 0, &mut buffer);
+/// ```
+///
+/// # Description
+/// [get_buffer_sub_data] and [get_named_buffer_sub_data] return some or all of the data contents of
+/// the data store of the specified buffer object. Data starting at byte offset `offset` and
+/// extending for size of `data` bytes is copied from the buffer object's data store to the memory
+/// pointed to by `data`. An error is thrown if the buffer object is currently mapped, or if
+/// `offset` and size together define a range beyond the bounds of the buffer object's data store.
+///
+/// If an error is generated, no change is made to the contents of `data`.
+///
+/// # Compatability
+/// * 4.2 - [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if zero is bound to `target`
+/// * [Error::InvalidValue] - if `offset`+ `data.len() * std::mem::size_of::<DataType>()` is greater
+/// than the value of [get_buffer_size] for the buffer object.
+/// * [Error::InvalidOperation] - if the buffer object is mapped with [map_buffer_range] or
+/// [map_buffer], unless it was mapped with the [BufferMapFlags::PERSISTENT] bit set in the
+/// [map_buffer_range] `access` flags.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [get_buffer_sub_data] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [get_named_buffer_sub_data] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+/// * [bind_buffer]
+/// * [buffer_data]
+/// * [buffer_sub_data]
+/// * [map_buffer]
+/// * [unmap_buffer]
+pub fn get_buffer_sub_data<DataType: Sized + Copy>(
+    target: BufferBindingTarget,
+    offset: u64,
+    data: &mut [DataType],
+) {
+    let target = GLenum::from(target);
+    let offset = offset as GLintptr;
+    let size = (data.len() * std::mem::size_of::<DataType>()) as GLsizeiptr;
+    let data = data.as_mut_ptr() as *mut std::os::raw::c_void;
+
+    // SAFE: TODO, is this data transmute? writing arbitrary bytes into a statically known type
+    unsafe { gl::GetBufferSubData(target, offset, size, data) }
+}
+
+/// # Returns a subset of a buffer object's data store
+/// see [get_buffer_sub_data]
+///
+/// # Arguments
+/// * `buffer` - Specifies the name of the buffer object
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if `buffer` is not the name of an existing buffer object.
+pub fn get_named_buffer_sub_data<DataType: Sized + Copy>(
+    buffer: Buffer,
+    offset: u64,
+    data: &mut [DataType],
+) {
+    let buffer = buffer.0;
+    let offset = offset as GLintptr;
+    let size = (data.len() * std::mem::size_of::<DataType>()) as GLsizeiptr;
+    let data = data.as_mut_ptr() as *mut std::os::raw::c_void;
+
+    // SAFE: TODO, is this data transmute? writing arbitrary bytes into a statically known type
+    unsafe { gl::GetNamedBufferSubData(buffer, offset, size, data) }
+}
+
 /// # Map all of a buffer object's data store into the client's address space
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMapBuffer.xhtml>
 ///
