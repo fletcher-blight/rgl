@@ -76,3 +76,36 @@ pub fn clear(mask: ClearMask) {
     let mask = mask.bits;
     unsafe { gl::Clear(mask) }
 }
+
+/// # Specify clear values for the color buffers
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glClearColor.xhtml>
+///
+/// # Arguments
+/// * `red`, `green`, `blue`, `alpha` - Specify the red, green, blue, and alpha values used when the
+/// color buffers are cleared. The initial values are all 0.0.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// clear_colour(0.1, 0.1, 0.1, 0.1);
+/// ```
+///
+/// # Description
+/// [clear_colour] specifies the red, green, blue, and alpha values used by [clear] to clear the
+/// colour buffers. Values specified by [clear_colour] are clamped to the range [0,1].
+///
+/// # Associated Gets
+/// * [get_colour_clear]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [clear_colour] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [clear]
+pub fn clear_colour(red: f32, green: f32, blue: f32, alpha: f32) {
+    // SAFE: synchronous integer copy
+    unsafe { gl::ClearColor(red, green, blue, alpha) }
+}
