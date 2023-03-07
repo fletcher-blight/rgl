@@ -333,7 +333,7 @@ pub trait BufferData {
 
 impl<DataType: Sized> BufferData for &[DataType] {
     fn get_size(&self) -> u64 {
-        self.len() as u64
+        (self.len() * std::mem::size_of::<DataType>()) as u64
     }
 
     fn get_raw_data_pointer(&self) -> *const std::os::raw::c_void {
