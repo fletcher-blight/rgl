@@ -160,13 +160,63 @@ pub enum BufferError {
 
 bitflags::bitflags! {
     pub struct BufferMapFlags: u32 {
+        /// indicates that the returned pointer may be used to read buffer object data. No GL error
+        /// is generated if the pointer is used to query a mapping which excludes this flag, but the
+        /// result is undefined and system errors (possibly including program termination) may
+        /// occur.
         const READ = gl::MAP_READ_BIT;
+
+        /// indicates that the returned pointer may be used to modify buffer object data. No GL
+        /// error is generated if the pointer is used to modify a mapping which excludes this flag,
+        /// but the result is undefined and system errors (possibly including program termination)
+        /// may occur.
         const WRITE = gl::MAP_WRITE_BIT;
+
+        /// indicates that the mapping is to be made in a persistent fashion and that the client
+        /// intends to hold and use the returned pointer during subsequent GL operation. It is not
+        /// an error to call drawing commands (render) while buffers are mapped using this flag. It
+        /// is an error to specify this flag if the buffer's data store was not allocated through a
+        /// call to the [buffer_storage] command in which the [BufferMapFlags::PERSISTENT] was also
+        /// set.
         const PERSISTENT = gl::MAP_PERSISTENT_BIT;
+
+        /// indicates that a persistent mapping is also to be coherent. Coherent maps guarantee that
+        /// the effect of writes to a buffer's data store by either the client or server will
+        /// eventually become visible to the other without further intervention from the
+        /// application. In the absence of this bit, persistent mappings are not coherent and
+        /// modified ranges of the buffer store must be explicitly communicated to the GL, either by
+        /// unmapping the buffer, or through a call to [flush_mapped_buffer_range] or
+        /// [memory_barrier].
         const COHERENT = gl::MAP_COHERENT_BIT;
+
+        /// indicates that the previous contents of the specified range may be discarded. Data
+        /// within this range are undefined with the exception of subsequently written data. No GL
+        /// error is generated if subsequent GL operations access unwritten data, but the result is
+        /// undefined and system errors (possibly including program termination) may occur. This
+        /// flag may not be used in combination with [BufferMapFlags::READ].
         const INVALIDATE_RANGE = gl::MAP_INVALIDATE_RANGE_BIT;
-        const INVALID_BUFFER = gl::MAP_INVALIDATE_BUFFER_BIT;
+
+        /// indicates that the previous contents of the entire buffer may be discarded. Data within
+        /// the entire buffer are undefined with the exception of subsequently written data. No GL
+        /// error is generated if subsequent GL operations access unwritten data, but the result is
+        /// undefined and system errors (possibly including program termination) may occur. This
+        /// flag may not be used in combination with [BufferMapFlags::READ].
+        const INVALIDATE_BUFFER = gl::MAP_INVALIDATE_BUFFER_BIT;
+
+        ///  indicates that one or more discrete subranges of the mapping may be modified. When this
+        /// flag is set, modifications to each subrange must be explicitly flushed by calling
+        /// [flush_mapped_buffer_range]. No GL error is set if a subrange of the mapping is modified
+        /// and not flushed, but data within the corresponding subrange of the buffer are undefined.
+        /// This flag may only be used in conjunction with [BufferMapFlags::WRITE]. When this option
+        /// is selected, flushing is strictly limited to regions that are explicitly indicated with
+        /// calls to [flush_mapped_buffer_range] prior to unmap; if this option is not selected
+        /// [unmap_buffer] will automatically flush the entire mapped range when called.
         const FLUSH_EXPLICIT = gl::MAP_FLUSH_EXPLICIT_BIT;
+
+        /// indicates that the GL should not attempt to synchronize pending operations on the buffer
+        /// prior to returning from [map_buffer_range] or [map_named_buffer_range]. No GL error is
+        /// generated if pending operations which source or modify the buffer overlap the mapped
+        /// region, but the result of such previous and any subsequent operations is undefined.
         const UNSYNCHRONISED = gl::MAP_UNSYNCHRONIZED_BIT;
     }
 }
@@ -1359,6 +1409,123 @@ pub fn map_named_buffer(buffer: Buffer, access: BufferAccess) -> *const std::os:
 
     // SAFE: synchronous integer copy
     unsafe { gl::MapNamedBuffer(buffer, access) }
+}
+
+/// # Map all or part of a buffer object's data store into the client's address space
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMapBufferRange.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the buffer object is bound
+/// * `offset` - Specifies the starting offset within the buffer of the range to be mapped.
+/// * `length` - Specifies the length of the range to be mapped.
+/// * `access` - Specifies a combination of access flags indicating the desired access to the mapped
+/// range.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let data: *const std::os::raw::c_void = map_buffer_range(BufferBindingTarget::Array, 0, 42, BufferMapFlags::READ);
+/// ```
+///
+/// # Description
+/// [map_buffer_range] and [map_named_buffer_range] map all or part of the data store of a specified
+/// buffer object into the client's address space. `offset` and `length` indicate the range of data
+/// in the buffer object that is to be mapped, in terms of basic machine units. `access` is a
+/// [bitfield](BufferMapFlags) containing flags which describe the requested mapping.
+///
+/// A pointer to the beginning of the mapped range is returned once all pending operations on the
+/// buffer object have completed, and may be used to modify and/or query the corresponding range of
+/// the data store according to the flag bits set in `access`.
+///
+/// If an error occurs, a null pointer is returned.
+///
+/// If no error occurs, the returned pointer will reflect an allocation aligned to the value of
+/// [get_min_map_buffer_alignment] basic machine units. Subtracting `offset` from this returned
+/// pointer will always produce a multiple of the value of [get_min_map_buffer_alignment].
+///
+/// The returned pointer values may not be passed as parameter values to GL commands. For example,
+/// they may not be used to specify array pointers, or to specify or query pixel or texture image
+/// data; such actions produce undefined results, although implementations may not check for such
+/// behavior for performance reasons.
+///
+/// Mappings to the data stores of buffer objects may have nonstandard performance characteristics.
+/// For example, such mappings may be marked as uncacheable regions of memory, and in such cases
+/// reading from them may be very slow. To ensure optimal performance, the client should use the
+/// mapping in a fashion consistent with the values of GL_BUFFER_USAGE for the buffer object and of
+/// access. Using a mapping in a fashion inconsistent with these values is liable to be multiple
+/// orders of magnitude slower than using normal memory.
+///
+/// No error is generated if memory outside the mapped range is modified or queried, but the result
+/// is undefined and system errors (possibly including program termination) may occur.
+///
+/// # Compatability
+/// * 4.2 - Alignment of the returned pointer is guaranteed, and
+/// [BufferBindingTarget::AtomicCounter]
+/// * 4.3 - [BufferBindingTarget::DispatchIndirect], [BufferBindingTarget::ShaderStorage]
+/// * 4.4 - [BufferBindingTarget::Query]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if zero is bound to `target`
+/// * [Error::InvalidValue] - if `offset`+`length` is greater than the value of [get_buffer_size]
+/// for the buffer object, or if access has any bits set other than those defined above.
+/// * [Error::InvalidOperation] - is generated for any of the following conditions:
+///     * `length` is zero
+///     * the buffer object is already in a mapped state
+///     * Neither [BufferMapFlags::READ] nor [BufferMapFlags::WRITE] is set.
+///     * [BufferMapFlags::READ] is set and any of [BufferMapFlags::INVALIDATE_RANGE],
+/// [BufferMapFlags::INVALIDATE_BUFFER] or [BufferMapFlags::UNSYNCHRONISED] is set.
+///     * [BufferMapFlags::FLUSH_EXPLICIT] is set and [BufferMapFlags::WRITE] is not set.
+///     * Any of [BufferMapFlags::READ], [BufferMapFlags::WRITE], [BufferMapFlags::PERSISTENT], or
+/// [BufferMapFlags::COHERENT] are set, but the same bit is not included in the buffer's storage
+/// flags.
+///
+/// # Associated Gets
+/// * [get_min_map_buffer_alignment] - The value must be a power of two that is at least 64.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [map_buffer_range] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [map_named_buffer_range] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+pub fn map_buffer_range(
+    target: BufferBindingTarget,
+    offset: u64,
+    length: u64,
+    access: BufferMapFlags,
+) -> *const std::os::raw::c_void {
+    let target = GLenum::from(target);
+    let offset = offset as GLintptr;
+    let length = length as GLsizeiptr;
+    let access = access.bits;
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::MapBufferRange(target, offset, length, access) }
+}
+
+/// # Map all or part of a buffer object's data store into the client's address space
+/// see [map_buffer_range]
+///
+/// # Arguments
+/// * `buffer` - Specifies the name of the buffer object
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if `buffer` is not the name of an existing buffer object
+pub fn map_named_buffer_range(
+    buffer: Buffer,
+    offset: u64,
+    length: u64,
+    access: BufferMapFlags,
+) -> *const std::os::raw::c_void {
+    let buffer = buffer.0;
+    let offset = offset as GLintptr;
+    let length = length as GLsizeiptr;
+    let access = access.bits;
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::MapNamedBufferRange(buffer, offset, length, access) }
 }
 
 /// # Release the mapping of a buffer object's data store into the client's address space
