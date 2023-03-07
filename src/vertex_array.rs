@@ -187,3 +187,79 @@ pub fn disable_vertex_array_attrib(vaobj: VertexArray, index: u32) {
     // SAFE: synchronous integer copy
     unsafe { gl::DisableVertexArrayAttrib(vaobj, index) }
 }
+
+/// # Generate vertex array object names
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGenVertexArrays.xhtml>
+///
+/// # Arguments
+/// * `arrays` - Specifies a mut slice in which the generated vertex array object names are stored.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let mut vao = Default::default();
+/// gen_vertex_arrays(std::slice::from_mut(&mut vao));
+/// ```
+///
+/// # Description
+/// [gen_vertex_arrays] fills all vertex array object names in `arrays`. There is no guarantee that
+/// the names form a contiguous set of integers; however, it is guaranteed that none of the returned
+/// names was in use immediately before the call to [gen_vertex_arrays].
+///
+/// Vertex array object names returned by a call to [gen_vertex_arrays] are not returned by
+/// subsequent calls, unless they are first deleted with [delete_vertex_arrays].
+///
+/// The names returned in `arrays` are marked as used, for the purposes of [gen_vertex_arrays] only,
+/// but they acquire state and type only when they are first bound.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [gen_vertex_arrays] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_vertex_array]
+/// * [delete_vertex_arrays]
+pub fn gen_vertex_arrays(arrays: &mut [VertexArray]) {
+    let n = arrays.len() as GLsizei;
+    let arrays = arrays.as_mut_ptr() as *mut u32;
+
+    // SAFE: synchronous write into `arrays`, nothing retained
+    unsafe { gl::GenVertexArrays(n, arrays) }
+}
+
+/// # Determine if a name corresponds to a vertex array object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glIsVertexArray.xhtml>
+///
+/// # Arguments
+/// * `array` - Specifies a value that may be the name of a vertex array object.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// assert!(is_vertex_array(VertexArray(42)));
+/// ```
+///
+/// # Description
+/// [is_vertex_array] returns true if `array` is currently the name of a vertex array object. If
+/// `array` is zero, or if `array` is not the name of a vertex array object, or if an error occurs,
+/// [is_vertex_array] returns false. If `array` is a name returned by [gen_vertex_arrays], by that
+/// has not yet been bound through a call to [bind_vertex_array], then the name is not a vertex
+/// array object and [is_vertex_array] returns false.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [is_vertex_array] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [gen_vertex_arrays]
+/// * [bind_vertex_array]
+/// * [delete_vertex_arrays]
+pub fn is_vertex_array(array: VertexArray) -> bool {
+    let array = array.0;
+    let val = unsafe { gl::IsVertexArray(array) };
+    val == gl::TRUE
+}
