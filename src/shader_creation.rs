@@ -12,7 +12,12 @@
 use crate::*;
 use gl::types::*;
 
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
+#[repr(transparent)]
 pub struct Program(u32);
+
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
+#[repr(transparent)]
 pub struct Shader(u32);
 
 /// # Attaches a shader object to a program object
@@ -126,4 +131,73 @@ pub fn attach_shader(program: Program, shader: Shader) {
 pub fn compile_shader(shader: Shader) {
     let shader = shader.0;
     unsafe { gl::CompileShader(shader) }
+}
+
+/// # Creates a program object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glCreateProgram.xhtml>
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let program: Program = create_program();
+/// assert_ne!(program, Program(0));
+/// ```
+///
+/// # Description
+/// [create_program] creates an empty program object and returns a non-zero value by which it can be
+/// referenced. A program object is an object to which shader objects can be attached. This provides
+/// a mechanism to specify the shader objects that will be linked to create a program. It also
+/// provides a means for checking the compatibility of the shaders that will be used to create a
+/// program (for instance, checking the compatibility between a vertex shader and a fragment
+/// shader). When no longer needed as part of a program object, shader objects can be detached.
+///
+/// One or more executables are created in a program object by successfully attaching shader objects
+/// to it with [attach_shader], successfully compiling the shader objects with [compile_shader], and
+/// successfully linking the program object with [link_program]. These executables are made part of
+/// current state when [use_program] is called. Program objects can be deleted by calling
+/// [delete_program]. The memory associated with the program object will be deleted when it is no
+/// longer part of current rendering state for any context.
+///
+/// Like buffer and texture objects, the name space for program objects may be shared across a set
+/// of contexts, as long as the server sides of the contexts share the same address space. If the
+/// name space is shared across contexts, any attached objects and the data associated with those
+/// attached objects are shared as well.
+///
+/// Applications are responsible for providing the synchronization across API calls when objects are
+/// accessed from different execution threads.
+///
+/// # Errors
+/// * This function returns Program(0) if an error occurs creating the program object.
+///
+/// # Associated Gets
+/// * [get_current_program]
+/// * [get_active_attrib] with a valid program object and the index of an active attribute variable
+/// * [get_active_uniform] with a valid program object and the index of an active uniform variable
+/// * [get_attached_shaders] with a valid program object
+/// * [get_attrib_location] with a valid program object and the name of an attribute variable
+/// *  all `get_program_*` variants
+/// * [get_program_info_log] with a valid program object
+/// * [get_uniform] with a valid program object and the location of a uniform variable
+/// * [get_uniform_location] with a valid program object and the name of a uniform variable
+/// * [is_program]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [create_program] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [attach_shader]
+/// * [bind_attrib_location]
+/// * [create_shader]
+/// * [delete_program]
+/// * [detach_shader]
+/// * [link_program]
+/// * all `uniform_*` variants
+/// * [use_program]
+/// * [validate_program]
+pub fn create_program() -> Program {
+    let val = unsafe { gl::CreateProgram() };
+    Program(val)
 }
