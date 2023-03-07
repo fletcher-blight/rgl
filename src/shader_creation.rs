@@ -493,7 +493,7 @@ pub fn detach_shader(program: Program, shader: Shader) {
 /// * [create_program]
 /// * [delete_program]
 /// * [detach_shader]
-/// * [link_progrma]
+/// * [link_program]
 /// * all `uniform_*` variants
 /// * [use_program]
 /// * [validate_program]

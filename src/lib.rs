@@ -35,6 +35,7 @@ struct Stub;
 pub mod buffer;
 pub mod prelude;
 pub mod shader_creation;
+pub mod shader_state;
 pub mod texture;
 pub mod vertex_array;
 pub mod vertex_render;
