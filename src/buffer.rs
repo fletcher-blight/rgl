@@ -803,6 +803,24 @@ pub fn buffer_sub_data<DataType: Sized>(
     unsafe { gl::BufferSubData(target, offset, size, data) }
 }
 
+/// # Updates a subset of a buffer object's data store
+/// see [buffer_sub_data]
+///
+/// # Arguments
+/// * `buffer` - Specifies the name of the buffer object
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if `buffer` is not the name of an existing buffer object.
+pub fn named_buffer_sub_data<DataType: Sized>(buffer: Buffer, offset: u64, data: &[DataType]) {
+    let buffer = buffer.0;
+    let offset = offset as GLintptr;
+    let size = (data.len() * std::mem::size_of::<DataType>()) as GLsizeiptr;
+    let data = data.as_ptr() as *const std::os::raw::c_void;
+
+    // SAFE: synchronous read of data, and integer copy, no pointers retained
+    unsafe { gl::NamedBufferSubData(buffer, offset, size, data) }
+}
+
 /// # Delete named buffer objects
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteBuffers.xhtml>
 ///
