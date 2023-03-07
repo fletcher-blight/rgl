@@ -33,6 +33,7 @@
 struct Stub;
 
 pub mod buffer;
+pub mod masks;
 pub mod prelude;
 pub mod shader_creation;
 pub mod shader_state;
