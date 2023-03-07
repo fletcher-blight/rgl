@@ -14,11 +14,11 @@ use gl::types::*;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 #[repr(transparent)]
-pub struct Program(u32);
+pub struct Program(pub u32);
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 #[repr(transparent)]
-pub struct Shader(u32);
+pub struct Shader(pub u32);
 
 /// # indicates the type of shader
 #[derive(Debug, Copy, Clone, PartialEq)]
