@@ -123,7 +123,7 @@ impl From<VertexAttribFloatType> for GLenum {
 /// * [enable_vertex_attrib_array]
 /// * [gen_vertex_arrays]
 /// * [is_vertex_array]
-/// * [vertex_attrib_pointer]
+/// * [vertex_attrib_float_pointer]
 pub fn bind_vertex_array(array: VertexArray) {
     let array = array.0;
 
@@ -224,7 +224,7 @@ pub fn delete_vertex_arrays(arrays: &[VertexArray]) {
 /// * [draw_range_elements]
 /// * [multi_draw_elements]
 /// * [vertex_attrib]
-/// * [vertex_attrib_pointer]
+/// * [vertex_attrib_float_pointer]
 pub fn enable_vertex_attrib_array(index: u32) {
     // SAFE: synchronous integer copy
     unsafe { gl::EnableVertexAttribArray(index) }
@@ -344,8 +344,9 @@ pub fn is_vertex_array(array: VertexArray) -> bool {
 /// * `index` - Specifies the index of the generic vertex attribute to be modified.
 /// * `size` - Specifies the number of components per generic vertex attribute.
 /// * `ty` - Specifies the data type of each component in the array.
-/// * `normalised` - Specifies whether fixed-point data values should be normalized (true) or converted
-/// directly as fixed-point values (false) when they are accessed.
+/// * `normalised` - For [vertex_attrib_float_pointer], specifies whether fixed-point data values
+/// should be normalized (true) or converted directly as fixed-point values (false) when they are
+/// accessed.
 /// * `stride` - Specifies the byte offset between consecutive generic vertex attributes. If stride
 /// is 0, the generic vertex attributes are understood to be tightly packed in the array. The
 /// initial value is 0.
@@ -356,7 +357,7 @@ pub fn is_vertex_array(array: VertexArray) -> bool {
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
-/// vertex_attrib_pointer(
+/// vertex_attrib_float_pointer(
 ///     0,
 ///     VertexAttribSize::Triple,
 ///     VertexAttribFloatType::F32,
@@ -367,14 +368,14 @@ pub fn is_vertex_array(array: VertexArray) -> bool {
 /// ```
 ///
 /// # Description
-/// [vertex_attrib_pointer], [vertex_attrib_integer_pointer] and [vertex_attrib_f64_pointer] specify
+/// [vertex_attrib_float_pointer], [vertex_attrib_integer_pointer] and [vertex_attrib_f64_pointer] specify
 /// the location and data format of the array of generic vertex attributes at index `index` to use
 /// when rendering. `size` specifies the number of components per attribute. `type` specifies the
 /// data type of each component, and `stride` specifies the byte stride from one attribute to the
 /// next, allowing vertices and attributes to be packed into a single array or stored in separate
 /// arrays.
 ///
-/// For [vertex_attrib_pointer], if normalized is set to true, it indicates that values stored in an
+/// For [vertex_attrib_float_pointer], if normalized is set to true, it indicates that values stored in an
 /// integer format are to be mapped to the range [-1,1] (for signed values) or [0,1] (for unsigned
 /// values) when they are accessed and converted to floating point. Otherwise, values will be
 /// converted to floats directly without normalization.
@@ -383,7 +384,7 @@ pub fn is_vertex_array(array: VertexArray) -> bool {
 ///
 /// [vertex_attrib_f64_pointer] specifies state for a generic vertex attribute array associated with
 /// a shader attribute variable declared with 64-bit double precision components. `index`, `size`,
-/// and stride behave as described for [vertex_attrib_pointer] and [vertex_attrib_integer_pointer].
+/// and stride behave as described for [vertex_attrib_float_pointer] and [vertex_attrib_integer_pointer].
 ///
 /// `offset` is treated as a byte offset into the buffer object's data store. The buffer object
 /// binding (GL_ARRAY_BUFFER_BINDING ?) is saved as generic vertex attribute array state
@@ -433,7 +434,7 @@ pub fn is_vertex_array(array: VertexArray) -> bool {
 ///
 /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
 /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-/// | [vertex_attrib_pointer] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [vertex_attrib_float_pointer] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
 /// | [vertex_attrib_integer_pointer] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
 /// | [vertex_attrib_f64_pointer] | N | N | N | N | N | N | N | Y | Y | Y | Y | Y |
 ///
@@ -448,52 +449,60 @@ pub fn is_vertex_array(array: VertexArray) -> bool {
 /// * [multi_draw_arrays]
 /// * [multi_draw_elements]
 /// * [vertex_attrib]
-pub fn vertex_attrib_pointer(
-    index: u32,
-    size: VertexAttribSize,
-    ty: VertexAttribFloatType,
-    normalised: bool,
-    stride: u64,
-    offset: u64,
-) {
-    let size = GLint::from(size);
-    let type_ = GLenum::from(ty);
-    let normalized = GLboolean::from(normalised);
-    let stride = stride as GLsizei;
-    let pointer = offset as *const std::os::raw::c_void;
+pub mod vertex_attrib_pointer {
+    use crate::prelude::*;
+    use gl::types::*;
 
-    // SAFE: synchronous integer copy
-    unsafe { gl::VertexAttribPointer(index, size, type_, normalized, stride, pointer) }
+    /// # Define an array of generic vertex attribute data
+    /// see [vertex_attrib_pointer]
+    pub fn vertex_attrib_float_pointer(
+        index: u32,
+        size: VertexAttribSize,
+        ty: VertexAttribFloatType,
+        normalised: bool,
+        stride: u64,
+        offset: u64,
+    ) {
+        let size = GLint::from(size);
+        let type_ = GLenum::from(ty);
+        let normalized = GLboolean::from(normalised);
+        let stride = stride as GLsizei;
+        let pointer = offset as *const std::os::raw::c_void;
+
+        // SAFE: synchronous integer copy
+        unsafe { gl::VertexAttribPointer(index, size, type_, normalized, stride, pointer) }
+    }
+
+    /// # Define an array of generic vertex attribute data
+    /// see [vertex_attrib_pointer]
+    pub fn vertex_attrib_integer_pointer(
+        index: u32,
+        size: VertexAttribSize,
+        ty: VertexAttribFloatType,
+        stride: u64,
+        offset: u64,
+    ) {
+        let size = GLint::from(size);
+        let type_ = GLenum::from(ty);
+        let stride = stride as GLsizei;
+        let pointer = offset as *const std::os::raw::c_void;
+
+        // SAFE: synchronous integer copy
+        unsafe { gl::VertexAttribIPointer(index, size, type_, stride, pointer) }
+    }
+
+    /// # Define an array of generic vertex attribute data
+    /// see [vertex_attrib_pointer]
+    pub fn vertex_attrib_f64_pointer(index: u32, size: VertexAttribSize, stride: u64, offset: u64) {
+        let size = GLint::from(size);
+        let stride = stride as GLsizei;
+        let pointer = offset as *const std::os::raw::c_void;
+
+        // SAFE: synchronous integer copy
+        unsafe { gl::VertexAttribLPointer(index, size, gl::DOUBLE, stride, pointer) }
+    }
 }
-
-/// # Define an array of generic vertex attribute data
-/// see [vertex_attrib_pointer]
-pub fn vertex_attrib_integer_pointer(
-    index: u32,
-    size: VertexAttribSize,
-    ty: VertexAttribFloatType,
-    stride: u64,
-    offset: u64,
-) {
-    let size = GLint::from(size);
-    let type_ = GLenum::from(ty);
-    let stride = stride as GLsizei;
-    let pointer = offset as *const std::os::raw::c_void;
-
-    // SAFE: synchronous integer copy
-    unsafe { gl::VertexAttribIPointer(index, size, type_, stride, pointer) }
-}
-
-/// # Define an array of generic vertex attribute data
-/// see [vertex_attrib_pointer]
-pub fn vertex_attrib_f64_pointer(index: u32, size: VertexAttribSize, stride: u64, offset: u64) {
-    let size = GLint::from(size);
-    let stride = stride as GLsizei;
-    let pointer = offset as *const std::os::raw::c_void;
-
-    // SAFE: synchronous integer copy
-    unsafe { gl::VertexAttribLPointer(index, size, gl::DOUBLE, stride, pointer) }
-}
+pub use vertex_attrib_pointer::*;
 
 /// # Modify the rate at which generic vertex attributes advance during instanced rendering
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glVertexAttribDivisor.xhtml>
@@ -529,7 +538,7 @@ pub fn vertex_attrib_f64_pointer(index: u32, size: VertexAttribSize, stride: u64
 /// | [vertex_attrib_divisor] | N | N | N | N | N | Y | Y | Y | Y | Y | Y | Y |
 ///
 /// # See Also
-/// * [vertex_attrib_pointer]
+/// * [vertex_attrib_float_pointer]
 /// * [enable_vertex_attrib_array]
 /// * [disable_vertex_attrib_array]
 pub fn vertex_attrib_divisor(index: u32, divisor: u32) {

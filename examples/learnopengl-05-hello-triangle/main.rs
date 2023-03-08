@@ -50,7 +50,7 @@ fn main() -> anyhow::Result<()> {
         rgl::BufferUsageNature::Draw,
     );
     rgl::enable_vertex_attrib_array(0);
-    rgl::vertex_attrib_pointer(
+    rgl::vertex_attrib_float_pointer(
         0,
         rgl::VertexAttribSize::Double,
         rgl::VertexAttribFloatType::F32,
