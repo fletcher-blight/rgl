@@ -1,4 +1,4 @@
-//! Shader Program Query
+//! # Shader Program Query
 //! <https://www.khronos.org/opengl/wiki/Category:Core_API_Ref_Shader_Program_Query>
 //!
 //! # Description
