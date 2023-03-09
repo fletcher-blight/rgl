@@ -178,6 +178,50 @@ pub fn bind_texture(target: TextureBindingTarget, texture: Texture) {
     unsafe { gl::BindTexture(target, texture) }
 }
 
+/// # Delete named textures
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteTextures.xhtml>
+///
+/// # Arguments
+/// * `textures` - Specifies a slice of textures to be deleted.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// delete_textures(&[Texture(1), Texture(2)]);
+/// ```
+///
+/// # Description
+/// [delete_textures] deletes all textures named by the elements of the slice `textures`. After a
+/// texture is deleted, it has no contents or dimensionality, and its name is free for reuse (for
+/// example by [gen_textures]). If a texture that is currently bound is deleted, the binding reverts
+/// to 0 (the default texture).
+///
+/// [delete_textures] silently ignores 0's and names that do not correspond to existing textures.
+///
+/// # Associated Gets
+/// * [is_texture]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [delete_textures] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_texture]
+/// * [copy_tex_image_1d], [copy_tex_image_2d]
+/// * [gen_textures]
+/// * [get_tex_parameter]
+/// * [tex_image_1d], [tex_image_2d]
+/// * [tex_parameter]
+pub fn delete_textures(textures: &[Texture]) {
+    let n = textures.len() as GLsizei;
+    let textures = textures.as_ptr() as *const GLuint;
+
+    // SAFE: synchronous read of `textures`, no memory retained
+    unsafe { gl::DeleteTextures(n, textures) }
+}
+
 pub fn gen_textures(textures: &mut [Texture]) {
     let n = textures.len() as GLsizei;
     let textures = textures.as_mut_ptr() as *mut u32;
