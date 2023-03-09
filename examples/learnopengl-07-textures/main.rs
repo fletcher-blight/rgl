@@ -1,3 +1,5 @@
+use rgl::prelude as rgl;
+
 fn main() -> anyhow::Result<()> {
     let sdl = sdl2::init().unwrap();
     let video = sdl.video().unwrap();
@@ -17,129 +19,134 @@ fn main() -> anyhow::Result<()> {
 
     // ============================================================================================
 
-    let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex).unwrap();
-    rgl::shader_source(vertex_shader, include_bytes!("shader.vert"))?;
-    rgl::compile_shader(vertex_shader)?;
-    assert!(rgl::get_shader_compile_status(vertex_shader)?);
+    let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex);
+    rgl::shader_source(vertex_shader, include_str!("shader.vert"));
+    rgl::compile_shader(vertex_shader);
+    assert!(rgl::get_shader_compile_status(vertex_shader));
 
-    let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment).unwrap();
-    rgl::shader_source(fragment_shader, include_bytes!("shader.frag"))?;
-    rgl::compile_shader(fragment_shader)?;
-    assert!(rgl::get_shader_compile_status(fragment_shader)?);
+    let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment);
+    rgl::shader_source(fragment_shader, include_str!("shader.frag"));
+    rgl::compile_shader(fragment_shader);
+    assert!(rgl::get_shader_compile_status(fragment_shader));
 
-    let shader_program = rgl::create_program().unwrap();
-    rgl::attach_shader(shader_program, vertex_shader)?;
-    rgl::attach_shader(shader_program, fragment_shader)?;
-    rgl::link_program(shader_program)?;
-    assert!(rgl::get_program_link_status(shader_program)?);
-    rgl::use_program(shader_program)?;
+    let shader_program = rgl::create_program();
+    rgl::attach_shader(shader_program, vertex_shader);
+    rgl::attach_shader(shader_program, fragment_shader);
+    rgl::link_program(shader_program);
+    assert!(rgl::get_program_link_status(shader_program));
+    rgl::use_program(shader_program);
 
-    let vao = rgl::gen_vertex_array();
-    let vbo = rgl::gen_buffer();
+    let mut vao = Default::default();
+    rgl::gen_vertex_arrays(std::slice::from_mut(&mut vao));
 
-    rgl::bind_vertex_array(Some(vao))?;
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(vbo))?;
+    let mut vbo = Default::default();
+    rgl::gen_buffers(std::slice::from_mut(&mut vbo));
+
+    rgl::bind_vertex_array(vao);
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, vbo);
     rgl::buffer_data(
         rgl::BufferBindingTarget::Array,
         &[[-0.5, -0.5], [0.0, 0.5], [0.5, -0.5f32]],
-        rgl::BufferUsage(
-            rgl::BufferUsageFrequency::Static,
-            rgl::BufferUsageNature::Draw,
-        ),
-    )?;
-    rgl::enable_vertex_attribute_array(0)?;
-    rgl::vertex_attribute_float_pointer(
+        rgl::BufferUsageFrequency::Static,
+        rgl::BufferUsageNature::Draw,
+    );
+    rgl::enable_vertex_attrib_array(0);
+    rgl::vertex_attrib_float_pointer(
         0,
-        rgl::VertexAttributeSize::Duple,
-        rgl::VertexAttributeFloatType::F32,
+        rgl::VertexAttribSize::Double,
+        rgl::VertexAttribFloatType::F32,
         false,
-        (std::mem::size_of::<f32>() * 2) as u32,
+        (std::mem::size_of::<f32>() * 2) as u64,
         0,
-    )?;
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
+    );
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, rgl::Buffer(0));
 
     let texture1 = {
-        let texture1 = rgl::gen_texture();
-        rgl::active_texture(0)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture1))?;
+        let mut texture = rgl::Texture::default();
+        rgl::gen_textures(std::slice::from_mut(&mut texture));
+
+        rgl::active_texture(0);
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture);
         rgl::texture_target_wrap(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureWrapTarget::S,
             rgl::TextureWrapMode::Repeat,
-        )?;
+        );
         rgl::texture_target_wrap(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureWrapTarget::T,
             rgl::TextureWrapMode::Repeat,
-        )?;
+        );
         rgl::texture_target_min_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMinFilter::Linear,
-        )?;
+        );
         rgl::texture_target_mag_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMagFilter::Linear,
-        )?;
+        );
 
         let image = image::open("./assets/splatoon-face.png")?.flipv();
-        rgl::texture_image_2d(
-            rgl::Texture2DTarget::Image2D,
+        rgl::tex_image_2d(
+            rgl::TextureBinding2DTarget::Image2D,
             0,
             rgl::TextureInternalFormat::RGB,
             image.width(),
             image.height(),
             rgl::TextureFormat::RGBA,
-            rgl::TexturePixelDataType::U8,
-            image.as_bytes(),
-        )?;
+            rgl::TexturePixelType::U8,
+            rgl::TextureData::Data(image.as_bytes()),
+        );
         let loc = rgl::get_uniform_location(
             shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"tex1\0")?,
-        )?;
-        rgl::uniform_1i32(loc, 0)?;
-        texture1
+        );
+        rgl::uniform_1i32(loc, 0);
+        texture
     };
 
     let texture2 = {
-        let texture2 = rgl::gen_texture();
-        rgl::active_texture(1)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture2))?;
+        let mut texture = rgl::Texture::default();
+        rgl::gen_textures(std::slice::from_mut(&mut texture));
+
+        rgl::active_texture(1);
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture);
         rgl::texture_target_wrap(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureWrapTarget::S,
             rgl::TextureWrapMode::Repeat,
-        )?;
+        );
         rgl::texture_target_wrap(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureWrapTarget::T,
             rgl::TextureWrapMode::Repeat,
-        )?;
+        );
         rgl::texture_target_min_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMinFilter::Linear,
-        )?;
+        );
         rgl::texture_target_mag_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMagFilter::Linear,
-        )?;
+        );
 
         let image = image::open("./assets/container2.png")?.flipv();
-        rgl::texture_image_2d(
-            rgl::Texture2DTarget::Image2D,
+        rgl::tex_image_2d(
+            rgl::TextureBinding2DTarget::Image2D,
             0,
             rgl::TextureInternalFormat::RGB,
             image.width(),
             image.height(),
             rgl::TextureFormat::RGBA,
-            rgl::TexturePixelDataType::U8,
-            image.as_bytes(),
-        )?;
+            rgl::TexturePixelType::U8,
+            rgl::TextureData::Data(image.as_bytes()),
+        );
         let loc = rgl::get_uniform_location(
             shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"tex2\0")?,
-        )?;
-        rgl::uniform_1i32(loc, 1)?;
-        texture2
+        );
+        rgl::uniform_1i32(loc, 1);
+        texture
     };
 
     // ============================================================================================
@@ -158,12 +165,12 @@ fn main() -> anyhow::Result<()> {
         }
 
         rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
-        rgl::active_texture(0)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture1))?;
-        rgl::active_texture(1)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture2))?;
-        rgl::bind_vertex_array(Some(vao))?;
-        rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 3)?;
+        rgl::active_texture(0);
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture1);
+        rgl::active_texture(1);
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture2);
+        rgl::bind_vertex_array(vao);
+        rgl::draw_arrays(rgl::DrawMode::Triangles, 0, 3);
         window.gl_swap_window();
     }
 
