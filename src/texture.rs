@@ -100,6 +100,76 @@ pub fn active_texture(texture_index: u32) {
 
 /// # Bind a named texture to a texturing target
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindTexture.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the texture is bound.
+/// * `texture` - Specifies the name of a texture.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// bind_texture(TextureBindingTarget::Image2D, Texture(42));
+/// ```
+///
+/// # Description
+/// [bind_texture] lets you create or use a named texture. Calling [bind_texture] with `texture` set
+/// to the name of the new texture binds the texture name to the target. When a texture is bound to
+/// a target, the previous binding for that target is automatically broken.
+///
+/// Texture names are `u32`. The value zero is reserved to represent the default texture for each
+/// texture target. Texture names and the corresponding texture contents are local to the shared
+/// object space of the current GL rendering context; two rendering contexts share texture names
+/// only if they explicitly enable sharing between contexts through the appropriate GL windows
+/// interfaces functions.
+///
+/// You must use [gen_textures] to generate a set of new texture names.
+///
+/// While a texture is bound, GL operations on the target to which it is bound affect the bound
+/// texture, and queries of the target to which it is bound return state from the bound texture. In
+/// effect, the texture targets become aliases for the textures currently bound to them, and the
+/// texture name zero refers to the default textures that were bound to them at initialization.
+///
+/// A texture binding created with [bind_texture] remains active until a different texture is bound
+/// to the same target, or until the bound texture is deleted with [delete_textures].
+///
+/// Once created, a named texture may be re-bound to its same original target as often as needed. It
+/// is usually much faster to use [bind_texture] to bind an existing named texture to one of the
+/// texture targets than it is to reload the texture image using [tex_image_1d], [tex_image_2d],
+/// [tex_image_3d] or another similar function.
+///
+/// # Compatability
+/// * 3.2 - [TextureBindingTarget::Multisample2D] and [TextureBindingTarget::Multisample2DArray]
+///
+/// # Errors
+/// * [Error::InvalidValue] - if `texture` is not a name returned from a previous call to
+/// [gen_textures].
+/// * [Error::InvalidOperation] - if `texture` was previously created with a target that doesn't
+/// match that of `target`.
+///
+/// # Associated Gets
+/// * [get_texture_binding_1d], [get_texture_binding_2d], [get_texture_binding_3d]
+/// * [get_texture_binding_1d_array], [get_texture_binding_2d_array]
+/// * [get_texture_binding_rectangle]
+/// * [get_texture_binding_buffer]
+/// * [get_texture_binding_cube_map]
+/// * [get_texture_binding_cub_map_array]
+/// * [get_texture_binding_multisample_2d], [get_texture_binding_multisample_2d_array]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [bind_texture] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [delete_textures]
+/// * [gen_textures]
+/// * [get_tex_parameter]
+/// * [is_texture]
+/// * [tex_image_1d], [tex_image_2d], [tex_image_3d]
+/// * [tex_image_2d_multisample], [tex_image_3d_multisample]
+/// * [tex_buffer]
+/// * [tex_parameter]
 pub fn bind_texture(target: TextureBindingTarget, texture: Texture) {
     let target = GLenum::from(target);
     let texture = texture.0;
