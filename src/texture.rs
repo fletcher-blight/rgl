@@ -9,7 +9,7 @@
 use crate::prelude::*;
 use gl::types::*;
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 #[repr(transparent)]
 pub struct Texture(pub u32);
 
@@ -295,6 +295,47 @@ pub fn generate_texture_mipmap(texture: Texture) {
     unsafe { gl::GenerateTextureMipmap(texture) }
 }
 
+/// # Generate texture names
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGenTextures.xhtml>
+///
+/// # Arguments
+/// * `textures` - Specifies an array in which the generated texture names are stored.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let mut texture = Texture::default();
+/// gen_textures(std::slice::from_mut(&mut texture));
+/// assert_ne!(texture, Texture(0));
+/// ```
+///
+/// # Description
+/// [gen_textures] returns all texture names in `textures`. There is no guarantee that the names
+/// form a contiguous set of integers; however, it is guaranteed that none of the returned names was
+/// in use immediately before the call to [gen_textures].
+///
+/// The generated textures have no dimensionality; they assume the dimensionality of the texture
+/// target to which they are first bound (see [bind_texture]).
+///
+/// Texture names returned by a call to [gen_textures] are not returned by subsequent calls, unless
+/// they are first deleted with [delete_textures].
+///
+/// # Associated Gets
+/// * [is_texture]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [gen_textures] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_texture]
+/// * [copy_tex_image_1d], [copy_tex_image_2d]
+/// * [delete_textures]
+/// * [get_tex_parameter]
+/// * [tex_image_1d], [tex_image_2d], [tex_image_3d]
+/// * [tex_parameter]
 pub fn gen_textures(textures: &mut [Texture]) {
     let n = textures.len() as GLsizei;
     let textures = textures.as_mut_ptr() as *mut u32;
