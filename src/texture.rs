@@ -222,6 +222,79 @@ pub fn delete_textures(textures: &[Texture]) {
     unsafe { gl::DeleteTextures(n, textures) }
 }
 
+/// # Generate mipmaps for a specified texture object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGenerateMipmap.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the texture object is bound
+/// * `texture` - Specifies the texture object name for glGenerateTextureMipmap
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// generate_mipmap(TextureBindingTarget::Image2D);
+/// generate_texture_mipmap(Texture(42));
+/// ```
+///
+/// # Description
+/// [generate_mipmap] and [generate_texture_mipmap] generates mipmaps for the specified texture
+/// object. For [generate_mipmap], the texture object that is bound to `target`. For
+/// [generate_texture_mipmap], `texture` is the name of the texture object.
+///
+/// For cube map and cube map array textures, the texture object must be cube complete or cube array
+/// complete respectively.
+///
+/// Mipmap generation replaces texel image levels `level<sub>base</sub> + 1` through `q` with images
+/// derived from the `level<sub>base</sub>` image, regardless of their previous contents. All other
+/// mimap images, including the `level<sub>base</sub> + 1` image, are left unchanged by this
+/// computation.
+///
+/// The internal formats of the derived mipmap images all match those of the `level<sub>base</sub>`
+/// image. The contents of the derived images are computed by repeated, filtered reduction of the
+/// `level<sub>base</sub> + 1` image. For one- and two-dimensional array and cube map array
+/// textures, each layer is filtered independently.
+///
+/// # Compatability
+/// * 4.0 - Cube map array textures
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if `target` is [TextureBindingTarget::CubeMap] or
+/// [TextureBindingTarget::CubeMapArray], and the specified texture object is not cube complete or
+/// cube array complete, respectively.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [generate_mipmap] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [generate_texture_mipmap] | N | N | N | N | N | N | N | N | N | N | N | Y |
+///
+/// # See Also
+/// * [tex_image_2d]
+/// * [bind_texture]
+/// * [gen_textures]
+pub fn generate_mipmap(target: TextureBindingTarget) {
+    let target = GLenum::from(target);
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::GenerateMipmap(target) }
+}
+
+/// # Generate mipmaps for a specified texture object
+/// see [generate_mipmap]
+///
+/// # Arguments
+/// * `texture` - Specifies the texture object name
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if `texture` is not the name of an existing texture object.
+pub fn generate_texture_mipmap(texture: Texture) {
+    let texture = texture.0;
+
+    // SAFE: synchronous integer copy
+    unsafe { gl::GenerateTextureMipmap(texture) }
+}
+
 pub fn gen_textures(textures: &mut [Texture]) {
     let n = textures.len() as GLsizei;
     let textures = textures.as_mut_ptr() as *mut u32;
