@@ -209,6 +209,115 @@ pub enum TextureData<'data, DataType> {
     Reserve,
 }
 
+/// See [texture_target_wrap]
+pub enum TextureWrapTarget {
+    S,
+    T,
+    R,
+}
+
+impl From<TextureWrapTarget> for u32 {
+    fn from(value: TextureWrapTarget) -> Self {
+        match value {
+            TextureWrapTarget::S => gl::TEXTURE_WRAP_S,
+            TextureWrapTarget::T => gl::TEXTURE_WRAP_T,
+            TextureWrapTarget::R => gl::TEXTURE_WRAP_R,
+        }
+    }
+}
+
+pub enum TextureWrapMode {
+    Repeat,
+    MirroredRepeat,
+    ClampToEdge,
+    ClampToBorder,
+    MirrorClampToEdge,
+}
+
+impl From<TextureWrapMode> for u32 {
+    fn from(value: TextureWrapMode) -> Self {
+        match value {
+            TextureWrapMode::Repeat => gl::REPEAT,
+            TextureWrapMode::MirroredRepeat => gl::MIRRORED_REPEAT,
+            TextureWrapMode::ClampToEdge => gl::CLAMP_TO_EDGE,
+            TextureWrapMode::ClampToBorder => gl::CLAMP_TO_BORDER,
+            TextureWrapMode::MirrorClampToEdge => gl::MIRROR_CLAMP_TO_EDGE,
+        }
+    }
+}
+
+/// # The texture minifying function
+/// see [texture_target_min_filter]
+pub enum TextureMinFilter {
+    /// Returns the value of the texture element that is nearest (in Manhattan distance) to the
+    /// specified texture coordinates.
+    Nearest,
+
+    /// Returns the weighted average of the four texture elements that are closest to the specified
+    /// texture coordinates. These can include items wrapped or repeated from other parts of a
+    /// texture, depending on the values of [TextureWrapTarget::S] and [TextureWrapTarget::T], and
+    /// on the exact mapping.
+    Linear,
+
+    /// Chooses the mipmap that most closely matches the size of the pixel being textured and uses
+    /// the [TextureMinFilter::Nearest] criterion (the texture element closest to the specified
+    /// texture coordinates) to produce a texture value.
+    NearestMipmapNearest,
+
+    /// Chooses the mipmap that most closely matches the size of the pixel being textured and uses
+    /// the [TextureMinFilter::Linear] criterion (a weighted average of the four texture elements
+    /// that are closest to the specified texture coordinates) to produce a texture value.
+    LinearMipmapNearest,
+
+    /// Chooses the two mipmaps that most closely match the size of the pixel being textured and
+    /// uses the [TextureMinFilter::Nearest] criterion (the texture element closest to the specified
+    /// texture coordinates) to produce a texture value from each mipmap. The final texture value is
+    /// a weighted average of those two values.
+    NearestMipmapLinear,
+
+    /// Chooses the two mipmaps that most closely match the size of the pixel being textured and
+    /// uses the [TextureMinFilter::Nearest] criterion (a weighted average of the texture elements
+    /// that are closest to the specified texture coordinates) to produce a texture value from each
+    /// mipmap. The final texture value is a weighted average of those two values.
+    LinearMipmapLinear,
+}
+
+impl From<TextureMinFilter> for u32 {
+    fn from(value: TextureMinFilter) -> Self {
+        match value {
+            TextureMinFilter::Nearest => gl::NEAREST,
+            TextureMinFilter::Linear => gl::LINEAR,
+            TextureMinFilter::NearestMipmapNearest => gl::NEAREST_MIPMAP_NEAREST,
+            TextureMinFilter::LinearMipmapNearest => gl::LINEAR_MIPMAP_NEAREST,
+            TextureMinFilter::NearestMipmapLinear => gl::NEAREST_MIPMAP_LINEAR,
+            TextureMinFilter::LinearMipmapLinear => gl::LINEAR_MIPMAP_LINEAR,
+        }
+    }
+}
+
+/// # The texture magnification function
+/// see [texture_target_mag_filter]
+pub enum TextureMagFilter {
+    /// Returns the value of the texture element that is nearest (in Manhattan distance) to the
+    /// specified texture coordinates.
+    Nearest,
+
+    /// Returns the weighted average of the texture elements that are closest to the specified
+    /// texture coordinates. These can include items wrapped or repeated from other parts of a
+    /// texture, depending on the values of [TextureWrapTarget::S] and [TextureWrapTarget::T], and
+    /// on the exact mapping.
+    Linear,
+}
+
+impl From<TextureMagFilter> for u32 {
+    fn from(value: TextureMagFilter) -> Self {
+        match value {
+            TextureMagFilter::Nearest => gl::NEAREST,
+            TextureMagFilter::Linear => gl::LINEAR,
+        }
+    }
+}
+
 /// # Select active texture unit
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glActiveTexture.xhtml>
 ///
@@ -752,85 +861,36 @@ pub fn tex_image_2d<DataType>(
     }
 }
 
-pub enum TextureWrapTarget {
-    S,
-    T,
-    R,
-}
+/// # Set texture parameters
+pub mod tex_parameter {
+    use crate::prelude::*;
+    use gl::types::*;
 
-impl From<TextureWrapTarget> for u32 {
-    fn from(value: TextureWrapTarget) -> Self {
-        match value {
-            TextureWrapTarget::S => gl::TEXTURE_WRAP_S,
-            TextureWrapTarget::T => gl::TEXTURE_WRAP_T,
-            TextureWrapTarget::R => gl::TEXTURE_WRAP_R,
-        }
+    fn tex_param_i32(target: TextureBindingTarget, pname: GLenum, param: i32) {
+        let target = GLenum::from(target);
+
+        // SAFE: synchronous integer copy
+        unsafe { gl::TexParameteri(target, pname, param) }
+    }
+
+    pub fn texture_target_wrap(
+        target: TextureBindingTarget,
+        wrap_target: TextureWrapTarget,
+        mode: TextureWrapMode,
+    ) {
+        let pname = GLenum::from(wrap_target);
+        let param = GLenum::from(mode) as i32;
+        tex_param_i32(target, pname, param)
+    }
+
+    pub fn texture_target_min_filter(target: TextureBindingTarget, filter: TextureMinFilter) {
+        let param = GLenum::from(filter) as i32;
+        tex_param_i32(target, gl::TEXTURE_MIN_FILTER, param)
+    }
+
+    pub fn texture_target_mag_filter(target: TextureBindingTarget, filter: TextureMagFilter) {
+        let param = GLenum::from(filter) as i32;
+        tex_param_i32(target, gl::TEXTURE_MAG_FILTER, param)
     }
 }
-
-pub enum TextureWrapMode {
-    Repeat,
-}
-
-impl From<TextureWrapMode> for u32 {
-    fn from(value: TextureWrapMode) -> Self {
-        match value {
-            TextureWrapMode::Repeat => gl::REPEAT,
-        }
-    }
-}
-
-fn tex_param_i32(target: TextureBindingTarget, pname: GLenum, param: i32) {
-    let target = GLenum::from(target);
-
-    // SAFE: synchronous integer copy
-    unsafe { gl::TexParameteri(target, pname, param) }
-}
-
-pub fn texture_target_wrap(
-    target: TextureBindingTarget,
-    wrap_target: TextureWrapTarget,
-    mode: TextureWrapMode,
-) {
-    let pname = GLenum::from(wrap_target);
-    let param = GLenum::from(mode) as i32;
-    tex_param_i32(target, pname, param)
-}
-
-pub enum TextureMinFilter {
-    Nearest,
-    Linear,
-}
-
-impl From<TextureMinFilter> for u32 {
-    fn from(value: TextureMinFilter) -> Self {
-        match value {
-            TextureMinFilter::Nearest => gl::NEAREST,
-            TextureMinFilter::Linear => gl::LINEAR,
-        }
-    }
-}
-
-pub fn texture_target_min_filter(target: TextureBindingTarget, filter: TextureMinFilter) {
-    let param = GLenum::from(filter) as i32;
-    tex_param_i32(target, gl::TEXTURE_MIN_FILTER, param)
-}
-
-pub enum TextureMagFilter {
-    Nearest,
-    Linear,
-}
-
-impl From<TextureMagFilter> for u32 {
-    fn from(value: TextureMagFilter) -> Self {
-        match value {
-            TextureMagFilter::Nearest => gl::NEAREST,
-            TextureMagFilter::Linear => gl::LINEAR,
-        }
-    }
-}
-
-pub fn texture_target_mag_filter(target: TextureBindingTarget, filter: TextureMagFilter) {
-    let param = GLenum::from(filter) as i32;
-    tex_param_i32(target, gl::TEXTURE_MAG_FILTER, param)
-}
+pub use tex_parameter::*;
