@@ -1,4 +1,4 @@
-FROM rust
+FROM rust:1.68
 RUN apt-get update && apt-get install -y build-essential cmake git libsdl2-dev g++-mingw-w64 clang ninja-build
 WORKDIR /deps
 RUN git clone --depth 1 --branch v5.2.5 https://github.com/assimp/assimp.git && \
@@ -16,3 +16,4 @@ RUN git clone --depth 1 --branch v5.2.5 https://github.com/assimp/assimp.git && 
 
 RUN cargo install cargo-readme
 RUN rustup component add rustfmt
+RUN rustup target add x86_64-pc-windows-gnu x86_64-unknown-linux-musl aarch64-unknown-linux-musl
