@@ -127,7 +127,7 @@ pub enum TextureInternalFormat {
     RG32F,
     RGB32F,
     RGBA32F,
-    R11FG11FB10F,
+    R11fG11fB10f,
     RGB9E5,
     R8I,
     R8UI,
@@ -218,7 +218,7 @@ impl From<TextureInternalFormat> for GLenum {
             TextureInternalFormat::RG32F => gl::RG32F,
             TextureInternalFormat::RGB32F => gl::RGB32F,
             TextureInternalFormat::RGBA32F => gl::RGBA32F,
-            TextureInternalFormat::R11FG11FB10F => gl::R11F_G11F_B10F,
+            TextureInternalFormat::R11fG11fB10f => gl::R11F_G11F_B10F,
             TextureInternalFormat::RGB9E5 => gl::RGB9_E5,
             TextureInternalFormat::R8I => gl::R8I,
             TextureInternalFormat::R8UI => gl::R8UI,
@@ -321,20 +321,20 @@ pub enum TexturePixelType {
     I32,
     F16,
     F32,
-    U8r3g3b2,
-    U8b2g3r3,
-    U16r5g6b5,
-    U16b5g6r5,
-    U16r4g4b4a4,
-    U16a4b4g4r4,
-    U16r5g5b5a1,
-    U16a1b5g5r5,
-    U32r8g8b8a8,
-    U32a8b8g8r8,
-    U32r10g10b10a2,
-    U32a2b10g10r10,
-    U32a5b9g9r9,
-    U32b10fg11fr11f,
+    R3G3B2,
+    B2G3R3,
+    R5G6B5,
+    B5G6R5,
+    R4G4B4A4,
+    A4B4G4R4,
+    R5G5B5A1,
+    A1B5G5R5,
+    R8G8B8A8,
+    A8B8G8R8,
+    R10G10B10A2,
+    A2B10G10R10,
+    A5B9G9R9,
+    B10fG11fR11f,
 }
 
 impl From<TexturePixelType> for GLenum {
@@ -348,20 +348,20 @@ impl From<TexturePixelType> for GLenum {
             TexturePixelType::I32 => gl::INT,
             TexturePixelType::F16 => gl::HALF_FLOAT,
             TexturePixelType::F32 => gl::FLOAT,
-            TexturePixelType::U8r3g3b2 => gl::UNSIGNED_BYTE_3_3_2,
-            TexturePixelType::U8b2g3r3 => gl::UNSIGNED_BYTE_2_3_3_REV,
-            TexturePixelType::U16r5g6b5 => gl::UNSIGNED_SHORT_5_6_5,
-            TexturePixelType::U16b5g6r5 => gl::UNSIGNED_SHORT_5_6_5_REV,
-            TexturePixelType::U16r4g4b4a4 => gl::UNSIGNED_SHORT_4_4_4_4,
-            TexturePixelType::U16a4b4g4r4 => gl::UNSIGNED_SHORT_4_4_4_4_REV,
-            TexturePixelType::U16r5g5b5a1 => gl::UNSIGNED_SHORT_5_5_5_1,
-            TexturePixelType::U16a1b5g5r5 => gl::UNSIGNED_SHORT_1_5_5_5_REV,
-            TexturePixelType::U32r8g8b8a8 => gl::UNSIGNED_INT_8_8_8_8,
-            TexturePixelType::U32a8b8g8r8 => gl::UNSIGNED_INT_8_8_8_8_REV,
-            TexturePixelType::U32r10g10b10a2 => gl::UNSIGNED_INT_10_10_10_2,
-            TexturePixelType::U32a2b10g10r10 => gl::UNSIGNED_INT_2_10_10_10_REV,
-            TexturePixelType::U32a5b9g9r9 => gl::UNSIGNED_INT_5_9_9_9_REV,
-            TexturePixelType::U32b10fg11fr11f => gl::UNSIGNED_INT_10F_11F_11F_REV,
+            TexturePixelType::R3G3B2 => gl::UNSIGNED_BYTE_3_3_2,
+            TexturePixelType::B2G3R3 => gl::UNSIGNED_BYTE_2_3_3_REV,
+            TexturePixelType::R5G6B5 => gl::UNSIGNED_SHORT_5_6_5,
+            TexturePixelType::B5G6R5 => gl::UNSIGNED_SHORT_5_6_5_REV,
+            TexturePixelType::R4G4B4A4 => gl::UNSIGNED_SHORT_4_4_4_4,
+            TexturePixelType::A4B4G4R4 => gl::UNSIGNED_SHORT_4_4_4_4_REV,
+            TexturePixelType::R5G5B5A1 => gl::UNSIGNED_SHORT_5_5_5_1,
+            TexturePixelType::A1B5G5R5 => gl::UNSIGNED_SHORT_1_5_5_5_REV,
+            TexturePixelType::R8G8B8A8 => gl::UNSIGNED_INT_8_8_8_8,
+            TexturePixelType::A8B8G8R8 => gl::UNSIGNED_INT_8_8_8_8_REV,
+            TexturePixelType::R10G10B10A2 => gl::UNSIGNED_INT_10_10_10_2,
+            TexturePixelType::A2B10G10R10 => gl::UNSIGNED_INT_2_10_10_10_REV,
+            TexturePixelType::A5B9G9R9 => gl::UNSIGNED_INT_5_9_9_9_REV,
+            TexturePixelType::B10fG11fR11f => gl::UNSIGNED_INT_10F_11F_11F_REV,
         }
     }
 }
@@ -954,20 +954,20 @@ pub fn is_texture(texture: Texture) -> bool {
 /// [TextureBinding2DTarget::Proxy1DArray] and `height` is greater than
 /// [get_max_array_texture_layers]
 /// * [Error::InvalidValue] - if `level` is greater than log<sub>2</sub>([get_max_texture_size])
-/// * [Error::InvalidOperation] - if `pixel_data_type` is one of [TexturePixelType::U8r3g3b2],
-/// [TexturePixelType::U8b2g3r3], [TexturePixelType::U16r5g6b5], [TexturePixelType::U16b5g6r5], or
-/// [TexturePixelType::U32b10fg11fr11f], and `format` is not [TextureFormat::RGB].
-/// * [Error::InvalidOperation] - if `pixel_data_type` is one of [TexturePixelType::U16r4g4b4a4],
-/// [TexturePixelType::U16a4b4g4r4], [TexturePixelType::U16r5g5b5a1],
-/// [TexturePixelType::U16a1b5g5r5], [TexturePixelType::U32r8g8b8a8],
-/// [TexturePixelType::U32a8b8g8r8], [TexturePixelType::U32r10g10b10a2],
-/// [TexturePixelType::U32a2b10g10r10], [TexturePixelType::U32a5b9g9r9], and `format` is neither
+/// * [Error::InvalidOperation] - if `pixel_data_type` is one of [TexturePixelType::R3G3B2],
+/// [TexturePixelType::B2G3R3], [TexturePixelType::R5G6B5], [TexturePixelType::B5G6R5], or
+/// [TexturePixelType::B10fG11fR11f], and `format` is not [TextureFormat::RGB].
+/// * [Error::InvalidOperation] - if `pixel_data_type` is one of [TexturePixelType::R4G4B4A4],
+/// [TexturePixelType::A4B4G4R4], [TexturePixelType::R5G5B5A1],
+/// [TexturePixelType::A1B5G5R5], [TexturePixelType::R8G8B8A8],
+/// [TexturePixelType::A8B8G8R8], [TexturePixelType::R10G10B10A2],
+/// [TexturePixelType::A2B10G10R10], [TexturePixelType::A5B9G9R9], and `format` is neither
 /// [TextureFormat::RGBA] or [TextureFormat::BGRA].
-/// * [Error::InvalidOperation] - if `pixel_data_type` is one of [TexturePixelType::U16r4g4b4a4],
-/// [TexturePixelType::U16a4b4g4r4], [TexturePixelType::U16r5g5b5a1],
-/// [TexturePixelType::U16a1b5g5r5], [TexturePixelType::U32r8g8b8a8],
-/// [TexturePixelType::U32a8b8g8r8], [TexturePixelType::U32r10g10b10a2],
-/// [TexturePixelType::U32a2b10g10r10], [TexturePixelType::U32a5b9g9r9] and `format` is neither
+/// * [Error::InvalidOperation] - if `pixel_data_type` is one of [TexturePixelType::R4G4B4A4],
+/// [TexturePixelType::A4B4G4R4], [TexturePixelType::R5G5B5A1],
+/// [TexturePixelType::A1B5G5R5], [TexturePixelType::R8G8B8A8],
+/// [TexturePixelType::A8B8G8R8], [TexturePixelType::R10G10B10A2],
+/// [TexturePixelType::A2B10G10R10], [TexturePixelType::A5B9G9R9] and `format` is neither
 /// * [Error::InvalidOperation] - if `target` is not [TextureBinding2DTarget::Image2D],
 /// [TextureBinding2DTarget::Proxy2D], [TextureBinding2DTarget::Rectangle], or
 /// [TextureBinding2DTarget::ProxyRectangle], and `internalformat` is
