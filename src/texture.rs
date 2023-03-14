@@ -47,6 +47,21 @@ impl From<TextureBindingTarget> for u32 {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+pub enum TextureDepthStencilMode {
+    DepthComponent,
+    StencilIndex,
+}
+
+impl From<TextureDepthStencilMode> for GLenum {
+    fn from(value: TextureDepthStencilMode) -> Self {
+        match value {
+            TextureDepthStencilMode::DepthComponent => gl::DEPTH_COMPONENT,
+            TextureDepthStencilMode::StencilIndex => gl::STENCIL_INDEX,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TextureBinding2DTarget {
     Image2D,
     Proxy2D,
@@ -1052,6 +1067,17 @@ pub fn tex_image_2d<DataType>(
 }
 
 /// # Set texture parameters
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+///
+/// # See Also
+/// * [active_texture]
+/// * [bind_texture]
+/// * [copy_tex_image_1d], [copy_tex_image_2d],
+/// * [copy_tex_sub_image_1d], [copy_tex_sub_image_2d], [copy_tex_sub_image_3d]
+/// * [pixel_store]
+/// * [sampler_parameter]
+/// * [tex_image_1d], [tex_image_2d], [tex_image_3d],
+/// * [tex_sub_image_1d], [tex_sub_image_2d], [tex_sub_image_3d]
 pub mod tex_parameter {
     use crate::prelude::*;
     use gl::types::*;
@@ -1061,6 +1087,54 @@ pub mod tex_parameter {
 
         // SAFE: synchronous integer copy
         unsafe { gl::TexParameteri(target, pname, param) }
+    }
+
+    /// # Set the mode used to read from depth-stencil format textures
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `mode` - Specifies the mode used to read from depth-stencil format textures.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_depth_stencil_texture_mode(
+    ///     TextureBindingTarget::Image2D,
+    ///     TextureDepthStencilMode::DepthComponent
+    /// );
+    /// ```
+    ///
+    /// # Description
+    /// Specifies the mode used to read from depth-stencil format textures. If the depth stencil
+    /// mode is [TextureDepthStencilMode::DepthComponent], then reads from depth-stencil format
+    /// textures will return the depth component of the texel in R<sub>t</sub> and the stencil
+    /// component will be discarded. If the depth stencil mode is
+    /// [TextureDepthStencilMode::StencilIndex] then the stencil component is returned in R<sub>t</sub>
+    /// and the depth component is discarded. The initial value is
+    /// [TextureDepthStencilMode::DepthComponent].
+    ///
+    /// # Compatability
+    /// * requires 4.3
+    ///
+    /// # Associated Gets
+    /// * [get_tex_parameter]
+    /// * [get_tex_level_parameter]
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_depth_stencil_texture_mode] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [tex_parameter]
+    pub fn texture_target_depth_stencil_texture_mode(
+        target: TextureBindingTarget,
+        mode: TextureDepthStencilMode,
+    ) {
+        let param = GLenum::from(mode) as i32;
+        tex_param_i32(target, gl::DEPTH_STENCIL_TEXTURE_MODE, param)
     }
 
     pub fn texture_target_wrap(
