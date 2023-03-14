@@ -91,7 +91,86 @@ pub enum TextureInternalFormat {
     RG,
     RGB,
     RGBA,
-    // TODO: Table2 + Table3
+
+    R8,
+    R8snorm,
+    R16,
+    R16snorm,
+    RG8,
+    RG8snorm,
+    RG16,
+    RG16snorm,
+    R3G3B2,
+    RGB4,
+    RGB5,
+    RGB8,
+    RGB8snorm,
+    RGB10,
+    RGB12,
+    RGB16snorm,
+    RGBA2,
+    RGBA4,
+    RGB5A1,
+    RGBA8,
+    RGBA8snorm,
+    RGB10A2,
+    RGB10A2UI,
+    RGBA12,
+    RGBA16,
+    SRGB8,
+    SRGB8A8,
+    R16F,
+    RG16F,
+    RGB16F,
+    RGBA16F,
+    R32F,
+    RG32F,
+    RGB32F,
+    RGBA32F,
+    R11FG11FB10F,
+    RGB9E5,
+    R8I,
+    R8UI,
+    R16I,
+    R16UI,
+    R32I,
+    R32UI,
+    RG8I,
+    RG8UI,
+    RG16I,
+    RG16UI,
+    RG32I,
+    RG32UI,
+    RGB8I,
+    RGB8UI,
+    RGB16I,
+    RGB16UI,
+    RGB32I,
+    RGB32UI,
+    RGBA8I,
+    RGBA8UI,
+    RGBA16I,
+    RGBA16UI,
+    RGBA32I,
+    RGBA32UI,
+    DepthComponent16,
+    DepthComponent24,
+    DepthComponent32F,
+
+    CompressedR,
+    CompressedRG,
+    CompressedRGB,
+    CompressedRGBA,
+    CompressedSRGB,
+    CompressedSRGBA,
+    CompressedRRGTC1,
+    CompressedSignedRRGTC1,
+    CompressedRGRGTC2,
+    CompressedSignedRGRGTC2,
+    CompressedRGBABPTCUNORM,
+    CompressedSRGBABPTCUNORM,
+    CompressedRGBBPTCSignedFloat,
+    CompressedRGBBPTCUnsignedFloat,
 }
 
 impl From<TextureInternalFormat> for GLenum {
@@ -103,6 +182,90 @@ impl From<TextureInternalFormat> for GLenum {
             TextureInternalFormat::RG => gl::RG,
             TextureInternalFormat::RGB => gl::RGB,
             TextureInternalFormat::RGBA => gl::RGBA,
+
+            TextureInternalFormat::R8 => gl::R8,
+            TextureInternalFormat::R8snorm => gl::R8_SNORM,
+            TextureInternalFormat::R16 => gl::R16,
+            TextureInternalFormat::R16snorm => gl::R16_SNORM,
+            TextureInternalFormat::RG8 => gl::RG8,
+            TextureInternalFormat::RG8snorm => gl::RG8_SNORM,
+            TextureInternalFormat::RG16 => gl::RG16,
+            TextureInternalFormat::RG16snorm => gl::RG16_SNORM,
+            TextureInternalFormat::R3G3B2 => gl::R3_G3_B2,
+            TextureInternalFormat::RGB4 => gl::RGB4,
+            TextureInternalFormat::RGB5 => gl::RGB5,
+            TextureInternalFormat::RGB8 => gl::RGB8,
+            TextureInternalFormat::RGB8snorm => gl::RGB8_SNORM,
+            TextureInternalFormat::RGB10 => gl::RGB10,
+            TextureInternalFormat::RGB12 => gl::RGB12,
+            TextureInternalFormat::RGB16snorm => gl::RGB16_SNORM,
+            TextureInternalFormat::RGBA2 => gl::RGBA2,
+            TextureInternalFormat::RGBA4 => gl::RGBA4,
+            TextureInternalFormat::RGB5A1 => gl::RGB5_A1,
+            TextureInternalFormat::RGBA8 => gl::RGBA8,
+            TextureInternalFormat::RGBA8snorm => gl::RGBA8_SNORM,
+            TextureInternalFormat::RGB10A2 => gl::RGB10_A2,
+            TextureInternalFormat::RGB10A2UI => gl::RGB10_A2UI,
+            TextureInternalFormat::RGBA12 => gl::RGBA12,
+            TextureInternalFormat::RGBA16 => gl::RGBA16,
+            TextureInternalFormat::SRGB8 => gl::SRGB8,
+            TextureInternalFormat::SRGB8A8 => gl::SRGB8_ALPHA8,
+            TextureInternalFormat::R16F => gl::R16F,
+            TextureInternalFormat::RG16F => gl::RG16F,
+            TextureInternalFormat::RGB16F => gl::RGB16F,
+            TextureInternalFormat::RGBA16F => gl::RGBA16F,
+            TextureInternalFormat::R32F => gl::R32F,
+            TextureInternalFormat::RG32F => gl::RG32F,
+            TextureInternalFormat::RGB32F => gl::RGB32F,
+            TextureInternalFormat::RGBA32F => gl::RGBA32F,
+            TextureInternalFormat::R11FG11FB10F => gl::R11F_G11F_B10F,
+            TextureInternalFormat::RGB9E5 => gl::RGB9_E5,
+            TextureInternalFormat::R8I => gl::R8I,
+            TextureInternalFormat::R8UI => gl::R8UI,
+            TextureInternalFormat::R16I => gl::R16I,
+            TextureInternalFormat::R16UI => gl::R16UI,
+            TextureInternalFormat::R32I => gl::R32I,
+            TextureInternalFormat::R32UI => gl::R32UI,
+            TextureInternalFormat::RG8I => gl::RG8I,
+            TextureInternalFormat::RG8UI => gl::RG8UI,
+            TextureInternalFormat::RG16I => gl::RG16I,
+            TextureInternalFormat::RG16UI => gl::RG16UI,
+            TextureInternalFormat::RG32I => gl::RG32I,
+            TextureInternalFormat::RG32UI => gl::RG32UI,
+            TextureInternalFormat::RGB8I => gl::RGB8I,
+            TextureInternalFormat::RGB8UI => gl::RGB8UI,
+            TextureInternalFormat::RGB16I => gl::RGB16I,
+            TextureInternalFormat::RGB16UI => gl::RGB16UI,
+            TextureInternalFormat::RGB32I => gl::RGB32I,
+            TextureInternalFormat::RGB32UI => gl::RGB32UI,
+            TextureInternalFormat::RGBA8I => gl::RGBA8I,
+            TextureInternalFormat::RGBA8UI => gl::RGBA8UI,
+            TextureInternalFormat::RGBA16I => gl::RGBA16I,
+            TextureInternalFormat::RGBA16UI => gl::RGBA16UI,
+            TextureInternalFormat::RGBA32I => gl::RGBA32I,
+            TextureInternalFormat::RGBA32UI => gl::RGBA32UI,
+            TextureInternalFormat::DepthComponent16 => gl::DEPTH_COMPONENT16,
+            TextureInternalFormat::DepthComponent24 => gl::DEPTH_COMPONENT24,
+            TextureInternalFormat::DepthComponent32F => gl::DEPTH_COMPONENT32F,
+
+            TextureInternalFormat::CompressedR => gl::COMPRESSED_RED,
+            TextureInternalFormat::CompressedRG => gl::COMPRESSED_RG,
+            TextureInternalFormat::CompressedRGB => gl::COMPRESSED_RGB,
+            TextureInternalFormat::CompressedRGBA => gl::COMPRESSED_RGBA,
+            TextureInternalFormat::CompressedSRGB => gl::COMPRESSED_SRGB,
+            TextureInternalFormat::CompressedSRGBA => gl::COMPRESSED_SRGB_ALPHA,
+            TextureInternalFormat::CompressedRRGTC1 => gl::COMPRESSED_RED_RGTC1,
+            TextureInternalFormat::CompressedSignedRRGTC1 => gl::COMPRESSED_SIGNED_RED_RGTC1,
+            TextureInternalFormat::CompressedRGRGTC2 => gl::COMPRESSED_RG_RGTC2,
+            TextureInternalFormat::CompressedSignedRGRGTC2 => gl::COMPRESSED_SIGNED_RG_RGTC2,
+            TextureInternalFormat::CompressedRGBABPTCUNORM => gl::COMPRESSED_RGBA_BPTC_UNORM,
+            TextureInternalFormat::CompressedSRGBABPTCUNORM => gl::COMPRESSED_SRGB_ALPHA_BPTC_UNORM,
+            TextureInternalFormat::CompressedRGBBPTCSignedFloat => {
+                gl::COMPRESSED_RGB_BPTC_SIGNED_FLOAT
+            }
+            TextureInternalFormat::CompressedRGBBPTCUnsignedFloat => {
+                gl::COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
+            }
         }
     }
 }
@@ -800,7 +963,34 @@ pub fn is_texture(texture: Texture) -> bool {
 /// [TexturePixelType::U32a8b8g8r8], [TexturePixelType::U32r10g10b10a2],
 /// [TexturePixelType::U32a2b10g10r10], [TexturePixelType::U32a5b9g9r9], and `format` is neither
 /// [TextureFormat::RGBA] or [TextureFormat::BGRA].
-/// * TODO - there is more ...
+/// * [Error::InvalidOperation] - if `pixel_data_type` is one of [TexturePixelType::U16r4g4b4a4],
+/// [TexturePixelType::U16a4b4g4r4], [TexturePixelType::U16r5g5b5a1],
+/// [TexturePixelType::U16a1b5g5r5], [TexturePixelType::U32r8g8b8a8],
+/// [TexturePixelType::U32a8b8g8r8], [TexturePixelType::U32r10g10b10a2],
+/// [TexturePixelType::U32a2b10g10r10], [TexturePixelType::U32a5b9g9r9] and `format` is neither
+/// * [Error::InvalidOperation] - if `target` is not [TextureBinding2DTarget::Image2D],
+/// [TextureBinding2DTarget::Proxy2D], [TextureBinding2DTarget::Rectangle], or
+/// [TextureBinding2DTarget::ProxyRectangle], and `internalformat` is
+/// [TextureInternalFormat::DepthComponent], [TextureInternalFormat::DepthComponent16],
+/// [TextureInternalFormat::DepthComponent24], or [TextureInternalFormat::DepthComponent32F]
+/// * [Error::InvalidOperation] - if `format` is [TextureFormat::DepthComponent], and
+/// `internalformat` is not [TextureInternalFormat::DepthComponent],
+/// [TextureInternalFormat::DepthComponent16], [TextureInternalFormat::DepthComponent24], or
+/// [TextureInternalFormat::DepthComponent32F]
+/// * [Error::InvalidOperation] - if `internalformat` is [TextureInternalFormat::DepthComponent],
+/// [TextureInternalFormat::DepthComponent16], [TextureInternalFormat::DepthComponent24], or
+/// [TextureInternalFormat::DepthComponent32F], and `format` is not [TextureFormat::DepthComponent]
+/// * [Error::InvalidOperation] - if a non-zero buffer object name is bound to the
+/// [BufferBindingTarget::PixelUnpack] target and the buffer object's data store is currently
+/// mapped.
+/// * [Error::InvalidOperation] - if a non-zero buffer object name is bound to the
+/// [BufferBindingTarget::PixelUnpack] target and the data would be unpacked from the buffer object
+/// such that the memory reads required would exceed the data store size.
+/// * [Error::InvalidOperation] - if a non-zero buffer object name is bound to the
+/// [BufferBindingTarget::PixelUnpack] target and the `data` is not evently divisble into the number
+/// of bytes needed to store in memory a datum indicated by `pixel_data_type`.
+/// * [Error::InvalidValue] - if `target` is [TextureBinding2DTarget::Rectangle] or
+/// [TextureBinding2DTarget::ProxyRectangle] and `level` is not 0.///
 ///
 /// # Associated Gets
 /// * [get_tex_image]
