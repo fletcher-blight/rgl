@@ -1069,6 +1069,10 @@ pub fn tex_image_2d<DataType>(
 /// # Set texture parameters
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
 ///
+/// # Associated Gets
+/// * [get_tex_parameter]
+/// * [get_tex_level_parameter]
+///
 /// # See Also
 /// * [active_texture]
 /// * [bind_texture]
@@ -1117,10 +1121,6 @@ pub mod tex_parameter {
     /// # Compatability
     /// * requires 4.3
     ///
-    /// # Associated Gets
-    /// * [get_tex_parameter]
-    /// * [get_tex_level_parameter]
-    ///
     /// # Version Support
     ///
     /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
@@ -1135,6 +1135,40 @@ pub mod tex_parameter {
     ) {
         let param = GLenum::from(mode) as i32;
         tex_param_i32(target, gl::DEPTH_STENCIL_TEXTURE_MODE, param)
+    }
+
+    /// # Set the index of the lowest defined mipmap level
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `level` - Specifies the index of the lowest defined mipmap level.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_base_level(TextureBindingTarget::Image2D, 42);
+    /// ```
+    ///
+    /// # Description
+    /// Specifies the index of the lowest defined mipmap level. The initial value is 0.
+    ///
+    /// # Errors
+    /// * [Error::InvalidOperation] - if the effective target is [TextureBindingTarget::Rectangle],
+    /// [TextureBindingTarget::Multisample2D] or [TextureBindingTarget::Multisample2DArray], and
+    /// `level` is a value other than zero.
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_base_level] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [tex_parameter]
+    pub fn texture_target_base_level(target: TextureBindingTarget, level: u32) {
+        let param = level as i32;
+        tex_param_i32(target, gl::TEXTURE_BASE_LEVEL, param)
     }
 
     pub fn texture_target_wrap(
