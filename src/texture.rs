@@ -62,6 +62,33 @@ impl From<TextureDepthStencilMode> for GLenum {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+pub enum TextureCompareFunc {
+    Never,
+    Always,
+    Equal,
+    NotEqual,
+    LessOrEqual,
+    GreaterOrEqual,
+    Less,
+    Greater,
+}
+
+impl From<TextureCompareFunc> for GLenum {
+    fn from(value: TextureCompareFunc) -> Self {
+        match value {
+            TextureCompareFunc::Never => gl::NEVER,
+            TextureCompareFunc::Always => gl::ALWAYS,
+            TextureCompareFunc::Equal => gl::EQUAL,
+            TextureCompareFunc::NotEqual => gl::NOTEQUAL,
+            TextureCompareFunc::LessOrEqual => gl::LEQUAL,
+            TextureCompareFunc::GreaterOrEqual => gl::GEQUAL,
+            TextureCompareFunc::Less => gl::LESS,
+            TextureCompareFunc::Greater => gl::GREATER,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TextureBinding2DTarget {
     Image2D,
     Proxy2D,
@@ -1263,6 +1290,36 @@ pub mod tex_parameter {
         // SAFE: TEXTURE_BORDER_COLOUR expects an array size of 4, and is synchronously read,
         // no memory is retained
         unsafe { gl::TexParameterIuiv(target, gl::TEXTURE_BORDER_COLOR, params) }
+    }
+
+    /// # Set the comparison operator for textures
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `func` - comparison operator
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_compare_func(TextureBindingTarget::Image2D, TextureCompareFunc::LessOrEqual);
+    /// ```
+    ///
+    /// # Description
+    /// Specifies the comparison operator used when [texture_target_compare_mode] is set to
+    /// [TextureCompareMode::Ref].
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_compare_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [tex_parameter]
+    pub fn texture_target_compare_func(target: TextureBindingTarget, func: TextureCompareFunc) {
+        let param = GLenum::from(func) as i32;
+        tex_param_i32(target, gl::TEXTURE_COMPARE_FUNC, param)
     }
 
     pub fn texture_target_wrap(
