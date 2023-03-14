@@ -1171,6 +1171,100 @@ pub mod tex_parameter {
         tex_param_i32(target, gl::TEXTURE_BASE_LEVEL, param)
     }
 
+    /// # Set a texel that should be used for border texels
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `texel` - Specifies border values that should be used for border texels
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_border_colour_f32(TextureBindingTarget::Image2D, [0.5, 0.9, 0.2, 1.0]);
+    /// texture_target_border_colour_i32(TextureBindingTarget::Image2D, [128, 250, 12, 255]);
+    /// texture_target_border_colour_u32(TextureBindingTarget::Image2D, [42, 7, 11, 255]);
+    /// texture_target_border_colour_i32_to_f32(TextureBindingTarget::Image2D, [0, 0, 0, 0]);
+    /// ```
+    ///
+    /// # Description
+    /// `texel` specifies four values that define the border values that should be used for border
+    /// texels. If a texel is sampled from the border of the texture, the values are interpreted as
+    /// an RGBA color to match the texture's internal format and substituted for the non-existent
+    /// texel data. If the texture contains depth components, the first component is interpreted as
+    /// a depth value. The initial value is `[0.0, 0.0, 0.0, 0.0]`.
+    ///
+    /// The `texel` is stored unmodified as floating-point values.
+    ///
+    /// # Compatability
+    ///
+    /// # Errors
+    ///
+    /// # Associated Gets
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_border_colour_f32] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    /// | [texture_target_border_colour_i32] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    /// | [texture_target_border_colour_u32] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    /// | [texture_target_border_colour_i32_to_f32] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [tex_parameter]
+    pub fn texture_target_border_colour_f32(target: TextureBindingTarget, texel: [f32; 4]) {
+        let target = GLenum::from(target);
+        let params = texel.as_ptr();
+
+        // SAFE: TEXTURE_BORDER_COLOUR expects an array size of 4, and is synchronously read,
+        // no memory is retained
+        unsafe { gl::TexParameterfv(target, gl::TEXTURE_BORDER_COLOR, params) }
+    }
+
+    /// # Set a texel that should be used for border texels
+    /// see [texture_target_border_colour_f32]
+    ///
+    /// # Description
+    /// The `texel` they are converted to floating point with the following equation:
+    /// `f = (2c + 1) / (2^b - 1)`
+    pub fn texture_target_border_colour_i32_to_f32(target: TextureBindingTarget, texel: [i32; 4]) {
+        let target = GLenum::from(target);
+        let params = texel.as_ptr();
+
+        // SAFE: TEXTURE_BORDER_COLOUR expects an array size of 4, and is synchronously read,
+        // no memory is retained
+        unsafe { gl::TexParameteriv(target, gl::TEXTURE_BORDER_COLOR, params) }
+    }
+
+    /// # Set a texel that should be used for border texels
+    /// see [texture_target_border_colour_f32]
+    ///
+    /// # Description
+    /// The `texel` is stored unmodified with an internal data type of i32.
+    pub fn texture_target_border_colour_i32(target: TextureBindingTarget, texel: [i32; 4]) {
+        let target = GLenum::from(target);
+        let params = texel.as_ptr();
+
+        // SAFE: TEXTURE_BORDER_COLOUR expects an array size of 4, and is synchronously read,
+        // no memory is retained
+        unsafe { gl::TexParameterIiv(target, gl::TEXTURE_BORDER_COLOR, params) }
+    }
+
+    /// # Set a texel that should be used for border texels
+    /// see [texture_target_border_colour_f32]
+    ///
+    /// # Description
+    /// The `texel` is stored unmodified with an internal data type of u32.
+    pub fn texture_target_border_colour_u32(target: TextureBindingTarget, texel: [u32; 4]) {
+        let target = GLenum::from(target);
+        let params = texel.as_ptr();
+
+        // SAFE: TEXTURE_BORDER_COLOUR expects an array size of 4, and is synchronously read,
+        // no memory is retained
+        unsafe { gl::TexParameterIuiv(target, gl::TEXTURE_BORDER_COLOR, params) }
+    }
+
     pub fn texture_target_wrap(
         target: TextureBindingTarget,
         wrap_target: TextureWrapTarget,
