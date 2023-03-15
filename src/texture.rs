@@ -1469,6 +1469,34 @@ pub mod tex_parameter {
         tex_param_i32(target, gl::TEXTURE_MIN_FILTER, param)
     }
 
+    /// # Set magnification function
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `filter` - Specifies the magnification function
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_mag_filter(TextureBindingTarget::Image2D, TextureMagFilter::Linear);
+    /// ```
+    ///
+    /// # Description
+    /// The texture magnification function is used whenever the level-of-detail function used when
+    /// sampling from the texture determines that the texture should be magnified.
+    /// [TextureMagFilter::Nearest] is generally faster than [TextureMagFilter::Linear], but it can
+    /// produce textured images with sharper edges because the transition between texture elements
+    /// is not as smooth. The initial value is [TextureMagFilter::Linear].
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_mag_filter] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [tex_parameter]
     pub fn texture_target_mag_filter(target: TextureBindingTarget, filter: TextureMagFilter) {
         let param = GLenum::from(filter) as i32;
         tex_param_i32(target, gl::TEXTURE_MAG_FILTER, param)
