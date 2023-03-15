@@ -436,28 +436,28 @@ pub enum TextureData<'data, DataType> {
     Reserve,
 }
 
-/// See [texture_target_wrap]
-pub enum TextureWrapTarget {
-    S,
-    T,
-    R,
-}
-
-impl From<TextureWrapTarget> for u32 {
-    fn from(value: TextureWrapTarget) -> Self {
-        match value {
-            TextureWrapTarget::S => gl::TEXTURE_WRAP_S,
-            TextureWrapTarget::T => gl::TEXTURE_WRAP_T,
-            TextureWrapTarget::R => gl::TEXTURE_WRAP_R,
-        }
-    }
-}
-
 pub enum TextureWrapMode {
+    /// Causes the integer part of the coordinate to be ignored; the GL uses only the fractional
+    /// part, thereby creating a repeating pattern.
     Repeat,
+
+    /// Causes the coordinate to be set to the fractional part of the texture coordinate if the
+    /// integer part of is even; if the integer part is odd, then the s texture coordinate is set to
+    /// `1 − frac(x)`, where `frac(x)` represents the fractional part of the coordinate `x`.
     MirroredRepeat,
+
+    /// Clamps to the range `[1/2N, 1 − 1/2N]`, where `N` is the size of the texture in the
+    /// direction of clamping
     ClampToEdge,
+
+    /// Evaluates coordinates in a similar manner to [TextureWrapMode::ClampToEdge]. However, in
+    /// cases where clamping would have occurred in [TextureWrapMode::ClampToEdge] mode, the fetched
+    /// texel data is substituted with the values specified by [texture_target_border_colour_f32].
     ClampToBorder,
+
+    /// Causes the coordinate to be repeated as for [TextureWrapMode::MirroredRepeat] for one
+    /// repetition of the texture, at which point the coordinate to be clamped as in
+    /// [TextureWrapMode::ClampToEdge].
     MirrorClampToEdge,
 }
 
@@ -1456,6 +1456,11 @@ pub mod tex_parameter {
     /// textures, linear filtering accesses the two nearest texture elements. In 3D textures, linear
     /// filtering accesses the eight nearest texture elements.
     ///
+    /// # Errors
+    /// * [Error::InvalidEnum] - if `target` is [TextureBindingTarget::Rectangle] and `filter` is
+    /// *not* one of: [TextureMinFilter::Nearest], [TextureMinFilter::Linear] (no mipmap filtering
+    /// is permitted).
+    ///
     /// # Version Support
     ///
     /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
@@ -1502,14 +1507,116 @@ pub mod tex_parameter {
         tex_param_i32(target, gl::TEXTURE_MAG_FILTER, param)
     }
 
-    pub fn texture_target_wrap(
-        target: TextureBindingTarget,
-        wrap_target: TextureWrapTarget,
-        mode: TextureWrapMode,
-    ) {
-        let pname = GLenum::from(wrap_target);
+    /// # Set the wrap value of the `s` coordinate
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `mode` - Specifies the texture wrap mode
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_wrap_s(TextureBindingTarget::Image2D, TextureWrapMode::Repeat);
+    /// ```
+    ///
+    /// # Description
+    /// Sets the wrap parameter for texture coordinate `s`. Initially set to
+    /// [TextureWrapMode::Repeat].
+    ///
+    /// # Compatability
+    /// * 4.4 - [TextureWrapMode::MirrorClampToEdge]
+    ///
+    /// # Errors
+    /// * [Error::InvalidEnum] - if `target` is [TextureBindingTarget::Rectangle] and `mode` is one
+    /// of: [TextureWrapMode::MirrorClampToEdge], [TextureWrapMode::MirroredRepeat],
+    /// [TextureWrapMode::Repeat].
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_wrap_s] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [TextureWrapMode]
+    /// * [tex_parameter]
+    pub fn texture_target_wrap_s(target: TextureBindingTarget, mode: TextureWrapMode) {
         let param = GLenum::from(mode) as i32;
-        tex_param_i32(target, pname, param)
+        tex_param_i32(target, gl::TEXTURE_WRAP_S, param)
+    }
+
+    /// # Set the wrap value of the `t` coordinate
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `mode` - Specifies the texture wrap mode
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_wrap_t(TextureBindingTarget::Image2D, TextureWrapMode::Repeat);
+    /// ```
+    ///
+    /// # Description
+    /// Sets the wrap parameter for texture coordinate `t`. Initially set to
+    /// [TextureWrapMode::Repeat].
+    ///
+    /// # Compatability
+    /// * 4.4 - [TextureWrapMode::MirrorClampToEdge]
+    ///
+    /// # Errors
+    /// * [Error::InvalidEnum] - if `target` is [TextureBindingTarget::Rectangle] and `mode` is one
+    /// of: [TextureWrapMode::MirrorClampToEdge], [TextureWrapMode::MirroredRepeat],
+    /// [TextureWrapMode::Repeat].
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_wrap_t] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [TextureWrapMode]
+    /// * [tex_parameter]
+    pub fn texture_target_wrap_t(target: TextureBindingTarget, mode: TextureWrapMode) {
+        let param = GLenum::from(mode) as i32;
+        tex_param_i32(target, gl::TEXTURE_WRAP_T, param)
+    }
+
+    /// # Set the wrap value of the `r` coordinate
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `mode` - Specifies the texture wrap mode
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_wrap_r(TextureBindingTarget::Image2D, TextureWrapMode::Repeat);
+    /// ```
+    ///
+    /// # Description
+    /// Sets the wrap parameter for texture coordinate `r`. Initially set to
+    /// [TextureWrapMode::Repeat].
+    ///
+    /// # Compatability
+    /// * 4.4 - [TextureWrapMode::MirrorClampToEdge]
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_wrap_r] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [TextureWrapMode]
+    /// * [tex_parameter]
+    pub fn texture_target_wrap_r(target: TextureBindingTarget, mode: TextureWrapMode) {
+        let param = GLenum::from(mode) as i32;
+        tex_param_i32(target, gl::TEXTURE_WRAP_R, param)
     }
 }
 pub use tex_parameter::*;
