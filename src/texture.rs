@@ -1414,16 +1414,56 @@ pub mod tex_parameter {
         tex_param_f32(target, gl::TEXTURE_LOD_BIAS, bias)
     }
 
-    pub fn texture_target_wrap(
-        target: TextureBindingTarget,
-        wrap_target: TextureWrapTarget,
-        mode: TextureWrapMode,
-    ) {
-        let pname = GLenum::from(wrap_target);
-        let param = GLenum::from(mode) as i32;
-        tex_param_i32(target, pname, param)
-    }
-
+    /// # Set the minifying function
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `filter` - Specifies the minifying function
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_min_filter(TextureBindingTarget::Image2D, TextureMinFilter::Nearest);
+    /// ```
+    ///
+    /// # Description
+    /// The texture minifying function is used whenever the level-of-detail function used when
+    /// sampling from the texture determines that the texture should be minified. There are six
+    /// defined minifying functions. Two of them use either the nearest texture elements or a
+    /// weighted average of multiple texture elements to compute the texture value. The other four
+    /// use mipmaps. See [TextureMinFilter]
+    ///
+    /// A mipmap is an ordered set of arrays representing the same image at progressively lower
+    /// resolutions. If the texture has dimensions 2<sup>n</sup>×2<sup>m</sup>, there are
+    /// `max(n,m) + 1` mipmaps. The first mipmap is the original texture, with dimensions
+    /// 2<sup>n</sup>×2<sup>m</sup>. Each subsequent mipmap has dimensions
+    /// 2<sup>k−1</sup>×2<sup>l−1</sup>, where 2<sup>k</sup>×2<sup>l</sup> are the dimensions of the
+    /// previous mipmap, until either `k=0` or `l=0`. At that point, subsequent mipmaps have
+    /// dimension 1×2<sup>l−1</sup> or 2<sup>k−1</sup>×1 until the final mipmap, which has dimension
+    /// `1×1`. To define the mipmaps, call [tex_image_1d], [tex_image_2d], [tex_image_3d],
+    /// [copy_tex_image_1d], or [copy_tex_image_2d] with the level argument indicating the order of
+    /// the mipmaps. Level 0 is the original texture; level `max(n,m)` is the final `1×1` mipmap.
+    ///
+    /// Suppose that a program attempts to sample from a texture and has set
+    /// [texture_target_min_filter] to one of the functions that requires a mipmap. If either the
+    /// dimensions of the texture images currently defined do not follow the proper sequence for
+    /// mipmaps (described above), or there are fewer texture images defined than are needed, or the
+    /// set of texture images have differing numbers of texture components, then the texture is
+    /// considered incomplete.
+    ///
+    /// Linear filtering accesses the four nearest texture elements only in 2D textures. In 1D
+    /// textures, linear filtering accesses the two nearest texture elements. In 3D textures, linear
+    /// filtering accesses the eight nearest texture elements.
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_min_filter] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [tex_parameter]
     pub fn texture_target_min_filter(target: TextureBindingTarget, filter: TextureMinFilter) {
         let param = GLenum::from(filter) as i32;
         tex_param_i32(target, gl::TEXTURE_MIN_FILTER, param)
@@ -1432,6 +1472,16 @@ pub mod tex_parameter {
     pub fn texture_target_mag_filter(target: TextureBindingTarget, filter: TextureMagFilter) {
         let param = GLenum::from(filter) as i32;
         tex_param_i32(target, gl::TEXTURE_MAG_FILTER, param)
+    }
+
+    pub fn texture_target_wrap(
+        target: TextureBindingTarget,
+        wrap_target: TextureWrapTarget,
+        mode: TextureWrapMode,
+    ) {
+        let pname = GLenum::from(wrap_target);
+        let param = GLenum::from(mode) as i32;
+        tex_param_i32(target, pname, param)
     }
 }
 pub use tex_parameter::*;
