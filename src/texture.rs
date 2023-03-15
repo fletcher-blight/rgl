@@ -1142,6 +1142,13 @@ pub mod tex_parameter {
         unsafe { gl::TexParameteri(target, pname, param) }
     }
 
+    fn tex_param_f32(target: TextureBindingTarget, pname: GLenum, param: f32) {
+        let target = GLenum::from(target);
+
+        // SAFE: synchronous integer copy
+        unsafe { gl::TexParameterf(target, pname, param) }
+    }
+
     /// # Set the mode used to read from depth-stencil format textures
     /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
     ///
@@ -1373,6 +1380,38 @@ pub mod tex_parameter {
     pub fn texture_target_compare_mode(target: TextureBindingTarget, mode: TextureCompareMode) {
         let param = GLenum::from(mode) as i32;
         tex_param_i32(target, gl::TEXTURE_COMPARE_MODE, param)
+    }
+
+    /// # Set the fixed bias for the level-of-detail
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `bias` - floating point lod bias
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_lod_bias(TextureBindingTarget::Image2D, 42.7);
+    /// ```
+    ///
+    /// # Description
+    /// `bias` specifies a fixed bias value that is to be added to the level-of-detail parameter for
+    /// the texture before texture sampling. The specified value is added to the shader-supplied
+    /// bias value (if any) and subsequently clamped into the implementation-defined range
+    /// \[−bias<sub>max</sub>, bias<sub>max</sub>\], where bias<sub>max</sub> is the value of the
+    /// implementation defined [get_texture_lod_bias]. The initial value is 0.0.
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_lod_bias] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [tex_parameter]
+    pub fn texture_target_lod_bias(target: TextureBindingTarget, bias: f32) {
+        tex_param_f32(target, gl::TEXTURE_LOD_BIAS, bias)
     }
 
     pub fn texture_target_wrap(
