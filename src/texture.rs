@@ -89,6 +89,28 @@ impl From<TextureCompareFunc> for GLenum {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+pub enum TextureCompareMode {
+    /// Specifies that the interpolated and clamped `r` texture coordinate should be compared to the
+    /// value in the currently bound depth texture. See the discussion of
+    /// [texture_target_compare_func] for details of how the comparison is evaluated. The result of
+    /// the comparison is assigned to the red channel.
+    Ref,
+
+    /// Specifies that the red channel should be assigned the appropriate value from the currently
+    /// bound depth texture.
+    None,
+}
+
+impl From<TextureCompareMode> for GLenum {
+    fn from(value: TextureCompareMode) -> Self {
+        match value {
+            TextureCompareMode::Ref => gl::COMPARE_REF_TO_TEXTURE,
+            TextureCompareMode::None => gl::NONE,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TextureBinding2DTarget {
     Image2D,
     Proxy2D,
@@ -1320,6 +1342,37 @@ pub mod tex_parameter {
     pub fn texture_target_compare_func(target: TextureBindingTarget, func: TextureCompareFunc) {
         let param = GLenum::from(func) as i32;
         tex_param_i32(target, gl::TEXTURE_COMPARE_FUNC, param)
+    }
+
+    /// # Set the texture comparion mode
+    /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexParameter.xhtml>
+    ///
+    /// # Arguments
+    /// * `target` - Specifies the target to which the texture is bound
+    /// * `mode` - comparison mode
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use rgl::prelude::*;
+    /// texture_target_compare_mode(TextureBindingTarget::Image2D, TextureCompareMode::Ref);
+    /// ```
+    ///
+    /// # Description
+    /// Specifies the texture comparison mode for currently bound depth textures. That is, a texture
+    /// whose internal format is [TextureInternalFormat::DepthComponent] (or similar); (see
+    /// [tex_image_2d]).
+    ///
+    /// # Version Support
+    ///
+    /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+    /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+    /// | [texture_target_compare_mode] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+    ///
+    /// # See Also
+    /// * [tex_parameter]
+    pub fn texture_target_compare_mode(target: TextureBindingTarget, mode: TextureCompareMode) {
+        let param = GLenum::from(mode) as i32;
+        tex_param_i32(target, gl::TEXTURE_COMPARE_MODE, param)
     }
 
     pub fn texture_target_wrap(
