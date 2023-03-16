@@ -10,6 +10,7 @@
 use crate::prelude::*;
 use gl::types::*;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DrawIndexType {
     U8,
     U16,
@@ -26,6 +27,7 @@ impl From<DrawIndexType> for u32 {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DrawMode {
     Points,
     LineStrip,
@@ -173,4 +175,78 @@ pub fn draw_elements(mode: DrawMode, count: u64, index_type: DrawIndexType, offs
     let indices = offset as *const std::os::raw::c_void;
 
     unsafe { gl::DrawElements(mode, count, type_, indices) }
+}
+
+/// # Draw multiple instances of a set of elements
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDrawElementsInstanced.xhtml>
+///
+/// # Arguments
+/// * `mode` - Specifies what kind of primitives to render.
+/// * `count` - Specifies the number of elements to be rendered.
+/// * `index_type` - Specifies the type of the values in indices.
+/// * `offset` - Specifies an offset to the location where the indices are stored.
+/// * `instance_count` - Specifies the number of instances of the specified range of indices to be
+/// rendered.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// draw_elements_instanced(DrawMode::Triangles, 36, DrawIndexType::U32, 0, 420);
+/// ```
+///
+/// # Description
+/// [draw_elements_instanced] behaves identically to [draw_elements] except that `instance_count`
+/// instances of the set of elements are executed and the value of the internal counter `instanceID`
+/// advances for each iteration. `instanceID` is an internal 32-bit integer counter that may be read
+/// by a vertex shader as `gl_InstanceID`.
+///
+/// [draw_elements_instanced] has the same effect as:
+/// ```no_run
+/// # use rgl::prelude::*;
+/// fn demo(
+///     mode: DrawMode,
+///     count: u64,
+///     index_type: DrawIndexType,
+///     offset: u64,
+///     instance_count: u64) {
+///     for instance in (0..instance_count) {
+///         draw_elements(mode, count, index_type, offset);
+///     }    
+/// }
+/// ```
+///
+/// # Compatability
+/// * requires at least 3.1
+/// * 3.2 for [DrawMode::LineStripAdjacency], [DrawMode::LinesAdjacency] and
+/// [DrawMode::TriangleStripAdjacency]
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if a geometry shader is active and `mode` is incompatible with the
+/// input primitive type of the geometry shader in the currently installed program object.
+/// * [Error::InvalidOperation] - if a non-zero buffer object name is bound to an enabled array and
+/// the buffer object's data store is currently mapped.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [draw_elements_instanced] | N | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [draw_elements]
+/// * [draw_arrays_instanced]
+pub fn draw_elements_instanced(
+    mode: DrawMode,
+    count: u64,
+    index_type: DrawIndexType,
+    offset: u64,
+    instance_count: u64,
+) {
+    let mode = GLenum::from(mode);
+    let count = count as GLsizei;
+    let type_ = GLenum::from(index_type);
+    let indices = offset as *const std::os::raw::c_void;
+    let instancecount = instance_count as GLsizei;
+
+    unsafe { gl::DrawElementsInstanced(mode, count, type_, indices, instancecount) }
 }

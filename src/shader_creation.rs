@@ -1466,11 +1466,12 @@ pub fn link_program(program: Program) {
 /// * [create_shader]
 /// * [delete_shader]
 pub fn shader_source(shader: Shader, source: &str) {
+    let source_bytes = source.as_bytes();
     let shader = shader.0;
     let count = 1;
-    let strings = [source.as_ptr()];
+    let strings = [source_bytes.as_ptr()];
     let string = strings.as_ptr() as *const *const GLchar;
-    let string_length = source.len() as GLint;
+    let string_length = source_bytes.len() as GLint;
     let length = &string_length as *const GLint;
 
     // SAFE: synchronous memory read of `string` and `length`, no pointers
