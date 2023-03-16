@@ -54,7 +54,7 @@ void main() {
         vec3 diffuse = spotlight.diffuse * diffuse_colour * max(dot(normal, light_dir), 0.0);
         vec3 specular = spotlight.specular * specular_colour * pow(max(dot(specular_dir, view_dir), 0.0), material.shininess);
 
-        vec3 colour = attenuation * (ambient + diffuse + specular);
+        vec3 colour = ambient + attenuation * (diffuse + specular);
         fragment_colour = vec4(colour, 1.0);
     } else {
         fragment_colour = vec4(ambient, 1.0);

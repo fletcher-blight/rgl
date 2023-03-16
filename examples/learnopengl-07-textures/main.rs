@@ -67,14 +67,12 @@ fn main() -> anyhow::Result<()> {
 
         rgl::active_texture(0);
         rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture);
-        rgl::texture_target_wrap(
+        rgl::texture_target_wrap_s(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::S,
             rgl::TextureWrapMode::Repeat,
         );
-        rgl::texture_target_wrap(
+        rgl::texture_target_wrap_t(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::T,
             rgl::TextureWrapMode::Repeat,
         );
         rgl::texture_target_min_filter(
@@ -111,14 +109,12 @@ fn main() -> anyhow::Result<()> {
 
         rgl::active_texture(1);
         rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture);
-        rgl::texture_target_wrap(
+        rgl::texture_target_wrap_s(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::S,
             rgl::TextureWrapMode::Repeat,
         );
-        rgl::texture_target_wrap(
+        rgl::texture_target_wrap_t(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::T,
             rgl::TextureWrapMode::Repeat,
         );
         rgl::texture_target_min_filter(

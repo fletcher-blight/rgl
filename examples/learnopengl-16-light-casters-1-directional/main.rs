@@ -1,4 +1,5 @@
 use nalgebra_glm as glm;
+use rgl::prelude as rgl;
 
 fn main() -> anyhow::Result<()> {
     let sdl = sdl2::init().unwrap();
@@ -23,118 +24,114 @@ fn main() -> anyhow::Result<()> {
     rgl::enable(rgl::Capability::DepthTest);
 
     let shader_program = {
-        let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex).unwrap();
-        rgl::shader_source(vertex_shader, include_bytes!("shader.vert"))?;
-        rgl::compile_shader(vertex_shader)?;
-        assert!(rgl::get_shader_compile_status(vertex_shader)?);
+        let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex);
+        rgl::shader_source(vertex_shader, include_str!("shader.vert"));
+        rgl::compile_shader(vertex_shader);
+        assert!(rgl::get_shader_compile_status(vertex_shader));
 
-        let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment).unwrap();
-        rgl::shader_source(fragment_shader, include_bytes!("shader.frag"))?;
-        rgl::compile_shader(fragment_shader)?;
-        assert!(rgl::get_shader_compile_status(fragment_shader)?);
+        let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment);
+        rgl::shader_source(fragment_shader, include_str!("shader.frag"));
+        rgl::compile_shader(fragment_shader);
+        assert!(rgl::get_shader_compile_status(fragment_shader));
 
-        let shader_program = rgl::create_program().unwrap();
-        rgl::attach_shader(shader_program, vertex_shader)?;
-        rgl::attach_shader(shader_program, fragment_shader)?;
-        rgl::link_program(shader_program)?;
-        assert!(rgl::get_program_link_status(shader_program)?);
-
-        rgl::detach_shader(shader_program, vertex_shader)?;
-        rgl::detach_shader(shader_program, fragment_shader)?;
-        rgl::delete_shader(vertex_shader)?;
-        rgl::delete_shader(fragment_shader)?;
+        let shader_program = rgl::create_program();
+        rgl::attach_shader(shader_program, vertex_shader);
+        rgl::attach_shader(shader_program, fragment_shader);
+        rgl::link_program(shader_program);
+        assert!(rgl::get_program_link_status(shader_program));
 
         shader_program
     };
-    rgl::use_program(shader_program)?;
+    rgl::use_program(shader_program);
 
     let diffuse_texture = {
-        let texture = rgl::gen_texture();
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture))?;
-        rgl::texture_target_wrap(
+        let mut texture = rgl::Texture::default();
+        rgl::gen_textures(std::slice::from_mut(&mut texture));
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture);
+        rgl::texture_target_wrap_s(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::S,
             rgl::TextureWrapMode::Repeat,
-        )?;
-        rgl::texture_target_wrap(
+        );
+        rgl::texture_target_wrap_t(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::T,
             rgl::TextureWrapMode::Repeat,
-        )?;
+        );
         rgl::texture_target_min_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMinFilter::Linear,
-        )?;
+        );
         rgl::texture_target_mag_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMagFilter::Linear,
-        )?;
+        );
 
         let image = image::open("./assets/container2.png")?.flipv();
-        rgl::texture_image_2d(
-            rgl::Texture2DTarget::Image2D,
+        rgl::tex_image_2d(
+            rgl::TextureBinding2DTarget::Image2D,
             0,
             rgl::TextureInternalFormat::RGB,
             image.width(),
             image.height(),
             rgl::TextureFormat::RGBA,
-            rgl::TexturePixelDataType::U8,
-            image.as_bytes(),
-        )?;
+            rgl::TexturePixelType::U8,
+            rgl::TextureData::Data(image.as_bytes()),
+        );
         let loc = rgl::get_uniform_location(
             shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"material.diffuse\0")?,
-        )?;
-        rgl::uniform_1i32(loc, 0)?;
+        );
+        rgl::uniform_1i32(loc, 0);
         texture
     };
 
     let specular_texture = {
-        let texture = rgl::gen_texture();
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture))?;
-        rgl::texture_target_wrap(
+        let mut texture = rgl::Texture::default();
+        rgl::gen_textures(std::slice::from_mut(&mut texture));
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture);
+        rgl::texture_target_wrap_s(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::S,
             rgl::TextureWrapMode::Repeat,
-        )?;
-        rgl::texture_target_wrap(
+        );
+        rgl::texture_target_wrap_t(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::T,
             rgl::TextureWrapMode::Repeat,
-        )?;
+        );
         rgl::texture_target_min_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMinFilter::Linear,
-        )?;
+        );
         rgl::texture_target_mag_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMagFilter::Linear,
-        )?;
+        );
 
         let image = image::open("./assets/container2_specular.png")?.flipv();
-        rgl::texture_image_2d(
-            rgl::Texture2DTarget::Image2D,
+        rgl::tex_image_2d(
+            rgl::TextureBinding2DTarget::Image2D,
             0,
             rgl::TextureInternalFormat::RGB,
             image.width(),
             image.height(),
             rgl::TextureFormat::RGBA,
-            rgl::TexturePixelDataType::U8,
-            image.as_bytes(),
-        )?;
+            rgl::TexturePixelType::U8,
+            rgl::TextureData::Data(image.as_bytes()),
+        );
         let loc = rgl::get_uniform_location(
             shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"material.specular\0")?,
-        )?;
-        rgl::uniform_1i32(loc, 1)?;
+        );
+        rgl::uniform_1i32(loc, 1);
         texture
     };
 
-    let vao = rgl::gen_vertex_array();
-    let vbo = rgl::gen_buffer();
+    let mut vao = Default::default();
+    rgl::gen_vertex_arrays(std::slice::from_mut(&mut vao));
 
-    rgl::bind_vertex_array(Some(vao))?;
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(vbo))?;
+    let mut vbo = Default::default();
+    rgl::gen_buffers(std::slice::from_mut(&mut vbo));
+
+    rgl::bind_vertex_array(vao);
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, vbo);
     rgl::buffer_data(
         rgl::BufferBindingTarget::Array,
         &[
@@ -181,67 +178,65 @@ fn main() -> anyhow::Result<()> {
             [-0.5, 0.5, -0.5],
             [-0.5, -0.5, -0.5],
         ],
-        rgl::BufferUsage(
-            rgl::BufferUsageFrequency::Static,
-            rgl::BufferUsageNature::Draw,
-        ),
-    )?;
-    rgl::enable_vertex_attribute_array(0)?;
-    rgl::vertex_attribute_float_pointer(
+        rgl::BufferUsageFrequency::Static,
+        rgl::BufferUsageNature::Draw,
+    );
+    rgl::enable_vertex_attrib_array(0);
+    rgl::vertex_attrib_float_pointer(
         0,
-        rgl::VertexAttributeSize::Triple,
-        rgl::VertexAttributeFloatType::F32,
+        rgl::VertexAttribSize::Triple,
+        rgl::VertexAttribFloatType::F32,
         false,
-        (std::mem::size_of::<f32>() * 3) as u32,
+        (std::mem::size_of::<f32>() * 3) as u64,
         0,
-    )?;
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
+    );
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, rgl::Buffer(0));
 
     let model = rgl::get_uniform_location(
         shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"model\0")?,
-    )?;
+    );
     let view = rgl::get_uniform_location(
         shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"view\0")?,
-    )?;
+    );
     let projection = rgl::get_uniform_location(
         shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"projection\0")?,
-    )?;
+    );
     let view_position = rgl::get_uniform_location(
         shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"view_position\0")?,
-    )?;
+    );
     let light_direction = rgl::get_uniform_location(
         shader_program,
         std::ffi::CStr::from_bytes_with_nul(b"directional_light.direction\0")?,
-    )?;
+    );
 
     {
-        rgl::use_program(shader_program)?;
+        rgl::use_program(shader_program);
 
         let material_shininess = rgl::get_uniform_location(
             shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"material.shininess\0")?,
-        )?;
+        );
         let light_ambient = rgl::get_uniform_location(
             shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"directional_light.ambient\0")?,
-        )?;
+        );
         let light_diffuse = rgl::get_uniform_location(
             shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"directional_light.diffuse\0")?,
-        )?;
+        );
         let light_specular = rgl::get_uniform_location(
             shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"directional_light.specular\0")?,
-        )?;
+        );
 
-        rgl::uniform_1f32(material_shininess, 32.0)?;
-        rgl::uniform_3f32(light_ambient, 0.2, 0.2, 0.2)?;
-        rgl::uniform_3f32(light_diffuse, 0.5, 0.5, 0.5)?;
-        rgl::uniform_3f32(light_specular, 1.0, 1.0, 1.0)?;
+        rgl::uniform_1f32(material_shininess, 32.0);
+        rgl::uniform_3f32(light_ambient, 0.2, 0.2, 0.2);
+        rgl::uniform_3f32(light_diffuse, 0.5, 0.5, 0.5);
+        rgl::uniform_3f32(light_specular, 1.0, 1.0, 1.0);
     };
 
     rgl::clear_colour(0.1, 0.1, 0.1, 0.1);
@@ -334,56 +329,56 @@ fn main() -> anyhow::Result<()> {
         }
 
         rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
-        rgl::use_program(shader_program)?;
+        rgl::use_program(shader_program);
 
         let light_dir = glm::rotate_vec3(
             &glm::vec3(0.0, -1.0, 0.0),
             total_duration.as_secs_f32() / 2.0,
             &glm::vec3(1.0, 0.0, 0.0),
         );
-        rgl::uniform_3f32(light_direction, light_dir[0], light_dir[1], light_dir[2])?;
+        rgl::uniform_3f32(light_direction, light_dir[0], light_dir[1], light_dir[2]);
         rgl::uniform_matrix_4f32v(
             view,
-            true,
+            rgl::MatrixOrderMajor::Row,
             &[from_glm(&glm::look_at(
                 &camera_position,
                 &(camera_position + camera_front),
                 &camera_up,
             ))],
-        )?;
+        );
         rgl::uniform_matrix_4f32v(
             projection,
-            true,
+            rgl::MatrixOrderMajor::Row,
             &[from_glm(&glm::perspective(
                 window.size().0 as f32 / window.size().1 as f32,
                 45.0f32.to_radians(),
                 0.1,
                 100.0,
             ))],
-        )?;
+        );
         rgl::uniform_3f32(
             view_position,
             camera_position[0],
             camera_position[1],
             camera_position[2],
-        )?;
+        );
 
-        rgl::active_texture(0)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(diffuse_texture))?;
-        rgl::active_texture(1)?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(specular_texture))?;
+        rgl::active_texture(0);
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, diffuse_texture);
+        rgl::active_texture(1);
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, specular_texture);
 
         for (i, cube_position) in cube_positions.iter().enumerate() {
             rgl::uniform_matrix_4f32v(
                 model,
-                true,
+                rgl::MatrixOrderMajor::Row,
                 &[from_glm(&glm::rotate(
                     &glm::translate(&glm::one(), &glm::make_vec3(cube_position)),
                     (i as f32 * 20.0).to_radians(),
                     &glm::vec3(1.0, 0.3, 0.5),
                 ))],
-            )?;
-            rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
+            );
+            rgl::draw_arrays(rgl::DrawMode::Triangles, 0, 36);
         }
 
         window.gl_swap_window();

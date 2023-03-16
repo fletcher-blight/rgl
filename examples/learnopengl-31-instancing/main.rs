@@ -1,6 +1,7 @@
 use image::{ColorType, GenericImageView};
 use nalgebra_glm as glm;
 use rand::Rng;
+use rgl::prelude as rgl;
 
 fn main() -> anyhow::Result<()> {
     let sdl = sdl2::init().unwrap();
@@ -28,15 +29,15 @@ fn main() -> anyhow::Result<()> {
     let planet_model = WavefrontObjModel::new("./assets/planet/planet.obj")?;
 
     let asteroid_shader_program = Program::new(&[
-        Shader::new(include_bytes!("asteroid.vert"), rgl::ShaderType::Vertex)?,
-        Shader::new(include_bytes!("asteroid.frag"), rgl::ShaderType::Fragment)?,
+        Shader::new(include_str!("asteroid.vert"), rgl::ShaderType::Vertex)?,
+        Shader::new(include_str!("asteroid.frag"), rgl::ShaderType::Fragment)?,
     ])?;
     let planet_shader_program = Program::new(&[
-        Shader::new(include_bytes!("planet.vert"), rgl::ShaderType::Vertex)?,
-        Shader::new(include_bytes!("planet.frag"), rgl::ShaderType::Fragment)?,
+        Shader::new(include_str!("planet.vert"), rgl::ShaderType::Vertex)?,
+        Shader::new(include_str!("planet.frag"), rgl::ShaderType::Fragment)?,
     ])?;
 
-    const NUM_ASTEROIDS: u32 = 100000;
+    const NUM_ASTEROIDS: u64 = 100000;
 
     let mut rng = rand::thread_rng();
     let asteroid_model_mats: Vec<f32> = (0..NUM_ASTEROIDS)
@@ -67,36 +68,35 @@ fn main() -> anyhow::Result<()> {
         })
         .collect();
 
-    let instance_buffer = rgl::gen_buffer();
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(instance_buffer))?;
+    let mut instance_buffer = rgl::Buffer::default();
+    rgl::gen_buffers(std::slice::from_mut(&mut instance_buffer));
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, instance_buffer);
     rgl::buffer_data(
         rgl::BufferBindingTarget::Array,
-        &asteroid_model_mats,
-        rgl::BufferUsage(
-            rgl::BufferUsageFrequency::Static,
-            rgl::BufferUsageNature::Draw,
-        ),
-    )?;
+        asteroid_model_mats.as_slice(),
+        rgl::BufferUsageFrequency::Static,
+        rgl::BufferUsageNature::Draw,
+    );
 
     for mesh in &asteroid_model.meshes {
-        rgl::bind_vertex_array(Some(mesh.vao))?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(instance_buffer))?;
+        rgl::bind_vertex_array(mesh.vao);
+        rgl::bind_buffer(rgl::BufferBindingTarget::Array, instance_buffer);
         for attribute in 3..=6 {
-            rgl::enable_vertex_attribute_array(attribute)?;
-            rgl::vertex_attribute_float_pointer(
+            rgl::enable_vertex_attrib_array(attribute);
+            rgl::vertex_attrib_float_pointer(
                 attribute,
-                rgl::VertexAttributeSize::Quad,
-                rgl::VertexAttributeFloatType::F32,
+                rgl::VertexAttribSize::Quad,
+                rgl::VertexAttribFloatType::F32,
                 false,
-                16 * std::mem::size_of::<f32>() as u32,
-                (attribute - 3) * (4 * std::mem::size_of::<f32>()) as u32,
-            )?;
-            rgl::vertex_attribute_divisor(attribute, 1)?;
+                16 * std::mem::size_of::<f32>() as u64,
+                (attribute - 3) as u64 * (4 * std::mem::size_of::<f32>()) as u64,
+            );
+            rgl::vertex_attrib_divisor(attribute, 1);
         }
 
-        rgl::bind_vertex_array(None)?;
+        rgl::bind_vertex_array(rgl::VertexArray::default());
     }
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, rgl::Buffer::default());
 
     let mut camera = Camera::new();
     camera.position = [50.0, 50.0, 50.0];
@@ -135,7 +135,7 @@ fn main() -> anyhow::Result<()> {
         let camera_projection = camera.calculate_projection(window.size(), 45.0, 0.1, 1000.0);
 
         {
-            planet_shader_program.enable()?;
+            planet_shader_program.enable();
             planet_shader_program.set_uniform_mat4(
                 planet_shader_program.find_uniform("model")?,
                 from_glm_mat4(&glm::scale(&glm::one(), &glm::vec3(5.0, 5.0, 5.0))),
@@ -149,7 +149,7 @@ fn main() -> anyhow::Result<()> {
             planet_model.draw(&planet_shader_program, 1)?;
         }
         {
-            asteroid_shader_program.enable()?;
+            asteroid_shader_program.enable();
             asteroid_shader_program.set_uniform_mat4(
                 asteroid_shader_program.find_uniform("rotate_model")?,
                 from_glm_mat4(&glm::rotate(
@@ -178,21 +178,20 @@ fn main() -> anyhow::Result<()> {
 struct Shader(rgl::Shader);
 impl Drop for Shader {
     fn drop(&mut self) {
-        rgl::delete_shader(self.0).unwrap();
+        rgl::delete_shader(self.0);
     }
 }
 impl Shader {
-    fn new(source: &[u8], shader_type: rgl::ShaderType) -> anyhow::Result<Self> {
-        let shader = Shader(rgl::create_shader(shader_type).unwrap());
-        rgl::shader_source(shader.0, source)?;
-        rgl::compile_shader(shader.0)?;
+    fn new(source: &str, shader_type: rgl::ShaderType) -> anyhow::Result<Self> {
+        let shader = Shader(rgl::create_shader(shader_type));
+        rgl::shader_source(shader.0, source);
+        rgl::compile_shader(shader.0);
 
-        if rgl::get_shader_compile_status(shader.0)? {
+        if rgl::get_shader_compile_status(shader.0) {
             Ok(shader)
         } else {
             let mut buffer = [0; 1024];
-            let num_bytes: usize = rgl::get_shader_info_log(shader.0, &mut buffer)? as usize;
-            let buffer: &[u8] = &buffer[0..num_bytes];
+            let buffer = rgl::get_shader_info_log(shader.0, &mut buffer);
             let info_log: String = String::from_utf8_lossy(buffer).into_owned();
             Err(anyhow::Error::msg(format!(
                 "{shader_type:?} Shader Compilation Failed: {info_log}"
@@ -204,30 +203,28 @@ impl Shader {
 struct Program(rgl::Program);
 impl Drop for Program {
     fn drop(&mut self) {
-        rgl::delete_program(self.0).unwrap();
+        rgl::delete_program(self.0);
     }
 }
 impl Program {
     fn new(shaders: &[Shader]) -> anyhow::Result<Self> {
-        let shader_program = Program(rgl::create_program().unwrap());
+        let shader_program = Program(rgl::create_program());
 
         for shader in shaders {
-            rgl::attach_shader(shader_program.0, shader.0)?;
+            rgl::attach_shader(shader_program.0, shader.0);
         }
 
-        rgl::link_program(shader_program.0)?;
+        rgl::link_program(shader_program.0);
 
         for shader in shaders {
-            rgl::detach_shader(shader_program.0, shader.0)?;
+            rgl::detach_shader(shader_program.0, shader.0);
         }
 
-        if rgl::get_program_link_status(shader_program.0)? {
+        if rgl::get_program_link_status(shader_program.0) {
             Ok(shader_program)
         } else {
             let mut buffer = [0; 1024];
-            let num_bytes: usize =
-                rgl::get_program_info_log(shader_program.0, &mut buffer)? as usize;
-            let buffer: &[u8] = &buffer[0..num_bytes];
+            let buffer = rgl::get_program_info_log(shader_program.0, &mut buffer);
             let info_log: String = String::from_utf8_lossy(buffer).into_owned();
             Err(anyhow::Error::msg(format!(
                 "Shader Program Link Failed: {info_log}"
@@ -235,15 +232,14 @@ impl Program {
         }
     }
 
-    fn enable(&self) -> anyhow::Result<()> {
-        rgl::use_program(self.0)?;
-        Ok(())
+    fn enable(&self) {
+        rgl::use_program(self.0);
     }
 
     fn find_uniform(&self, name: &str) -> anyhow::Result<rgl::UniformLocation> {
-        self.enable()?;
+        self.enable();
         let name = std::ffi::CString::new(name)?;
-        let location = rgl::get_uniform_location(self.0, &name)?;
+        let location = rgl::get_uniform_location(self.0, &name);
         Ok(location)
     }
 
@@ -252,8 +248,8 @@ impl Program {
         location: rgl::UniformLocation,
         value: [f32; 16],
     ) -> anyhow::Result<()> {
-        self.enable()?;
-        rgl::uniform_matrix_4f32v(location, true, &[value])?;
+        self.enable();
+        rgl::uniform_matrix_4f32v(location, rgl::MatrixOrderMajor::Row, &[value]);
         Ok(())
     }
 }
@@ -266,39 +262,39 @@ impl Drop for Texture {
 }
 impl Texture {
     fn new(data: &[u8], format: rgl::TextureFormat, size: (u32, u32)) -> anyhow::Result<Self> {
-        let texture = Texture(rgl::gen_texture());
+        let mut texture = rgl::Texture::default();
+        rgl::gen_textures(std::slice::from_mut(&mut texture));
+        let texture = Texture(texture);
 
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture.0))?;
-        rgl::texture_target_wrap(
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture.0);
+        rgl::texture_target_wrap_s(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::S,
             rgl::TextureWrapMode::Repeat,
-        )?;
-        rgl::texture_target_wrap(
+        );
+        rgl::texture_target_wrap_t(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::T,
             rgl::TextureWrapMode::Repeat,
-        )?;
+        );
         rgl::texture_target_min_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMinFilter::Linear,
-        )?;
+        );
         rgl::texture_target_mag_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMagFilter::Linear,
-        )?;
+        );
 
-        rgl::texture_image_2d(
-            rgl::Texture2DTarget::Image2D,
+        rgl::tex_image_2d(
+            rgl::TextureBinding2DTarget::Image2D,
             0,
             rgl::TextureInternalFormat::RGB,
             size.0,
             size.1,
             format,
-            rgl::TexturePixelDataType::U8,
-            data,
-        )?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, None)?;
+            rgl::TexturePixelType::U8,
+            rgl::TextureData::Data(data),
+        );
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, rgl::Texture::default());
 
         Ok(texture)
     }
@@ -309,7 +305,7 @@ struct InstancedIndexedVertexUVMesh {
     vbo: rgl::Buffer,
     ebo: rgl::Buffer,
     diffuse: rgl::Texture,
-    indices_count: u32,
+    indices_count: u64,
 }
 impl Drop for InstancedIndexedVertexUVMesh {
     fn drop(&mut self) {
@@ -319,64 +315,70 @@ impl Drop for InstancedIndexedVertexUVMesh {
 }
 impl InstancedIndexedVertexUVMesh {
     fn new(vertices: &[f32], indices: &[u32], diffuse: rgl::Texture) -> anyhow::Result<Self> {
+        let mut vao = rgl::VertexArray::default();
+        let mut buffers = [rgl::Buffer::default(); 2];
+
+        rgl::gen_vertex_arrays(std::slice::from_mut(&mut vao));
+        rgl::gen_buffers(&mut buffers);
+        let [vbo, ebo] = buffers;
+
         let mesh = InstancedIndexedVertexUVMesh {
-            vao: rgl::gen_vertex_array(),
-            vbo: rgl::gen_buffer(),
-            ebo: rgl::gen_buffer(),
+            vao,
+            vbo,
+            ebo,
             diffuse,
-            indices_count: indices.len() as u32,
+            indices_count: indices.len() as u64,
         };
 
-        rgl::bind_vertex_array(Some(mesh.vao))?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(mesh.vbo))?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::ElementArray, Some(mesh.ebo))?;
+        rgl::bind_vertex_array(mesh.vao);
+        rgl::bind_buffer(rgl::BufferBindingTarget::Array, mesh.vbo);
+        rgl::bind_buffer(rgl::BufferBindingTarget::ElementArray, mesh.ebo);
 
         rgl::buffer_data(
             rgl::BufferBindingTarget::Array,
             vertices,
-            rgl::BufferUsage(
-                rgl::BufferUsageFrequency::Static,
-                rgl::BufferUsageNature::Draw,
-            ),
-        )?;
+            rgl::BufferUsageFrequency::Static,
+            rgl::BufferUsageNature::Draw,
+        );
         rgl::buffer_data(
             rgl::BufferBindingTarget::ElementArray,
             indices,
-            rgl::BufferUsage(
-                rgl::BufferUsageFrequency::Static,
-                rgl::BufferUsageNature::Draw,
-            ),
-        )?;
+            rgl::BufferUsageFrequency::Static,
+            rgl::BufferUsageNature::Draw,
+        );
 
         let position_size = std::mem::size_of::<f32>() * 3;
         let uv_size = std::mem::size_of::<f32>() * 2;
         let stride = position_size + uv_size;
 
         // position triple
-        rgl::enable_vertex_attribute_array(0)?;
-        rgl::vertex_attribute_float_pointer(
+        rgl::enable_vertex_attrib_array(0);
+        rgl::vertex_attrib_float_pointer(
             0,
-            rgl::VertexAttributeSize::Triple,
-            rgl::VertexAttributeFloatType::F32,
+            rgl::VertexAttribSize::Triple,
+            rgl::VertexAttribFloatType::F32,
             false,
-            stride as u32,
+            stride as u64,
             0,
-        )?;
+        );
 
         // uv duple
-        rgl::enable_vertex_attribute_array(1)?;
-        rgl::vertex_attribute_float_pointer(
+        rgl::enable_vertex_attrib_array(1);
+        rgl::vertex_attrib_float_pointer(
             1,
-            rgl::VertexAttributeSize::Duple,
-            rgl::VertexAttributeFloatType::F32,
+            rgl::VertexAttribSize::Double,
+            rgl::VertexAttribFloatType::F32,
             false,
-            stride as u32,
-            position_size as u32,
-        )?;
+            stride as u64,
+            position_size as u64,
+        );
 
-        rgl::bind_vertex_array(None)?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::ElementArray, None)?;
+        rgl::bind_vertex_array(rgl::VertexArray::default());
+        rgl::bind_buffer(rgl::BufferBindingTarget::Array, rgl::Buffer::default());
+        rgl::bind_buffer(
+            rgl::BufferBindingTarget::ElementArray,
+            rgl::Buffer::default(),
+        );
 
         Ok(mesh)
     }
@@ -462,24 +464,24 @@ impl WavefrontObjModel {
         })
     }
 
-    fn draw(&self, shader_program: &Program, instance_count: u32) -> anyhow::Result<()> {
-        shader_program.enable()?;
+    fn draw(&self, shader_program: &Program, instance_count: u64) -> anyhow::Result<()> {
+        shader_program.enable();
 
-        rgl::uniform_1i32(shader_program.find_uniform("diffuse")?, 0)?;
+        rgl::uniform_1i32(shader_program.find_uniform("material.diffuse")?, 0);
 
         for mesh in &self.meshes {
-            rgl::active_texture(0)?;
-            rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(mesh.diffuse))?;
+            rgl::active_texture(0);
+            rgl::bind_texture(rgl::TextureBindingTarget::Image2D, mesh.diffuse);
 
-            rgl::bind_vertex_array(Some(mesh.vao))?;
+            rgl::bind_vertex_array(mesh.vao);
             rgl::draw_elements_instanced(
-                rgl::RenderPrimitive::Triangles,
+                rgl::DrawMode::Triangles,
                 mesh.indices_count,
-                rgl::IndicesType::U32,
+                rgl::DrawIndexType::U32,
                 0,
                 instance_count,
-            )?;
-            rgl::bind_vertex_array(None)?;
+            );
+            rgl::bind_vertex_array(rgl::VertexArray::default());
         }
 
         Ok(())

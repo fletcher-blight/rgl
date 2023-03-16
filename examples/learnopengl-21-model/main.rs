@@ -1,5 +1,6 @@
 use image::GenericImageView;
 use nalgebra_glm as glm;
+use rgl::prelude as rgl;
 
 fn main() -> anyhow::Result<()> {
     let sdl = sdl2::init().unwrap();
@@ -27,19 +28,19 @@ fn main() -> anyhow::Result<()> {
     let light_model = CubeModel::new()?;
 
     let backpack_shader_program = Program::new(&[
-        Shader::new(include_bytes!("backpack.vert"), rgl::ShaderType::Vertex)?,
-        Shader::new(include_bytes!("backpack.frag"), rgl::ShaderType::Fragment)?,
+        Shader::new(include_str!("backpack.vert"), rgl::ShaderType::Vertex)?,
+        Shader::new(include_str!("backpack.frag"), rgl::ShaderType::Fragment)?,
     ])?;
 
     let light_shader_program = Program::new(&[
-        Shader::new(include_bytes!("light.vert"), rgl::ShaderType::Vertex)?,
-        Shader::new(include_bytes!("light.frag"), rgl::ShaderType::Fragment)?,
+        Shader::new(include_str!("light.vert"), rgl::ShaderType::Vertex)?,
+        Shader::new(include_str!("light.frag"), rgl::ShaderType::Fragment)?,
     ])?;
 
     rgl::uniform_1f32(
         backpack_shader_program.find_uniform("material.shininess")?,
         32.0,
-    )?;
+    );
 
     let directional_light_from_left = DirectionalLight {
         direction: [-1.0, -1.0, 0.0],
@@ -118,14 +119,14 @@ fn main() -> anyhow::Result<()> {
                 .0[0];
 
         {
-            backpack_shader_program.enable()?;
+            backpack_shader_program.enable();
 
             rgl::uniform_3f32(
                 backpack_shader_program.find_uniform("view_position")?,
                 camera.position[0],
                 camera.position[1],
                 camera.position[2],
-            )?;
+            );
 
             point_light_horizontal_rotating
                 .update(&backpack_shader_program, "point_light_horizontal_rotating")?;
@@ -144,7 +145,7 @@ fn main() -> anyhow::Result<()> {
             model.draw(&backpack_shader_program)?;
         }
         {
-            light_shader_program.enable()?;
+            light_shader_program.enable();
 
             light_shader_program.set_uniform_mat4(
                 light_shader_program.find_uniform("model")?,
@@ -177,21 +178,20 @@ fn main() -> anyhow::Result<()> {
 struct Shader(rgl::Shader);
 impl Drop for Shader {
     fn drop(&mut self) {
-        rgl::delete_shader(self.0).unwrap();
+        rgl::delete_shader(self.0);
     }
 }
 impl Shader {
-    fn new(source: &[u8], shader_type: rgl::ShaderType) -> anyhow::Result<Self> {
-        let shader = Shader(rgl::create_shader(shader_type).unwrap());
-        rgl::shader_source(shader.0, source)?;
-        rgl::compile_shader(shader.0)?;
+    fn new(source: &str, shader_type: rgl::ShaderType) -> anyhow::Result<Self> {
+        let shader = Shader(rgl::create_shader(shader_type));
+        rgl::shader_source(shader.0, source);
+        rgl::compile_shader(shader.0);
 
-        if rgl::get_shader_compile_status(shader.0)? {
+        if rgl::get_shader_compile_status(shader.0) {
             Ok(shader)
         } else {
             let mut buffer = [0; 1024];
-            let num_bytes: usize = rgl::get_shader_info_log(shader.0, &mut buffer)? as usize;
-            let buffer: &[u8] = &buffer[0..num_bytes];
+            let buffer = rgl::get_shader_info_log(shader.0, &mut buffer);
             let info_log: String = String::from_utf8_lossy(buffer).into_owned();
             Err(anyhow::Error::msg(format!(
                 "{shader_type:?} Shader Compilation Failed: {info_log}"
@@ -203,30 +203,28 @@ impl Shader {
 struct Program(rgl::Program);
 impl Drop for Program {
     fn drop(&mut self) {
-        rgl::delete_program(self.0).unwrap();
+        rgl::delete_program(self.0);
     }
 }
 impl Program {
     fn new(shaders: &[Shader]) -> anyhow::Result<Self> {
-        let shader_program = Program(rgl::create_program().unwrap());
+        let shader_program = Program(rgl::create_program());
 
         for shader in shaders {
-            rgl::attach_shader(shader_program.0, shader.0)?;
+            rgl::attach_shader(shader_program.0, shader.0);
         }
 
-        rgl::link_program(shader_program.0)?;
+        rgl::link_program(shader_program.0);
 
         for shader in shaders {
-            rgl::detach_shader(shader_program.0, shader.0)?;
+            rgl::detach_shader(shader_program.0, shader.0);
         }
 
-        if rgl::get_program_link_status(shader_program.0)? {
+        if rgl::get_program_link_status(shader_program.0) {
             Ok(shader_program)
         } else {
             let mut buffer = [0; 1024];
-            let num_bytes: usize =
-                rgl::get_program_info_log(shader_program.0, &mut buffer)? as usize;
-            let buffer: &[u8] = &buffer[0..num_bytes];
+            let buffer = rgl::get_program_info_log(shader_program.0, &mut buffer);
             let info_log: String = String::from_utf8_lossy(buffer).into_owned();
             Err(anyhow::Error::msg(format!(
                 "Shader Program Link Failed: {info_log}"
@@ -234,15 +232,14 @@ impl Program {
         }
     }
 
-    fn enable(&self) -> anyhow::Result<()> {
-        rgl::use_program(self.0)?;
-        Ok(())
+    fn enable(&self) {
+        rgl::use_program(self.0);
     }
 
     fn find_uniform(&self, name: &str) -> anyhow::Result<rgl::UniformLocation> {
-        self.enable()?;
+        self.enable();
         let name = std::ffi::CString::new(name)?;
-        let location = rgl::get_uniform_location(self.0, &name)?;
+        let location = rgl::get_uniform_location(self.0, &name);
         Ok(location)
     }
 
@@ -251,8 +248,8 @@ impl Program {
         location: rgl::UniformLocation,
         value: [f32; 16],
     ) -> anyhow::Result<()> {
-        self.enable()?;
-        rgl::uniform_matrix_4f32v(location, true, &[value])?;
+        self.enable();
+        rgl::uniform_matrix_4f32v(location, rgl::MatrixOrderMajor::Row, &[value]);
         Ok(())
     }
 }
@@ -265,39 +262,39 @@ impl Drop for Texture {
 }
 impl Texture {
     fn new(data: &[u8], format: rgl::TextureFormat, size: (u32, u32)) -> anyhow::Result<Self> {
-        let texture = Texture(rgl::gen_texture());
+        let mut texture = rgl::Texture::default();
+        rgl::gen_textures(std::slice::from_mut(&mut texture));
+        let texture = Texture(texture);
 
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(texture.0))?;
-        rgl::texture_target_wrap(
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, texture.0);
+        rgl::texture_target_wrap_s(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::S,
             rgl::TextureWrapMode::Repeat,
-        )?;
-        rgl::texture_target_wrap(
+        );
+        rgl::texture_target_wrap_t(
             rgl::TextureBindingTarget::Image2D,
-            rgl::TextureWrapTarget::T,
             rgl::TextureWrapMode::Repeat,
-        )?;
+        );
         rgl::texture_target_min_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMinFilter::Linear,
-        )?;
+        );
         rgl::texture_target_mag_filter(
             rgl::TextureBindingTarget::Image2D,
             rgl::TextureMagFilter::Linear,
-        )?;
+        );
 
-        rgl::texture_image_2d(
-            rgl::Texture2DTarget::Image2D,
+        rgl::tex_image_2d(
+            rgl::TextureBinding2DTarget::Image2D,
             0,
             rgl::TextureInternalFormat::RGB,
             size.0,
             size.1,
             format,
-            rgl::TexturePixelDataType::U8,
-            data,
-        )?;
-        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, None)?;
+            rgl::TexturePixelType::U8,
+            rgl::TextureData::Data(data),
+        );
+        rgl::bind_texture(rgl::TextureBindingTarget::Image2D, rgl::Texture(0));
 
         Ok(texture)
     }
@@ -315,19 +312,19 @@ impl LightColour {
             self.ambient[0],
             self.ambient[1],
             self.ambient[2],
-        )?;
+        );
         rgl::uniform_3f32(
             shader_program.find_uniform(&format!("{name}.diffuse"))?,
             self.diffuse[0],
             self.diffuse[1],
             self.diffuse[2],
-        )?;
+        );
         rgl::uniform_3f32(
             shader_program.find_uniform(&format!("{name}.specular"))?,
             self.specular[0],
             self.specular[1],
             self.specular[2],
-        )?;
+        );
         Ok(())
     }
 }
@@ -342,15 +339,15 @@ impl LightAttenuation {
         rgl::uniform_1f32(
             shader_program.find_uniform(&format!("{name}.constant"))?,
             self.constant,
-        )?;
+        );
         rgl::uniform_1f32(
             shader_program.find_uniform(&format!("{name}.linear"))?,
             self.linear,
-        )?;
+        );
         rgl::uniform_1f32(
             shader_program.find_uniform(&format!("{name}.quadratic"))?,
             self.quadratic,
-        )?;
+        );
         Ok(())
     }
 }
@@ -368,7 +365,7 @@ impl DirectionalLight {
             self.direction[0],
             self.direction[1],
             self.direction[2],
-        )?;
+        );
         Ok(())
     }
 }
@@ -389,7 +386,7 @@ impl PointLight {
             self.position[0],
             self.position[1],
             self.position[2],
-        )?;
+        );
         Ok(())
     }
 }
@@ -406,11 +403,14 @@ impl Drop for CubeModel {
 }
 impl CubeModel {
     fn new() -> anyhow::Result<Self> {
-        let vao = rgl::gen_vertex_array();
-        let vbo = rgl::gen_buffer();
+        let mut vao = rgl::VertexArray::default();
+        let mut vbo = rgl::Buffer::default();
 
-        rgl::bind_vertex_array(Some(vao))?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(vbo))?;
+        rgl::gen_vertex_arrays(std::slice::from_mut(&mut vao));
+        rgl::gen_buffers(std::slice::from_mut(&mut vbo));
+
+        rgl::bind_vertex_array(vao);
+        rgl::bind_buffer(rgl::BufferBindingTarget::Array, vbo);
         rgl::buffer_data(
             rgl::BufferBindingTarget::Array,
             &[
@@ -457,30 +457,28 @@ impl CubeModel {
                 [-0.5, 0.5, -0.5],
                 [-0.5, -0.5, -0.5],
             ],
-            rgl::BufferUsage(
-                rgl::BufferUsageFrequency::Static,
-                rgl::BufferUsageNature::Draw,
-            ),
-        )?;
-        rgl::enable_vertex_attribute_array(0)?;
-        rgl::vertex_attribute_float_pointer(
+            rgl::BufferUsageFrequency::Static,
+            rgl::BufferUsageNature::Draw,
+        );
+        rgl::enable_vertex_attrib_array(0);
+        rgl::vertex_attrib_float_pointer(
             0,
-            rgl::VertexAttributeSize::Triple,
-            rgl::VertexAttributeFloatType::F32,
+            rgl::VertexAttribSize::Triple,
+            rgl::VertexAttribFloatType::F32,
             false,
-            (std::mem::size_of::<f32>() * 3) as u32,
+            (std::mem::size_of::<f32>() * 3) as u64,
             0,
-        )?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
+        );
+        rgl::bind_buffer(rgl::BufferBindingTarget::Array, rgl::Buffer::default());
 
         Ok(CubeModel { vao, vbo })
     }
 
     fn draw(&self, shader: &Program) -> anyhow::Result<()> {
-        shader.enable()?;
-        rgl::bind_vertex_array(Some(self.vao))?;
-        rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
-        rgl::bind_vertex_array(None)?;
+        shader.enable();
+        rgl::bind_vertex_array(self.vao);
+        rgl::draw_arrays(rgl::DrawMode::Triangles, 0, 36);
+        rgl::bind_vertex_array(rgl::VertexArray::default());
         Ok(())
     }
 }
@@ -491,7 +489,7 @@ struct IndexedVertexNormalUVMesh {
     ebo: rgl::Buffer,
     diffuse: rgl::Texture,
     specular: rgl::Texture,
-    indices_count: u32,
+    indices_count: u64,
 }
 impl Drop for IndexedVertexNormalUVMesh {
     fn drop(&mut self) {
@@ -506,35 +504,38 @@ impl IndexedVertexNormalUVMesh {
         diffuse: rgl::Texture,
         specular: rgl::Texture,
     ) -> anyhow::Result<Self> {
+        let mut vao = rgl::VertexArray::default();
+        let mut buffers = [rgl::Buffer::default(); 2];
+
+        rgl::gen_vertex_arrays(std::slice::from_mut(&mut vao));
+        rgl::gen_buffers(&mut buffers);
+        let [vbo, ebo] = buffers;
+
         let mesh = IndexedVertexNormalUVMesh {
-            vao: rgl::gen_vertex_array(),
-            vbo: rgl::gen_buffer(),
-            ebo: rgl::gen_buffer(),
+            vao,
+            vbo,
+            ebo,
             diffuse,
             specular,
-            indices_count: indices.len() as u32,
+            indices_count: indices.len() as u64,
         };
 
-        rgl::bind_vertex_array(Some(mesh.vao))?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(mesh.vbo))?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::ElementArray, Some(mesh.ebo))?;
+        rgl::bind_vertex_array(mesh.vao);
+        rgl::bind_buffer(rgl::BufferBindingTarget::Array, mesh.vbo);
+        rgl::bind_buffer(rgl::BufferBindingTarget::ElementArray, mesh.ebo);
 
         rgl::buffer_data(
             rgl::BufferBindingTarget::Array,
             vertices,
-            rgl::BufferUsage(
-                rgl::BufferUsageFrequency::Static,
-                rgl::BufferUsageNature::Draw,
-            ),
-        )?;
+            rgl::BufferUsageFrequency::Static,
+            rgl::BufferUsageNature::Draw,
+        );
         rgl::buffer_data(
             rgl::BufferBindingTarget::ElementArray,
             indices,
-            rgl::BufferUsage(
-                rgl::BufferUsageFrequency::Static,
-                rgl::BufferUsageNature::Draw,
-            ),
-        )?;
+            rgl::BufferUsageFrequency::Static,
+            rgl::BufferUsageNature::Draw,
+        );
 
         let position_size = std::mem::size_of::<f32>() * 3;
         let normal_size = std::mem::size_of::<f32>() * 3;
@@ -542,41 +543,44 @@ impl IndexedVertexNormalUVMesh {
         let stride = position_size + normal_size + uv_size;
 
         // position triple
-        rgl::enable_vertex_attribute_array(0)?;
-        rgl::vertex_attribute_float_pointer(
+        rgl::enable_vertex_attrib_array(0);
+        rgl::vertex_attrib_float_pointer(
             0,
-            rgl::VertexAttributeSize::Triple,
-            rgl::VertexAttributeFloatType::F32,
+            rgl::VertexAttribSize::Triple,
+            rgl::VertexAttribFloatType::F32,
             false,
-            stride as u32,
+            stride as u64,
             0,
-        )?;
+        );
 
         // normal triple
-        rgl::enable_vertex_attribute_array(1)?;
-        rgl::vertex_attribute_float_pointer(
+        rgl::enable_vertex_attrib_array(1);
+        rgl::vertex_attrib_float_pointer(
             1,
-            rgl::VertexAttributeSize::Triple,
-            rgl::VertexAttributeFloatType::F32,
+            rgl::VertexAttribSize::Triple,
+            rgl::VertexAttribFloatType::F32,
             false,
-            stride as u32,
-            position_size as u32,
-        )?;
+            stride as u64,
+            position_size as u64,
+        );
 
         // uv duple
-        rgl::enable_vertex_attribute_array(2)?;
-        rgl::vertex_attribute_float_pointer(
+        rgl::enable_vertex_attrib_array(2);
+        rgl::vertex_attrib_float_pointer(
             2,
-            rgl::VertexAttributeSize::Duple,
-            rgl::VertexAttributeFloatType::F32,
+            rgl::VertexAttribSize::Double,
+            rgl::VertexAttribFloatType::F32,
             false,
-            stride as u32,
-            (position_size + normal_size) as u32,
-        )?;
+            stride as u64,
+            (position_size + normal_size) as u64,
+        );
 
-        rgl::bind_vertex_array(None)?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
-        rgl::bind_buffer(rgl::BufferBindingTarget::ElementArray, None)?;
+        rgl::bind_vertex_array(rgl::VertexArray::default());
+        rgl::bind_buffer(rgl::BufferBindingTarget::Array, rgl::Buffer::default());
+        rgl::bind_buffer(
+            rgl::BufferBindingTarget::ElementArray,
+            rgl::Buffer::default(),
+        );
 
         Ok(mesh)
     }
@@ -681,26 +685,26 @@ impl WavefrontObjModel {
     }
 
     fn draw(&self, shader_program: &Program) -> anyhow::Result<()> {
-        shader_program.enable()?;
+        shader_program.enable();
 
-        rgl::uniform_1i32(shader_program.find_uniform("material.diffuse")?, 0)?;
-        rgl::uniform_1i32(shader_program.find_uniform("material.specular")?, 1)?;
+        rgl::uniform_1i32(shader_program.find_uniform("material.diffuse")?, 0);
+        rgl::uniform_1i32(shader_program.find_uniform("material.specular")?, 1);
 
         for mesh in &self.meshes {
-            rgl::active_texture(0)?;
-            rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(mesh.diffuse))?;
+            rgl::active_texture(0);
+            rgl::bind_texture(rgl::TextureBindingTarget::Image2D, mesh.diffuse);
 
-            rgl::active_texture(1)?;
-            rgl::bind_texture(rgl::TextureBindingTarget::Image2D, Some(mesh.specular))?;
+            rgl::active_texture(1);
+            rgl::bind_texture(rgl::TextureBindingTarget::Image2D, mesh.specular);
 
-            rgl::bind_vertex_array(Some(mesh.vao))?;
+            rgl::bind_vertex_array(mesh.vao);
             rgl::draw_elements(
-                rgl::RenderPrimitive::Triangles,
+                rgl::DrawMode::Triangles,
                 mesh.indices_count,
-                rgl::IndicesType::U32,
+                rgl::DrawIndexType::U32,
                 0,
-            )?;
-            rgl::bind_vertex_array(None)?;
+            );
+            rgl::bind_vertex_array(rgl::VertexArray::default());
         }
 
         Ok(())

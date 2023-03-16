@@ -1,4 +1,5 @@
 use nalgebra_glm as glm;
+use rgl::prelude as rgl;
 
 fn main() -> anyhow::Result<()> {
     let sdl = sdl2::init().unwrap();
@@ -22,60 +23,53 @@ fn main() -> anyhow::Result<()> {
     rgl::enable(rgl::Capability::DepthTest);
 
     let cube_shader_program = {
-        let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex).unwrap();
-        rgl::shader_source(vertex_shader, include_bytes!("phong.vert"))?;
-        rgl::compile_shader(vertex_shader)?;
-        assert!(rgl::get_shader_compile_status(vertex_shader)?);
+        let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex);
+        rgl::shader_source(vertex_shader, include_str!("phong.vert"));
+        rgl::compile_shader(vertex_shader);
+        assert!(rgl::get_shader_compile_status(vertex_shader));
 
-        let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment).unwrap();
-        rgl::shader_source(fragment_shader, include_bytes!("phong.frag"))?;
-        rgl::compile_shader(fragment_shader)?;
-        assert!(rgl::get_shader_compile_status(fragment_shader)?);
+        let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment);
+        rgl::shader_source(fragment_shader, include_str!("phong.frag"));
+        rgl::compile_shader(fragment_shader);
+        assert!(rgl::get_shader_compile_status(fragment_shader));
 
-        let shader_program = rgl::create_program().unwrap();
-        rgl::attach_shader(shader_program, vertex_shader)?;
-        rgl::attach_shader(shader_program, fragment_shader)?;
-        rgl::link_program(shader_program)?;
-        assert!(rgl::get_program_link_status(shader_program)?);
-
-        rgl::detach_shader(shader_program, vertex_shader)?;
-        rgl::detach_shader(shader_program, fragment_shader)?;
-        rgl::delete_shader(vertex_shader)?;
-        rgl::delete_shader(fragment_shader)?;
+        let shader_program = rgl::create_program();
+        rgl::attach_shader(shader_program, vertex_shader);
+        rgl::attach_shader(shader_program, fragment_shader);
+        rgl::link_program(shader_program);
+        assert!(rgl::get_program_link_status(shader_program));
 
         shader_program
     };
 
     let light_shader_program = {
-        let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex).unwrap();
-        rgl::shader_source(vertex_shader, include_bytes!("light.vert"))?;
-        rgl::compile_shader(vertex_shader)?;
-        assert!(rgl::get_shader_compile_status(vertex_shader)?);
+        let vertex_shader = rgl::create_shader(rgl::ShaderType::Vertex);
+        rgl::shader_source(vertex_shader, include_str!("light.vert"));
+        rgl::compile_shader(vertex_shader);
+        assert!(rgl::get_shader_compile_status(vertex_shader));
 
-        let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment).unwrap();
-        rgl::shader_source(fragment_shader, include_bytes!("light.frag"))?;
-        rgl::compile_shader(fragment_shader)?;
-        assert!(rgl::get_shader_compile_status(fragment_shader)?);
+        let fragment_shader = rgl::create_shader(rgl::ShaderType::Fragment);
+        rgl::shader_source(fragment_shader, include_str!("light.frag"));
+        rgl::compile_shader(fragment_shader);
+        assert!(rgl::get_shader_compile_status(fragment_shader));
 
-        let shader_program = rgl::create_program().unwrap();
-        rgl::attach_shader(shader_program, vertex_shader)?;
-        rgl::attach_shader(shader_program, fragment_shader)?;
-        rgl::link_program(shader_program)?;
-        assert!(rgl::get_program_link_status(shader_program)?);
-
-        rgl::detach_shader(shader_program, vertex_shader)?;
-        rgl::detach_shader(shader_program, fragment_shader)?;
-        rgl::delete_shader(vertex_shader)?;
-        rgl::delete_shader(fragment_shader)?;
+        let shader_program = rgl::create_program();
+        rgl::attach_shader(shader_program, vertex_shader);
+        rgl::attach_shader(shader_program, fragment_shader);
+        rgl::link_program(shader_program);
+        assert!(rgl::get_program_link_status(shader_program));
 
         shader_program
     };
 
-    let vao = rgl::gen_vertex_array();
-    let vbo = rgl::gen_buffer();
+    let mut vao = Default::default();
+    rgl::gen_vertex_arrays(std::slice::from_mut(&mut vao));
 
-    rgl::bind_vertex_array(Some(vao))?;
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, Some(vbo))?;
+    let mut vbo = Default::default();
+    rgl::gen_buffers(std::slice::from_mut(&mut vbo));
+
+    rgl::bind_vertex_array(vao);
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, vbo);
     rgl::buffer_data(
         rgl::BufferBindingTarget::Array,
         &[
@@ -122,134 +116,132 @@ fn main() -> anyhow::Result<()> {
             [-0.5, 0.5, -0.5],
             [-0.5, -0.5, -0.5],
         ],
-        rgl::BufferUsage(
-            rgl::BufferUsageFrequency::Static,
-            rgl::BufferUsageNature::Draw,
-        ),
-    )?;
-    rgl::enable_vertex_attribute_array(0)?;
-    rgl::vertex_attribute_float_pointer(
+        rgl::BufferUsageFrequency::Static,
+        rgl::BufferUsageNature::Draw,
+    );
+    rgl::enable_vertex_attrib_array(0);
+    rgl::vertex_attrib_float_pointer(
         0,
-        rgl::VertexAttributeSize::Triple,
-        rgl::VertexAttributeFloatType::F32,
+        rgl::VertexAttribSize::Triple,
+        rgl::VertexAttribFloatType::F32,
         false,
-        (std::mem::size_of::<f32>() * 3) as u32,
+        (std::mem::size_of::<f32>() * 3) as u64,
         0,
-    )?;
-    rgl::bind_buffer(rgl::BufferBindingTarget::Array, None)?;
+    );
+    rgl::bind_buffer(rgl::BufferBindingTarget::Array, rgl::Buffer(0));
 
     const LIGHT_COLOUR: [f32; 3] = [1.0, 1.0, 1.0];
     const LIGHT_POS: [f32; 3] = [1.2, 1.0, 2.0];
     const EYE_POS: [f32; 3] = [1.5, 2.0, 5.0];
 
     let cube_model = {
-        rgl::use_program(cube_shader_program)?;
+        rgl::use_program(cube_shader_program);
         let model = rgl::get_uniform_location(
             cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"model\0")?,
-        )?;
+        );
         let view = rgl::get_uniform_location(
             cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"view\0")?,
-        )?;
+        );
         let projection = rgl::get_uniform_location(
             cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"projection\0")?,
-        )?;
+        );
         let object_colour = rgl::get_uniform_location(
             cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"object_colour\0")?,
-        )?;
+        );
         let light_colour = rgl::get_uniform_location(
             cube_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"light_colour\0")?,
-        )?;
+        );
 
-        rgl::uniform_matrix_4f32v(model, true, &[from_glm(&glm::one())])?;
+        rgl::uniform_matrix_4f32v(model, rgl::MatrixOrderMajor::Row, &[from_glm(&glm::one())]);
         rgl::uniform_matrix_4f32v(
             view,
-            true,
+            rgl::MatrixOrderMajor::Row,
             &[from_glm(&glm::look_at(
                 &glm::make_vec3(&EYE_POS),
                 &glm::vec3(0.0, 0.0, 0.0),
                 &glm::vec3(0.0, 1.0, 0.0),
             ))],
-        )?;
+        );
         rgl::uniform_matrix_4f32v(
             projection,
-            true,
+            rgl::MatrixOrderMajor::Row,
             &[from_glm(&glm::perspective(
                 window.size().0 as f32 / window.size().1 as f32,
                 45.0f32.to_radians(),
                 0.1,
                 100.0,
             ))],
-        )?;
+        );
 
-        rgl::uniform_3f32(object_colour, 1.0, 0.5, 0.31)?;
+        rgl::uniform_3f32(object_colour, 1.0, 0.5, 0.31);
         rgl::uniform_3f32(
             light_colour,
             LIGHT_COLOUR[0],
             LIGHT_COLOUR[1],
             LIGHT_COLOUR[2],
-        )?;
+        );
 
         model
     };
 
     {
-        rgl::use_program(light_shader_program)?;
+        rgl::use_program(light_shader_program);
         let model = rgl::get_uniform_location(
             light_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"model\0")?,
-        )?;
+        );
         let view = rgl::get_uniform_location(
             light_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"view\0")?,
-        )?;
+        );
         let projection = rgl::get_uniform_location(
             light_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"projection\0")?,
-        )?;
+        );
         let light_colour = rgl::get_uniform_location(
             light_shader_program,
             std::ffi::CStr::from_bytes_with_nul(b"light_colour\0")?,
-        )?;
+        );
 
         rgl::uniform_matrix_4f32v(
             model,
-            true,
+            rgl::MatrixOrderMajor::Row,
             &[from_glm(&glm::scale(
                 &glm::translate(&glm::one(), &glm::make_vec3(&LIGHT_POS)),
                 &glm::make_vec3(&[0.2; 3]),
             ))],
-        )?;
+        );
         rgl::uniform_matrix_4f32v(
             view,
-            true,
+            rgl::MatrixOrderMajor::Row,
             &[from_glm(&glm::look_at(
                 &glm::make_vec3(&EYE_POS),
                 &glm::vec3(0.0, 0.0, 0.0),
                 &glm::vec3(0.0, 1.0, 0.0),
             ))],
-        )?;
+        );
         rgl::uniform_matrix_4f32v(
             projection,
-            true,
+            rgl::MatrixOrderMajor::Row,
             &[from_glm(&glm::perspective(
                 window.size().0 as f32 / window.size().1 as f32,
                 45.0f32.to_radians(),
                 0.1,
                 100.0,
             ))],
-        )?;
+        );
 
         rgl::uniform_3f32(
             light_colour,
             LIGHT_COLOUR[0],
             LIGHT_COLOUR[1],
             LIGHT_COLOUR[2],
-        )?;
+        );
     }
 
     // ============================================================================================
@@ -274,21 +266,21 @@ fn main() -> anyhow::Result<()> {
         rgl::clear(rgl::ClearMask::COLOUR | rgl::ClearMask::DEPTH);
 
         {
-            rgl::use_program(cube_shader_program)?;
+            rgl::use_program(cube_shader_program);
             rgl::uniform_matrix_4f32v(
                 cube_model,
-                true,
+                rgl::MatrixOrderMajor::Row,
                 &[from_glm(&glm::rotate(
                     &glm::one(),
                     total_duration.as_secs_f32(),
                     &glm::vec3(1.0, 1.0, 1.0),
                 ))],
-            )?;
-            rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
+            );
+            rgl::draw_arrays(rgl::DrawMode::Triangles, 0, 36);
         }
         {
-            rgl::use_program(light_shader_program)?;
-            rgl::draw_arrays(rgl::RenderPrimitive::Triangles, 0, 36)?;
+            rgl::use_program(light_shader_program);
+            rgl::draw_arrays(rgl::DrawMode::Triangles, 0, 36);
         }
 
         window.gl_swap_window();
