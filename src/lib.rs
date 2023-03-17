@@ -47,37 +47,6 @@ use gl::types::*;
 
 pub use gl::load_with;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Error {
-    NoError,
-    InvalidEnum,
-    InvalidValue,
-    InvalidOperation,
-    InvalidFramebufferOperation,
-    OutOfMemory,
-    StackUnderflow,
-    StackOverflow,
-    ImplementationSpecific(u32),
-}
-
-impl From<GLenum> for Error {
-    fn from(value: GLenum) -> Self {
-        match value {
-            gl::NO_ERROR => Error::NoError,
-            gl::INVALID_ENUM => Error::InvalidEnum,
-            other => Error::ImplementationSpecific(other),
-        }
-    }
-}
-
-/// # Return error information
-/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGetError.xhtml>
-pub fn get_error() -> Error {
-    // SAFE: just an integer copy
-    let error = unsafe { gl::GetError() };
-    Error::from(error)
-}
-
 /// Server-side GL capabilities
 ///
 /// Use [is_enabled] or [get] to determine the current setting of any capability. The initial value
