@@ -23,93 +23,6 @@ bitflags::bitflags! {
     }
 }
 
-/// # Clear buffers to preset values
-/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glClear.xhtml>
-///
-/// # Arguments
-/// * `mask` - Bitwise OR of masks that indicate the buffers to be cleared.
-///
-/// # Example
-/// ```no_run
-/// # use rgl::prelude::*;
-/// clear(ClearMask::COLOUR | ClearMask::DEPTH);
-/// ```
-///
-/// # Description
-/// [clear] sets the bitplane area of the window to values previously selected by [clear_colour],
-/// [clear_depth], and [clear_stencil]. Multiple color buffers can be cleared simultaneously by
-/// selecting more than one buffer at a time using [draw_buffer] glDrawBuffer.
-///
-/// The pixel ownership test, the scissor test, dithering, and the buffer writemasks affect the
-/// operation of [clear]. The scissor box bounds the cleared region. Alpha function, blend function,
-/// logical operation, stenciling, texture mapping, and depth-buffering are ignored by [clear].
-///
-/// [clear] takes a single argument that is the bitwise OR of several values indicating which buffer
-/// is to be cleared.
-///
-/// The value to which each buffer is cleared depends on the setting of the clear value for that
-/// buffer.
-///
-/// If a buffer is not present, then a [clear] directed at that buffer has no effect.
-///
-/// # Associated Gets
-/// * [get_depth_clear_value]
-/// * [get_colour_clear_value]
-/// * [get_stencil_clear_value]
-///
-/// # Version Support
-///
-/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
-/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-/// | [clear] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
-///
-/// # See Also
-/// * [clear_colour]
-/// * [clear_depth]
-/// * [clear_stencil]
-/// * [colour_mask]
-/// * [depth_mask]
-/// * [draw_buffer]
-/// * [scissor]
-/// * [stencil_mask]
-pub fn clear(mask: ClearMask) {
-    let mask = mask.bits;
-    unsafe { gl::Clear(mask) }
-}
-
-/// # Specify clear values for the color buffers
-/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glClearColor.xhtml>
-///
-/// # Arguments
-/// * `red`, `green`, `blue`, `alpha` - Specify the red, green, blue, and alpha values used when the
-/// color buffers are cleared. The initial values are all 0.0.
-///
-/// # Example
-/// ```no_run
-/// # use rgl::prelude::*;
-/// clear_colour(0.1, 0.1, 0.1, 0.1);
-/// ```
-///
-/// # Description
-/// [clear_colour] specifies the red, green, blue, and alpha values used by [clear] to clear the
-/// colour buffers. Values specified by [clear_colour] are clamped to the range [0,1].
-///
-/// # Associated Gets
-/// * [get_colour_clear]
-///
-/// # Version Support
-///
-/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
-/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-/// | [clear_colour] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
-///
-/// # See Also
-/// * [clear]
-pub fn clear_colour(red: f32, green: f32, blue: f32, alpha: f32) {
-    // SAFE: synchronous integer copy
-    unsafe { gl::ClearColor(red, green, blue, alpha) }
-}
-
 /// Server-side GL capabilities
 ///
 /// Use [is_enabled] or [get] to determine the current setting of any capability. The initial value
@@ -278,6 +191,137 @@ impl From<Capability> for GLenum {
     }
 }
 
+/// # Depth Func Comparison Function
+/// see [depth_func]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum DepthFunc {
+    /// Never passes
+    Never,
+
+    /// Passes if the incoming depth value is less than the stored depth value.
+    Less,
+
+    /// Passes if the incoming depth value is equal to the stored depth value.
+    Equal,
+
+    /// Passes if the incoming depth value is less than or equal to the stored depth value.
+    LessOrEqual,
+
+    /// Passes if the incoming depth value is greater than the stored depth value.
+    Greater,
+
+    /// Passes if the incoming depth value is not equal to the stored depth value.
+    NotEqual,
+
+    ///  Passes if the incoming depth value is greater than or equal to the stored depth value.
+    GreaterOrEqual,
+
+    /// Always passes.
+    Always,
+}
+
+impl From<DepthFunc> for GLenum {
+    fn from(value: DepthFunc) -> Self {
+        match value {
+            DepthFunc::Never => gl::NEVER,
+            DepthFunc::Less => gl::LESS,
+            DepthFunc::Equal => gl::EQUAL,
+            DepthFunc::LessOrEqual => gl::LEQUAL,
+            DepthFunc::Greater => gl::GREATER,
+            DepthFunc::NotEqual => gl::NOTEQUAL,
+            DepthFunc::GreaterOrEqual => gl::GEQUAL,
+            DepthFunc::Always => gl::ALWAYS,
+        }
+    }
+}
+
+/// # Clear buffers to preset values
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glClear.xhtml>
+///
+/// # Arguments
+/// * `mask` - Bitwise OR of masks that indicate the buffers to be cleared.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// clear(ClearMask::COLOUR | ClearMask::DEPTH);
+/// ```
+///
+/// # Description
+/// [clear] sets the bitplane area of the window to values previously selected by [clear_colour],
+/// [clear_depth], and [clear_stencil]. Multiple color buffers can be cleared simultaneously by
+/// selecting more than one buffer at a time using [draw_buffer] glDrawBuffer.
+///
+/// The pixel ownership test, the scissor test, dithering, and the buffer writemasks affect the
+/// operation of [clear]. The scissor box bounds the cleared region. Alpha function, blend function,
+/// logical operation, stenciling, texture mapping, and depth-buffering are ignored by [clear].
+///
+/// [clear] takes a single argument that is the bitwise OR of several values indicating which buffer
+/// is to be cleared.
+///
+/// The value to which each buffer is cleared depends on the setting of the clear value for that
+/// buffer.
+///
+/// If a buffer is not present, then a [clear] directed at that buffer has no effect.
+///
+/// # Associated Gets
+/// * [get_depth_clear_value]
+/// * [get_colour_clear_value]
+/// * [get_stencil_clear_value]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [clear] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [clear_colour]
+/// * [clear_depth]
+/// * [clear_stencil]
+/// * [colour_mask]
+/// * [depth_mask]
+/// * [draw_buffer]
+/// * [scissor]
+/// * [stencil_mask]
+pub fn clear(mask: ClearMask) {
+    let mask = mask.bits;
+    unsafe { gl::Clear(mask) }
+}
+
+/// # Specify clear values for the color buffers
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glClearColor.xhtml>
+///
+/// # Arguments
+/// * `red`, `green`, `blue`, `alpha` - Specify the red, green, blue, and alpha values used when the
+/// color buffers are cleared. The initial values are all 0.0.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// clear_colour(0.1, 0.1, 0.1, 0.1);
+/// ```
+///
+/// # Description
+/// [clear_colour] specifies the red, green, blue, and alpha values used by [clear] to clear the
+/// colour buffers. Values specified by [clear_colour] are clamped to the range [0,1].
+///
+/// # Associated Gets
+/// * [get_colour_clear]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [clear_colour] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [clear]
+pub fn clear_colour(red: f32, green: f32, blue: f32, alpha: f32) {
+    // SAFE: synchronous integer copy
+    unsafe { gl::ClearColor(red, green, blue, alpha) }
+}
+
 /// # Enable server-side GL capabilities
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glEnable.xhtml>
 ///
@@ -377,4 +421,49 @@ pub fn disable(capability: Capability) {
 pub fn depth_mask(enabled: bool) {
     let flag = GLboolean::from(enabled);
     unsafe { gl::DepthMask(flag) }
+}
+
+/// # Specify the value used for depth buffer comparisons
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDepthFunc.xhtml>
+///
+/// # Arguments
+/// * `func` - Specifies the depth comparison function.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// depth_func(DepthFunc::Greater);
+/// ```
+///
+/// # Description
+/// [depth_func] specifies the function used to compare each incoming pixel depth value with the
+/// depth value present in the depth buffer. The comparison is performed only if depth testing is
+/// enabled. (See [enable] and [disable] of [Capability::DepthTest].)
+///
+/// `func` specifies the conditions under which the pixel will be drawn.
+///
+/// The initial value of func is [DepthFunc::Less]. Initially, depth testing is disabled. If depth
+/// testing is disabled or if no depth buffer exists, it is as if the depth test always passes.
+///
+/// Even if the depth buffer exists and the depth mask is non-zero, the depth buffer is not updated
+/// if the depth test is disabled. In order to unconditionally write to the depth buffer, the depth
+/// test should be enabled and set to [DepthFunc::Always].
+///
+/// # Associated Gets
+/// * [get_depth_func]
+/// * [is_enabled]([Capability::DepthTest])
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [depth_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [depth_range]
+/// * [enable]
+/// * [polygon_offset]
+pub fn depth_func(func: DepthFunc) {
+    let func = GLenum::from(func);
+    unsafe { gl::DepthFunc(func) }
 }
