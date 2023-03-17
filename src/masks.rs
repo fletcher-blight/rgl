@@ -337,3 +337,44 @@ pub fn disable(capability: Capability) {
     let cap = GLenum::from(capability);
     unsafe { gl::Disable(cap) }
 }
+
+/// # Enable or disable writing into the depth buffer
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDepthMask.xhtml>
+///
+/// # Arguments
+/// * `enabled` - Specifies whether the depth buffer is enabled for writing. If `enabled` is false,
+/// depth buffer writing is disabled. Otherwise, it is enabled. Initially, depth buffer writing is
+/// enabled.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// depth_mask(true);
+/// ```
+///
+/// # Description
+/// [depth_mask] specifies whether the depth buffer is enabled for writing. If flag is false, depth
+/// buffer writing is disabled. Otherwise, it is enabled. Initially, depth buffer writing is enabled.
+///
+/// Even if the depth buffer exists and the depth mask is non-zero, the depth buffer is not updated
+/// if the depth test is disabled. In order to unconditionally write to the depth buffer, the depth
+/// test should be enabled and set to [depth_func]([DepthFunc::Always]).
+///
+/// # Associated Gets
+/// * [get_depth_write_mask]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [depth_mask] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [colour_mask]
+/// * [depth_func]
+/// * [depth_range]
+/// * [stencil_mask]
+pub fn depth_mask(enabled: bool) {
+    let flag = GLboolean::from(enabled);
+    unsafe { gl::DepthMask(flag) }
+}
