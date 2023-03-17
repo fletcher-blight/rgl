@@ -331,7 +331,7 @@ pub fn enable(capability: Capability) {
     unsafe { gl::Enable(cap) }
 }
 
-/// # disable server-side GL capabilities
+/// # Disable server-side GL capabilities
 /// see [enable]
 pub fn disable(capability: Capability) {
     let cap = GLenum::from(capability);
