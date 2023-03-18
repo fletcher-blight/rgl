@@ -62,33 +62,6 @@ impl From<TextureDepthStencilMode> for GLenum {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum TextureCompareFunc {
-    Never,
-    Always,
-    Equal,
-    NotEqual,
-    LessOrEqual,
-    GreaterOrEqual,
-    Less,
-    Greater,
-}
-
-impl From<TextureCompareFunc> for GLenum {
-    fn from(value: TextureCompareFunc) -> Self {
-        match value {
-            TextureCompareFunc::Never => gl::NEVER,
-            TextureCompareFunc::Always => gl::ALWAYS,
-            TextureCompareFunc::Equal => gl::EQUAL,
-            TextureCompareFunc::NotEqual => gl::NOTEQUAL,
-            TextureCompareFunc::LessOrEqual => gl::LEQUAL,
-            TextureCompareFunc::GreaterOrEqual => gl::GEQUAL,
-            TextureCompareFunc::Less => gl::LESS,
-            TextureCompareFunc::Greater => gl::GREATER,
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TextureCompareMode {
     /// Specifies that the interpolated and clamped `r` texture coordinate should be compared to the
     /// value in the currently bound depth texture. See the discussion of
@@ -1331,7 +1304,7 @@ pub mod tex_parameter {
     /// # Example
     /// ```no_run
     /// # use rgl::prelude::*;
-    /// texture_target_compare_func(TextureBindingTarget::Image2D, TextureCompareFunc::LessOrEqual);
+    /// texture_target_compare_func(TextureBindingTarget::Image2D, CompareFunc::LessOrEqual);
     /// ```
     ///
     /// # Description
@@ -1346,7 +1319,7 @@ pub mod tex_parameter {
     ///
     /// # See Also
     /// * [tex_parameter]
-    pub fn texture_target_compare_func(target: TextureBindingTarget, func: TextureCompareFunc) {
+    pub fn texture_target_compare_func(target: TextureBindingTarget, func: CompareFunc) {
         let param = GLenum::from(func) as i32;
         tex_param_i32(target, gl::TEXTURE_COMPARE_FUNC, param)
     }

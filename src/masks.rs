@@ -191,52 +191,7 @@ impl From<Capability> for GLenum {
     }
 }
 
-/// # Depth Func Comparison Function
-/// see [depth_func]
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum DepthFunc {
-    /// Never passes
-    Never,
-
-    /// Passes if the incoming depth value is less than the stored depth value.
-    Less,
-
-    /// Passes if the incoming depth value is equal to the stored depth value.
-    Equal,
-
-    /// Passes if the incoming depth value is less than or equal to the stored depth value.
-    LessOrEqual,
-
-    /// Passes if the incoming depth value is greater than the stored depth value.
-    Greater,
-
-    /// Passes if the incoming depth value is not equal to the stored depth value.
-    NotEqual,
-
-    ///  Passes if the incoming depth value is greater than or equal to the stored depth value.
-    GreaterOrEqual,
-
-    /// Always passes.
-    Always,
-}
-
-impl From<DepthFunc> for GLenum {
-    fn from(value: DepthFunc) -> Self {
-        match value {
-            DepthFunc::Never => gl::NEVER,
-            DepthFunc::Less => gl::LESS,
-            DepthFunc::Equal => gl::EQUAL,
-            DepthFunc::LessOrEqual => gl::LEQUAL,
-            DepthFunc::Greater => gl::GREATER,
-            DepthFunc::NotEqual => gl::NOTEQUAL,
-            DepthFunc::GreaterOrEqual => gl::GEQUAL,
-            DepthFunc::Always => gl::ALWAYS,
-        }
-    }
-}
-
-/// # Stencil Mask Target Face
-/// see [stencil_mask_separate]
+/// # Stencil Target Face
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum StencilMaskFace {
     Front,
@@ -250,6 +205,33 @@ impl From<StencilMaskFace> for GLenum {
             StencilMaskFace::Front => gl::FRONT,
             StencilMaskFace::Back => gl::BACK,
             StencilMaskFace::FrontAndBack => gl::FRONT_AND_BACK,
+        }
+    }
+}
+
+/// # Comparison Functions
+pub enum CompareFunc {
+    Never,
+    Always,
+    Equal,
+    NotEqual,
+    Less,
+    LessOrEqual,
+    Greater,
+    GreaterOrEqual,
+}
+
+impl From<CompareFunc> for GLenum {
+    fn from(value: CompareFunc) -> Self {
+        match value {
+            CompareFunc::Never => gl::NEVER,
+            CompareFunc::Less => gl::LESS,
+            CompareFunc::Equal => gl::EQUAL,
+            CompareFunc::LessOrEqual => gl::LEQUAL,
+            CompareFunc::Greater => gl::GREATER,
+            CompareFunc::NotEqual => gl::NOTEQUAL,
+            CompareFunc::GreaterOrEqual => gl::GEQUAL,
+            CompareFunc::Always => gl::ALWAYS,
         }
     }
 }
@@ -451,7 +433,7 @@ pub fn depth_mask(enabled: bool) {
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
-/// depth_func(DepthFunc::Greater);
+/// depth_func(CompareFunc::Greater);
 /// ```
 ///
 /// # Description
@@ -461,12 +443,23 @@ pub fn depth_mask(enabled: bool) {
 ///
 /// `func` specifies the conditions under which the pixel will be drawn.
 ///
-/// The initial value of func is [DepthFunc::Less]. Initially, depth testing is disabled. If depth
+/// | [CompareFunc] | Usage |
+/// |------------------|-------|
+/// | Never | Never passes |
+/// | Always | Always passes |
+/// | Equal | Passes if the incoming depth value is equal to the stored depth value |
+/// | NotEqual | Passes if the incoming depth value is not equal to the stored depth value |
+/// | Less | Passes if the incoming depth value is less than the stored depth value |
+/// | LessOrEqual | Passes if the incoming depth value is less than or equal to the stored depth value |
+/// | Greater | Passes if the incoming depth value is greater than the stored depth value |
+/// | GreaterOrEqual | Passes if the incoming depth value is greater than or equal to the stored depth value |
+///
+/// The initial value of func is [CompareFunc::Less]. Initially, depth testing is disabled. If depth
 /// testing is disabled or if no depth buffer exists, it is as if the depth test always passes.
 ///
 /// Even if the depth buffer exists and the depth mask is non-zero, the depth buffer is not updated
 /// if the depth test is disabled. In order to unconditionally write to the depth buffer, the depth
-/// test should be enabled and set to [DepthFunc::Always].
+/// test should be enabled and set to [CompareFunc::Always].
 ///
 /// # Associated Gets
 /// * [get_depth_func]
@@ -482,7 +475,7 @@ pub fn depth_mask(enabled: bool) {
 /// * [depth_range]
 /// * [enable]
 /// * [polygon_offset]
-pub fn depth_func(func: DepthFunc) {
+pub fn depth_func(func: CompareFunc) {
     let func = GLenum::from(func);
     unsafe { gl::DepthFunc(func) }
 }
