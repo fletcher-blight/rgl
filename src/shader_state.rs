@@ -536,7 +536,7 @@ pub mod uniform {
 
     /// # Set an array of f32 mat2x3 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_2x3f32v(
+    pub fn uniform_matrix_2x3f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 6]],
@@ -552,7 +552,7 @@ pub mod uniform {
 
     /// # Set an array of f32 mat3x2 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_3x2f32v(
+    pub fn uniform_matrix_3x2f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 6]],
@@ -568,7 +568,7 @@ pub mod uniform {
 
     /// # Set an array of f32 mat2x4 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_2x4f32v(
+    pub fn uniform_matrix_2x4f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 8]],
@@ -584,7 +584,7 @@ pub mod uniform {
 
     /// # Set an array of f32 mat4x2 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_4x2f32v(
+    pub fn uniform_matrix_4x2f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 8]],
@@ -600,7 +600,7 @@ pub mod uniform {
 
     /// # Set an array of f32 mat3x4 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_3x4f32v(
+    pub fn uniform_matrix_3x4f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 12]],
@@ -616,7 +616,7 @@ pub mod uniform {
 
     /// # Set an array of f32 mat4x3 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_4x3f32v(
+    pub fn uniform_matrix_4x3f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 12]],
