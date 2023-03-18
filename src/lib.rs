@@ -114,6 +114,7 @@
 //! * CI/CD automation
 //! * github integration
 //! * cleanup `FROM` implementations. Use privates so a public `u32::from(rgl::SomeEnum)` would fail
+//! * merge comparison funcs? ([TextureCompareFunc], [DepthFunc], [StencilFunc])
 
 pub mod buffer;
 pub mod get;

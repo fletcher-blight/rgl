@@ -235,6 +235,25 @@ impl From<DepthFunc> for GLenum {
     }
 }
 
+/// # Stencil Mask Target Face
+/// see [stencil_mask_separate]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum StencilMaskFace {
+    Front,
+    Back,
+    FrontAndBack,
+}
+
+impl From<StencilMaskFace> for GLenum {
+    fn from(value: StencilMaskFace) -> Self {
+        match value {
+            StencilMaskFace::Front => gl::FRONT,
+            StencilMaskFace::Back => gl::BACK,
+            StencilMaskFace::FrontAndBack => gl::FRONT_AND_BACK,
+        }
+    }
+}
+
 /// # Clear buffers to preset values
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glClear.xhtml>
 ///
@@ -466,4 +485,113 @@ pub fn depth_mask(enabled: bool) {
 pub fn depth_func(func: DepthFunc) {
     let func = GLenum::from(func);
     unsafe { gl::DepthFunc(func) }
+}
+
+/// # Control the front and back writing of individual bits in the stencil planes
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glStencilMask.xhtml>
+///
+/// # Arguments
+/// * `mask` - Specifies a bit mask to enable and disable writing of individual bits in the stencil
+/// planes. Initially, the mask is all 1's.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// stencil_mask(0xff00aa99);
+/// ```
+///
+/// # Description
+/// [stencil_mask] controls the writing of individual bits in the stencil planes. The least
+/// significant `n` bits of `mask`, where `n` is the number of bits in the stencil buffer, specify a
+/// mask. Where a `1` appears in the mask, it's possible to write to the corresponding bit in the
+/// stencil buffer. Where a `0` appears, the corresponding bit is write-protected. Initially, all
+/// bits are enabled for writing.
+///
+/// There can be two separate `mask` writemasks; one affects back-facing polygons, and the other
+/// affects front-facing polygons as well as other non-polygon primitives. [stencil_mask] sets both
+/// front and back stencil writemasks to the same values. Use [stencil_mask_separate] to set front
+/// and back stencil writemasks to different values.
+///
+/// [stencil_mask] is the same as calling [stencil_mask_separate] with `face` set to
+/// [StencilMaskFace::FrontAndBack], like so:
+/// ```no_run
+/// # use rgl::prelude::*;
+/// fn equivilent_stencil_mask(mask: u32) {
+///     stencil_mask_separate(StencilMaskFace::FrontAndBack, mask);
+/// }
+/// ```
+///
+/// # Associated Gets
+/// * [get_stencil_writemask]
+/// * [get_stencil_back_writemask]
+/// * [get_stencil_bits]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [stencil_mask] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [colour_mask]
+/// * [depth_mask]
+/// * [stencil_mask]
+/// * [stencil_func]
+/// * [stencil_func_separate]
+/// * [stencil_mask_separate]
+/// * [stencil_op]
+/// * [stencil_op_separate]
+pub fn stencil_mask(mask: u32) {
+    unsafe { gl::StencilMask(mask) }
+}
+
+/// # Control the front and/or back writing of individual bits in the stencil planes
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glStencilMaskSeparate.xhtml>
+///
+/// # Arguments
+/// * `face` - Specifies whether the front and/or back stencil writemask is updated.
+/// * `mask` - Specifies a bit mask to enable and disable writing of individual bits in the stencil
+/// planes. Initially, the mask is all 1's.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// stencil_mask_separate(StencilMaskFace::Front, 0xFFFFFFFF);
+/// stencil_mask_separate(StencilMaskFace::Back, 0x00000000);
+/// ```
+///
+/// # Description
+/// [stencil_mask_separate] controls the writing of individual bits in the stencil planes. The least
+/// significant `n` bits of `mask`, where `n` is the number of bits in the stencil buffer, specify a
+/// mask. Where a `1` appears in the mask, it's possible to write to the corresponding bit in the
+/// stencil buffer. Where a `0` appears, the corresponding bit is write-protected. Initially, all
+/// bits are enabled for writing.
+///
+/// There can be two separate mask writemasks; one affects back-facing polygons, and the other
+/// affects front-facing polygons as well as other non-polygon primitives. See [stencil_mask] to
+/// simply set both faces at once.
+///
+/// # Associated Gets
+/// * [get_stencil_writemask]
+/// * [get_stencil_back_writemask]
+/// * [get_stencil_bits]
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [stencil_mask_separate] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [colour_mask]
+/// * [depth_mask]
+/// * [stencil_mask]
+/// * [stencil_func]
+/// * [stencil_func_separate]
+/// * [stencil_mask]
+/// * [stencil_op]
+/// * [stencil_op_separate]
+pub fn stencil_mask_separate(face: StencilMaskFace, mask: u32) {
+    let face = GLenum::from(face);
+    unsafe { gl::StencilMaskSeparate(face, mask) }
 }
