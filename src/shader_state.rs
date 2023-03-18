@@ -36,15 +36,15 @@ use gl::types::*;
 /// uniform_3f32v(loc, &[[1.0, 2.0, 3.0]]);
 /// uniform_4f32v(loc, &[[1.0, 2.0, 3.0, 4.0]]);
 ///
-/// uniform_matrix_2f32v(loc, MatrixOrderMajor::Row, &[
+/// uniform_matrix_2f32v_flat(loc, MatrixOrderMajor::Row, &[
 ///     [1.0, 2.0, 3.0, 4.0],
 ///     [5.0, 6.0, 7.0, 8.0],
 /// ]);
-/// uniform_matrix_3f32v(loc, MatrixOrderMajor::Row, &[
+/// uniform_matrix_3f32v_flat(loc, MatrixOrderMajor::Row, &[
 ///     [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
 ///     [9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0],
 /// ]);
-/// uniform_matrix_4f32v(loc, MatrixOrderMajor::Row, &[
+/// uniform_matrix_4f32v_flat(loc, MatrixOrderMajor::Row, &[
 ///     [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0],
 ///     [16.0, 15.0, 14.0, 13.0, 12.0, 11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0],
 /// ]);
@@ -440,7 +440,7 @@ pub mod uniform {
 
     /// # Set an array of f32 mat2 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_2f32v(
+    pub fn uniform_matrix_2f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 4]],
@@ -454,9 +454,25 @@ pub mod uniform {
         unsafe { gl::UniformMatrix2fv(location, count, transpose, value) }
     }
 
+    /// # Set an array of f32 mat2 values of a uniform variable for the current program object
+    /// see [uniform]
+    pub fn uniform_matrix_2f32v_multi(
+        location: UniformLocation,
+        order: MatrixOrderMajor,
+        values: &[[[f32; 2]; 2]],
+    ) {
+        let location = location.0;
+        let count = values.len() as GLsizei;
+        let transpose = GLboolean::from(order);
+        let value = values.as_ptr() as *const f32;
+
+        // SAFE: synchronous integer copy
+        unsafe { gl::UniformMatrix2fv(location, count, transpose, value) }
+    }
+
     /// # Set an array of f32 mat3 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_3f32v(
+    pub fn uniform_matrix_3f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 9]],
@@ -470,12 +486,44 @@ pub mod uniform {
         unsafe { gl::UniformMatrix3fv(location, count, transpose, value) }
     }
 
+    /// # Set an array of f32 mat3 values of a uniform variable for the current program object
+    /// see [uniform]
+    pub fn uniform_matrix_3f32v_multi(
+        location: UniformLocation,
+        order: MatrixOrderMajor,
+        values: &[[[f32; 3]; 3]],
+    ) {
+        let location = location.0;
+        let count = values.len() as GLsizei;
+        let transpose = GLboolean::from(order);
+        let value = values.as_ptr() as *const f32;
+
+        // SAFE: synchronous integer copy
+        unsafe { gl::UniformMatrix3fv(location, count, transpose, value) }
+    }
+
     /// # Set an array of f32 mat4 values of a uniform variable for the current program object
     /// see [uniform]
-    pub fn uniform_matrix_4f32v(
+    pub fn uniform_matrix_4f32v_flat(
         location: UniformLocation,
         order: MatrixOrderMajor,
         values: &[[f32; 16]],
+    ) {
+        let location = location.0;
+        let count = values.len() as GLsizei;
+        let transpose = GLboolean::from(order);
+        let value = values.as_ptr() as *const f32;
+
+        // SAFE: synchronous integer copy
+        unsafe { gl::UniformMatrix4fv(location, count, transpose, value) }
+    }
+
+    /// # Set an array of f32 mat4 values of a uniform variable for the current program object
+    /// see [uniform]
+    pub fn uniform_matrix_4f32v_multi(
+        location: UniformLocation,
+        order: MatrixOrderMajor,
+        values: &[[[f32; 4]; 4]],
     ) {
         let location = location.0;
         let count = values.len() as GLsizei;
