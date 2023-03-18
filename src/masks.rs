@@ -236,6 +236,52 @@ impl From<CompareFunc> for GLenum {
     }
 }
 
+/// # Stencil Op Actions
+/// see [stencil_op] or [stencil_op_separate]
+pub enum StencilOp {
+    /// Keeps the current value.
+    Keep,
+
+    /// Sets the stencil buffer value to 0.
+    Zero,
+
+    /// Sets the stencil buffer value to `reference`, as specified by [stencil_func].
+    Replace,
+
+    /// Increments the current stencil buffer value. Clamps to the maximum representable unsigned
+    /// value.
+    IncrementClamp,
+
+    /// Increments the current stencil buffer value. Wraps stencil buffer value to zero when
+    /// incrementing the maximum representable unsigned value.
+    IncrementWrap,
+
+    /// Decrements the current stencil buffer value. Clamps to 0.
+    DecrementClamp,
+
+    /// Decrements the current stencil buffer value. Wraps stencil buffer value to the maximum
+    /// representable unsigned value when decrementing a stencil buffer value of zero.
+    DecrementWrap,
+
+    /// Bitwise inverts the current stencil buffer value.
+    Invert,
+}
+
+impl From<StencilOp> for GLenum {
+    fn from(value: StencilOp) -> Self {
+        match value {
+            StencilOp::Keep => gl::KEEP,
+            StencilOp::Zero => gl::ZERO,
+            StencilOp::Replace => gl::REPLACE,
+            StencilOp::IncrementClamp => gl::INCR,
+            StencilOp::IncrementWrap => gl::INCR_WRAP,
+            StencilOp::DecrementClamp => gl::DECR,
+            StencilOp::DecrementWrap => gl::DECR_WRAP,
+            StencilOp::Invert => gl::INVERT,
+        }
+    }
+}
+
 /// # Clear buffers to preset values
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glClear.xhtml>
 ///
@@ -783,4 +829,185 @@ pub fn stencil_func_separate(face: StencilFace, func: CompareFunc, reference: i3
     let face = GLenum::from(face);
     let func = GLenum::from(func);
     unsafe { gl::StencilFuncSeparate(face, func, reference, mask) }
+}
+
+/// # Set front and back stencil test actions
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glStencilOp.xhtml>
+///
+/// # Arguments
+/// * `stencil_fail_op` - Specifies the action to take when the stencil test fails. The initial
+/// value is [StencilOp::Keep].
+/// * `depth_fail_op` - Specifies the stencil action when the stencil test passes, but the depth
+/// test fails. The initial value is [StencilOp::Keep].
+/// * `depth_pass_op` - Specifies the stencil action when both the stencil test and the depth test
+/// pass, or when the stencil test passes and either there is no depth buffer or depth testing is
+/// not enabled. The initial value is [StencilOp::Keep].
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// stencil_op(StencilOp::Keep, StencilOp::Keep, StencilOp::Replace);
+/// ```
+///
+/// # Description
+/// Stenciling, like depth-buffering, enables and disables drawing on a per-pixel basis. You draw
+/// into the stencil planes using GL drawing primitives, then render geometry and images, using the
+/// stencil planes to mask out portions of the screen. Stenciling is typically used in multipass
+/// rendering algorithms to achieve special effects, such as decals, outlining, and constructive
+/// solid geometry rendering.
+///
+/// The stencil test conditionally eliminates a pixel based on the outcome of a comparison between
+/// the value in the stencil buffer and a reference value. To enable and disable the test, call
+/// [enable] and [disable] with argument [Capability::StencilTest]; to control it, call
+/// [stencil_func] or [stencil_func_separate].
+///
+/// There can be two separate sets of `stencil_fail_op`, `depth_fail_op`, and `depth_pass_op`
+/// parameters; one affects back-facing polygons, and the other affects front-facing polygons as
+/// well as other non-polygon primitives. [stencil_op] sets both front and back stencil state to the
+/// same values. Use [stencil_op_separate] to set front and back stencil state to different values.
+///
+/// [stencil_op] takes three arguments that indicate what happens to the stored stencil value while
+/// stenciling is enabled. If the stencil test fails, no change is made to the pixel's color or
+/// depth buffers, and `stencil_fail_op` specifies what happens to the stencil buffer contents.
+///
+/// Stencil buffer values are treated as unsigned integers. When incremented and decremented, values
+/// are clamped to `0` and `2`<sup>`n`</sup>` − 1`, where `n` is the value returned by querying
+/// [get_stencil_bits].
+///
+/// The other two arguments to [stencil_op] specify stencil buffer actions that depend on whether
+/// subsequent depth buffer tests succeed (`depth_pass_op`) or fail (`depth_fail_op`) (see
+/// [depth_func]). Note that `depth_fail_op` is ignored when there is no depth buffer, or when the
+/// depth buffer is not enabled. In these cases, `stencil_fail_op` and `depth_pass_op` specify
+/// stencil action when the stencil test fails and passes, respectively.
+///
+/// Initially the stencil test is disabled. If there is no stencil buffer, no stencil modification
+/// can occur and it is as if the stencil tests always pass, regardless of any call to [stencil_op].
+///
+/// [stencil_op] is the same as calling [stencil_op_separate] with `face` set to
+/// [StencilFace::FrontAndBack], like so:
+/// ```no_run
+/// # use rgl::prelude::*;
+/// fn equivalent_stencil_op(stencil_fail_op: StencilOp, depth_fail_op: StencilOp, depth_pass_op: StencilOp) {
+///     stencil_op_separate(StencilFace::FrontAndBack, StencilOp::Keep, StencilOp::Keep, StencilOp::Replace);
+/// }
+/// ```
+///
+/// # Associated Gets
+/// * [get_stencil_fail]
+/// * [get_stencil_pass_depth_pass]
+/// * [get_stencil_pass_depth_fail]
+/// * [get_stencil_back_fail]
+/// * [get_stencil_back_pass_depth_pass]
+/// * [get_stencil_back_pass_depth_fail]
+/// * [get_stencil_bits]
+/// * [is_enabled]([Capability::StencilTest])
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [stencil_op] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [blend_func]
+/// * [depth_func]
+/// * [enable]
+/// * [logic_op]
+/// * [stencil_func]
+/// * [stencil_func_separate]
+/// * [stencil_mask]
+/// * [stencil_mask_separate]
+/// * [stencil_op_separate]
+pub fn stencil_op(stencil_fail_op: StencilOp, depth_fail_op: StencilOp, depth_pass_op: StencilOp) {
+    let sfail = GLenum::from(stencil_fail_op);
+    let dpfail = GLenum::from(depth_fail_op);
+    let dppass = GLenum::from(depth_pass_op);
+    unsafe { gl::StencilOp(sfail, dpfail, dppass) }
+}
+
+/// # Set front and/or back stencil test actions
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glStencilOpSeparate.xhtml>
+///
+/// # Arguments
+/// * `face` - Specifies whether front and/or back stencil state is updated.
+/// * `stencil_fail_op` - Specifies the action to take when the stencil test fails. The initial
+/// value is [StencilOp::Keep].
+/// * `depth_fail_op` - Specifies the stencil action when the stencil test passes, but the depth
+/// test fails. The initial value is [StencilOp::Keep].
+/// * `depth_pass_op` - Specifies the stencil action when both the stencil test and the depth test
+/// pass, or when the stencil test passes and either there is no depth buffer or depth testing is
+/// not enabled. The initial value is [StencilOp::Keep].
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// stencil_op(StencilOp::Keep, StencilOp::Keep, StencilOp::Replace);
+/// ```
+///
+/// # Description
+/// Stenciling, like depth-buffering, enables and disables drawing on a per-pixel basis. You draw
+/// into the stencil planes using GL drawing primitives, then render geometry and images, using the
+/// stencil planes to mask out portions of the screen. Stenciling is typically used in multipass
+/// rendering algorithms to achieve special effects, such as decals, outlining, and constructive
+/// solid geometry rendering.
+///
+/// The stencil test conditionally eliminates a pixel based on the outcome of a comparison between
+/// the value in the stencil buffer and a reference value. To enable and disable the test, call
+/// [enable] and [disable] with argument [Capability::StencilTest]; to control it, call
+/// [stencil_func] or [stencil_func_separate].
+///
+/// There can be two separate sets of `stencil_fail_op`, `depth_fail_op`, and `depth_pass_op`
+/// parameters; one affects back-facing polygons, and the other affects front-facing polygons as
+/// well as other non-polygon primitives. [stencil_op] sets both front and back stencil state to the
+/// same values. Use [stencil_op_separate] to set front and back stencil state to different values.
+///
+/// [stencil_op] takes three arguments that indicate what happens to the stored stencil value while
+/// stenciling is enabled. If the stencil test fails, no change is made to the pixel's color or
+/// depth buffers, and `stencil_fail_op` specifies what happens to the stencil buffer contents.
+///
+/// Stencil buffer values are treated as unsigned integers. When incremented and decremented, values
+/// are clamped to `0` and `2`<sup>`n`</sup>` − 1`, where `n` is the value returned by querying
+/// [get_stencil_bits].
+///
+/// The other two arguments to [stencil_op_separate] specify stencil buffer actions that depend on
+/// whether subsequent depth buffer tests succeed (`depth_pass_op`) or fail (`depth_fail_op`) (see
+/// [depth_func]). Note that `depth_fail_op` is ignored when there is no depth buffer, or when the
+/// depth buffer is not enabled. In these cases, `stencil_fail_op` and `depth_pass_op` specify
+/// stencil action when the stencil test fails and passes, respectively.
+///
+/// Initially the stencil test is disabled. If there is no stencil buffer, no stencil modification
+/// can occur and it is as if the stencil tests always pass, regardless of any call to [stencil_op].
+///
+/// # Associated Gets
+/// * [get_stencil_fail]
+/// * [get_stencil_pass_depth_pass]
+/// * [get_stencil_pass_depth_fail]
+/// * [get_stencil_back_fail]
+/// * [get_stencil_back_pass_depth_pass]
+/// * [get_stencil_back_pass_depth_fail]
+/// * [get_stencil_bits]
+/// * [is_enabled]([Capability::StencilTest])
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [stencil_op] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [blend_func]
+/// * [depth_func]
+/// * [enable]
+/// * [logic_op]
+/// * [stencil_func]
+/// * [stencil_func_separate]
+/// * [stencil_mask]
+/// * [stencil_mask_separate]
+/// * [stencil_op]
+pub fn stencil_op_separate(face: StencilFace, stencil_fail_op: StencilOp, depth_fail_op: StencilOp, depth_pass_op: StencilOp) {
+    let face = GLenum::from(face);
+    let sfail = GLenum::from(stencil_fail_op);
+    let dpfail = GLenum::from(depth_fail_op);
+    let dppass = GLenum::from(depth_pass_op);
+    unsafe { gl::StencilOpSeparate(face, sfail, dpfail, dppass) }
 }
