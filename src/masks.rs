@@ -589,3 +589,198 @@ pub fn stencil_mask_separate(face: StencilFace, mask: u32) {
     let face = GLenum::from(face);
     unsafe { gl::StencilMaskSeparate(face, mask) }
 }
+
+/// # Set front and back function and reference value for stencil testing
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glStencilFunc.xhtml>
+///
+/// # Arguments
+/// * `func` - Specifies the test function.
+/// * `reference` - Specifies the reference value for the stencil test. `reference` is clamped to
+/// the range \[0, 2<sup>n</sup> − 1\], where `n` is the number of bitplanes in the stencil buffer. The
+/// initial value is `0`.
+/// * `mask` - Specifies a mask that is ANDed with both the `reference` value and the stored stencil
+/// value when the test is done. The initial value is all 1's.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// stencil_func(CompareFunc::Always, 1, 0xFF);
+/// ```
+///
+/// # Description
+/// Stenciling, like depth-buffering, enables and disables drawing on a per-pixel basis. Stencil
+/// planes are first drawn into using GL drawing primitives, then geometry and images are rendered
+/// using the stencil planes to mask out portions of the screen. Stenciling is typically used in
+/// multipass rendering algorithms to achieve special effects, such as decals, outlining, and
+/// constructive solid geometry rendering.
+///
+/// The stencil test conditionally eliminates a pixel based on the outcome of a comparison between
+/// the reference value and the value in the stencil buffer. To enable and disable the test, call
+/// [enable] and [disable] with argument [Capability::StencilTest]. To specify actions based on the
+/// outcome of the stencil test, call [stencil_op] or [stencil_op_separate].
+///
+/// There can be two separate sets of `func`, `reference`, and `mask` parameters; one affects
+/// back-facing polygons, and the other affects front-facing polygons as well as other non-polygon
+/// primitives. [stencil_func] sets both front and back stencil state to the same values. Use
+/// [stencil_func_separate] to set front and back stencil state to different values.
+///
+/// `func` is a symbolic constant that determines the stencil comparison function. It accepts one of
+/// eight values, shown in the following list. `reference` is an integer reference value that is
+/// used in the stencil comparison. It is clamped to the range \[0, 2<sup>n</sup> − 1\], where `n`
+/// is the number of bitplanes in the stencil buffer. `mask` is bitwise ANDed with both the
+/// `reference` value and the stored stencil value, with the ANDed values participating in the
+/// comparison.
+///
+/// If `stencil` represents the value stored in the corresponding stencil buffer location, the
+/// following list shows the effect of each comparison function that can be specified by `func`.
+/// Only if the comparison succeeds is the pixel passed through to the next stage in the
+/// rasterization process (see glStencilOp). All tests treat stencil values as unsigned integers in
+/// the range \[0, 2<sup>n</sup> − 1\], where `n` is the number of bitplanes in the stencil buffer.
+///
+/// | [CompareFunc] | Usage |
+/// |---------------|-------|
+/// | Never | Always fails |
+/// | Always | Always passes |
+/// | Equal | Passes if ( `ref` & `mask` ) = ( `stencil` & `mask` ) |
+/// | NotEqual | Passes if ( `ref` & `mask` ) != ( `stencil` & `mask` ) |
+/// | Less | Passes if ( `ref` & `mask` ) < ( `stencil` & `mask` ) |
+/// | LessOrEqual | Passes if ( `ref` & `mask` ) <= ( `stencil` & `mask` ) |
+/// | Greater | Passes if ( `ref` & `mask` ) > ( `stencil` & `mask` ) |
+/// | GreaterOrEqual | Passes if ( `ref` & `mask` ) >= ( `stencil` & `mask` ) |
+///
+/// Initially, the stencil test is disabled. If there is no stencil buffer, no stencil modification
+/// can occur and it is as if the stencil test always passes.
+///
+/// [stencil_func] is the same as calling [stencil_func_separate] with `face` set to
+/// [StencilFace::FrontAndBack].
+/// ```no_run
+/// # use rgl::prelude::*;
+/// fn equivalent_stencil_func(func: CompareFunc, reference: i32, mask: u32) {
+///     stencil_func_separate(StencilFace::FrontAndBack, func, reference, mask)
+/// }
+/// ```
+///
+/// # Associated Gets
+/// * [get_stencil_func]
+/// * [get_stencil_value_mask]
+/// * [get_stencil_ref]
+/// * [get_stencil_back_func]
+/// * [get_stencil_back_value_mask]
+/// * [get_stencil_back_ref]
+/// * [get_stencil_bits]
+/// * [is_enabled]([Capability::StencilTest])
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [stencil_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [blend_func]
+/// * [depth_func]
+/// * [enable]
+/// * [logic_op]
+/// * [stencil_func_separate]
+/// * [stencil_mask]
+/// * [stencil_mask_separate]
+/// * [stencil_op]
+/// * [stencil_op_separate]
+pub fn stencil_func(func: CompareFunc, reference: i32, mask: u32) {
+    let func = GLenum::from(func);
+    unsafe { gl::StencilFunc(func, reference, mask) }
+}
+
+/// # Set front and/or back function and reference value for stencil testing
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glStencilFuncSeparate.xhtml>
+///
+/// # Arguments
+/// * `face` - Specifies whether front and/or back stencil state is updated.
+/// * `func` - Specifies the test function.
+/// * `reference` - Specifies the reference value for the stencil test. `reference` is clamped to
+/// the range \[0, 2<sup>n</sup> − 1\], where `n` is the number of bitplanes in the stencil buffer. The
+/// initial value is `0`.
+/// * `mask` - Specifies a mask that is ANDed with both the `reference` value and the stored stencil
+/// value when the test is done. The initial value is all 1's.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// stencil_func_separate(StencilFace::Back, CompareFunc::Greater, 1, 0x32);
+/// ```
+///
+/// # Description
+/// Stenciling, like depth-buffering, enables and disables drawing on a per-pixel basis. You draw
+/// into the stencil planes using GL drawing primitives, then render geometry and images, using the
+/// stencil planes to mask out portions of the screen. Stenciling is typically used in multipass
+/// rendering algorithms to achieve special effects, such as decals, outlining, and constructive
+/// solid geometry rendering.
+///
+/// The stencil test conditionally eliminates a pixel based on the outcome of a comparison between
+/// the reference value and the value in the stencil buffer. To enable and disable the test, call
+/// [enable] and [disable] with argument [Capability::StencilTest]. To specify actions based on the
+/// outcome of the stencil test, call [stencil_op] or [stencil_op_separate].
+///
+/// There can be two separate sets of `func`, `reference`, and `mask` parameters; one affects
+/// back-facing polygons, and the other affects front-facing polygons as well as other non-polygon
+/// primitives. [stencil_func] sets both front and back stencil state to the same values, as if
+/// [stencil_func_separate] were called with face set to [StencilFace::FrontAndBack].
+///
+/// `func` is a symbolic constant that determines the stencil comparison function. It accepts one of
+/// eight values, shown in the following list. `reference` is an integer reference value that is
+/// used in the stencil comparison. It is clamped to the range \[0, 2<sup>n</sup> − 1\], where `n`
+/// is the number of bitplanes in the stencil buffer. `mask` is bitwise ANDed with both the
+/// `reference` value and the stored stencil value, with the ANDed values participating in the
+/// comparison.
+///
+/// If `stencil` represents the value stored in the corresponding stencil buffer location, the
+/// following list shows the effect of each comparison function that can be specified by `func`.
+/// Only if the comparison succeeds is the pixel passed through to the next stage in the
+/// rasterization process (see [stencil_op]). All tests treat stencil values as unsigned integers in
+/// the range \[0, 2<sup>n</sup> − 1\], where `n` is the number of bitplanes in the stencil buffer.
+///
+/// | [CompareFunc] | Usage |
+/// |---------------|-------|
+/// | Never | Always fails |
+/// | Always | Always passes |
+/// | Equal | Passes if ( `ref` & `mask` ) = ( `stencil` & `mask` ) |
+/// | NotEqual | Passes if ( `ref` & `mask` ) != ( `stencil` & `mask` ) |
+/// | Less | Passes if ( `ref` & `mask` ) < ( `stencil` & `mask` ) |
+/// | LessOrEqual | Passes if ( `ref` & `mask` ) <= ( `stencil` & `mask` ) |
+/// | Greater | Passes if ( `ref` & `mask` ) > ( `stencil` & `mask` ) |
+/// | GreaterOrEqual | Passes if ( `ref` & `mask` ) >= ( `stencil` & `mask` ) |
+///
+/// Initially, the stencil test is disabled. If there is no stencil buffer, no stencil modification
+/// can occur and it is as if the stencil test always passes.
+///
+/// # Associated Gets
+/// * [get_stencil_func]
+/// * [get_stencil_value_mask]
+/// * [get_stencil_ref]
+/// * [get_stencil_back_func]
+/// * [get_stencil_back_value_mask]
+/// * [get_stencil_back_ref]
+/// * [get_stencil_bits]
+/// * [is_enabled]([Capability::StencilTest])
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [stencil_func_separate] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [blend_func]
+/// * [depth_func]
+/// * [enable]
+/// * [logic_op]
+/// * [stencil_func]
+/// * [stencil_mask]
+/// * [stencil_mask_separate]
+/// * [stencil_op]
+/// * [stencil_op_separate]
+pub fn stencil_func_separate(face: StencilFace, func: CompareFunc, reference: i32, mask: u32) {
+    let face = GLenum::from(face);
+    let func = GLenum::from(func);
+    unsafe { gl::StencilFuncSeparate(face, func, reference, mask) }
+}
