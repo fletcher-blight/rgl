@@ -110,6 +110,12 @@ impl From<GLenum> for Error {
         match value {
             gl::NO_ERROR => Error::NoError,
             gl::INVALID_ENUM => Error::InvalidEnum,
+            gl::INVALID_VALUE => Error::InvalidValue,
+            gl::INVALID_OPERATION => Error::InvalidOperation,
+            gl::INVALID_FRAMEBUFFER_OPERATION => Error::InvalidFramebufferOperation,
+            gl::OUT_OF_MEMORY => Error::OutOfMemory,
+            gl::STACK_UNDERFLOW => Error::StackUnderflow,
+            gl::STACK_OVERFLOW => Error::StackOverflow,
             other => Error::ImplementationSpecific(other),
         }
     }
