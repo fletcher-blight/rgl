@@ -193,18 +193,18 @@ impl From<Capability> for GLenum {
 
 /// # Stencil Target Face
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum StencilMaskFace {
+pub enum StencilFace {
     Front,
     Back,
     FrontAndBack,
 }
 
-impl From<StencilMaskFace> for GLenum {
-    fn from(value: StencilMaskFace) -> Self {
+impl From<StencilFace> for GLenum {
+    fn from(value: StencilFace) -> Self {
         match value {
-            StencilMaskFace::Front => gl::FRONT,
-            StencilMaskFace::Back => gl::BACK,
-            StencilMaskFace::FrontAndBack => gl::FRONT_AND_BACK,
+            StencilFace::Front => gl::FRONT,
+            StencilFace::Back => gl::BACK,
+            StencilFace::FrontAndBack => gl::FRONT_AND_BACK,
         }
     }
 }
@@ -506,11 +506,11 @@ pub fn depth_func(func: CompareFunc) {
 /// and back stencil writemasks to different values.
 ///
 /// [stencil_mask] is the same as calling [stencil_mask_separate] with `face` set to
-/// [StencilMaskFace::FrontAndBack], like so:
+/// [StencilFace::FrontAndBack], like so:
 /// ```no_run
 /// # use rgl::prelude::*;
 /// fn equivilent_stencil_mask(mask: u32) {
-///     stencil_mask_separate(StencilMaskFace::FrontAndBack, mask);
+///     stencil_mask_separate(StencilFace::FrontAndBack, mask);
 /// }
 /// ```
 ///
@@ -549,8 +549,8 @@ pub fn stencil_mask(mask: u32) {
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
-/// stencil_mask_separate(StencilMaskFace::Front, 0xFFFFFFFF);
-/// stencil_mask_separate(StencilMaskFace::Back, 0x00000000);
+/// stencil_mask_separate(StencilFace::Front, 0xFFFFFFFF);
+/// stencil_mask_separate(StencilFace::Back, 0x00000000);
 /// ```
 ///
 /// # Description
@@ -561,8 +561,9 @@ pub fn stencil_mask(mask: u32) {
 /// bits are enabled for writing.
 ///
 /// There can be two separate mask writemasks; one affects back-facing polygons, and the other
-/// affects front-facing polygons as well as other non-polygon primitives. See [stencil_mask] to
-/// simply set both faces at once.
+/// affects front-facing polygons as well as other non-polygon primitives. [stencil_mask] sets both
+/// front and back stencil writemasks to the same values, as if [stencil_mask_separate] were called
+/// with `face` set to [StencilFace::FrontAndBack].
 ///
 /// # Associated Gets
 /// * [get_stencil_writemask]
@@ -584,7 +585,7 @@ pub fn stencil_mask(mask: u32) {
 /// * [stencil_mask]
 /// * [stencil_op]
 /// * [stencil_op_separate]
-pub fn stencil_mask_separate(face: StencilMaskFace, mask: u32) {
+pub fn stencil_mask_separate(face: StencilFace, mask: u32) {
     let face = GLenum::from(face);
     unsafe { gl::StencilMaskSeparate(face, mask) }
 }
