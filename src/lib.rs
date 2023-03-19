@@ -126,6 +126,7 @@ pub mod shader_state;
 pub mod texture;
 pub mod vertex_array;
 pub mod vertex_render;
+pub mod post;
 
 use gl::types::*;
 
