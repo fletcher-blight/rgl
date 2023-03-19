@@ -4,11 +4,11 @@
 //! # Description
 //! The core OpenGL API reference for functions that deal with state for various post-fragment
 //! shader operations. These operations include:
-//! * [Blending]()
-//! * [Stencil Test]()
-//! * [Depth Test]()
-//! * [Scissor Test]()
-//! * [Logical Operation]()
+//! * [Blending](https://www.khronos.org/opengl/wiki/Blending)
+//! * [Stencil Test](https://www.khronos.org/opengl/wiki/Stencil_Test)
+//! * [Depth Test](https://www.khronos.org/opengl/wiki/Depth_Test)
+//! * [Scissor Test](https://www.khronos.org/opengl/wiki/Scissor_Test)
+//! * [Logical Operation](https://www.khronos.org/opengl/wiki/Logical_Operation)
 
 use crate::prelude::*;
 use gl::types::*;
@@ -57,6 +57,107 @@ impl From<StencilOp> for GLenum {
             StencilOp::Invert => gl::INVERT,
         }
     }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum BlendFactor {
+    Zero,
+    One,
+    SourceColour,
+    OneMinusSourceColour,
+    DestColour,
+    OneMinusDestColour,
+    SourceAlpha,
+    OneMinusSourceAlpha,
+    DestAlpha,
+    OneMinusDestAlpha,
+    ConstantColour,
+    OneMinusConstantColour,
+    ConstantAlpha,
+    OneMinusConstantAlpha,
+    SourceAlphaSaturate,
+    Source1Alpha,
+    OneMinusSource1Alpha,
+}
+
+impl From<BlendFactor> for GLenum {
+    fn from(value: BlendFactor) -> Self {
+        match value {
+            BlendFactor::Zero => gl::ZERO,
+            BlendFactor::One => gl::ONE,
+            BlendFactor::SourceColour => gl::SRC_COLOR,
+            BlendFactor::OneMinusSourceColour => gl::ONE_MINUS_SRC_COLOR,
+            BlendFactor::DestColour => gl::DST_COLOR,
+            BlendFactor::OneMinusDestColour => gl::ONE_MINUS_DST_COLOR,
+            BlendFactor::SourceAlpha => gl::SRC_ALPHA,
+            BlendFactor::OneMinusSourceAlpha => gl::ONE_MINUS_SRC_ALPHA,
+            BlendFactor::DestAlpha => gl::DST_ALPHA,
+            BlendFactor::OneMinusDestAlpha => gl::ONE_MINUS_DST_ALPHA,
+            BlendFactor::ConstantColour => gl::CONSTANT_COLOR,
+            BlendFactor::OneMinusConstantColour => gl::ONE_MINUS_CONSTANT_COLOR,
+            BlendFactor::ConstantAlpha => gl::CONSTANT_ALPHA,
+            BlendFactor::OneMinusConstantAlpha => gl::ONE_MINUS_CONSTANT_ALPHA,
+            BlendFactor::SourceAlphaSaturate => gl::SRC_ALPHA_SATURATE,
+            BlendFactor::Source1Alpha => gl::SRC1_ALPHA,
+            BlendFactor::OneMinusSource1Alpha => gl::ONE_MINUS_SRC1_ALPHA,
+        }
+    }
+}
+
+/// # Specify pixel arithmetic
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBlendFunc.xhtml>
+///
+/// # Arguments
+/// * `sfactor` - Specifies how the red, green, blue, and alpha source blending factors are
+/// computed. The initial value is [BlendFactor::One].
+/// * `dfactor` - Specifies how the red, green, blue, and alpha destination blending factors are
+/// computed. The initial value is [BlendFactor::One].
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// blend_func(BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha);
+/// ```
+///
+/// # Description
+/// TODO: Complete this and make it nicer
+///
+/// Pixels can be drawn using a function that blends the incoming (source) RGBA values with the RGBA
+/// values that are already in the frame buffer (the destination values). Blending is initially
+/// disabled. Use [enable] and [disable] with argument [Capability::Blend] to enable and disable
+/// blending.
+///
+/// [blend_func] defines the operation of blending for all draw buffers when it is enabled.
+/// [blend_func_buffer] defines the operation of blending for a single draw buffer specified by
+/// `buf` when enabled for that draw buffer. `sfactor` specifies which method is used to scale the
+/// source color components. `dfactor` specifies which method is used to scale the destination
+/// colour components. The possible methods are described in the following table. Each method
+/// defines four scale factors, one each for red, green, blue, and alpha. In the table and in
+/// subsequent equations, first source, second source and destination color components are referred
+/// to as (R<sub>s0</sub>, G<sub>s0</sub>, B<sub>s0</sub>, A<sub>s0</sub>), (R<sub>s1</sub>,
+/// G<sub>s1</sub>, B<sub>s1</sub>, A<sub>s1</sub>) and (R<sub>d</sub>, G<sub>d</sub>,
+/// B<sub>d</sub>, A<sub>d</sub>), respectively. The colour specified by [blend_colour] is referred
+/// to as (R<sub>c</sub>, G<sub>c</sub>, B<sub>c</sub>, A<sub>c</sub>). They are understood to have
+/// integer values between 0 and (k<sub>R</sub>, k<sub>G</sub>, k<sub>B</sub>, k<sub>A</sub>), where
+/// k<sub>c</sub> = 2<sup>mc</sup> - 1
+/// and (m<sub>R</sub>, m<sub>G</sub>, m<sub>B</sub>, m<sub>A</sub>) is the number of red, green,
+/// blue, and alpha bitplanes.
+///
+/// Source and destination scale factors are referred to as (sR,sG,sB,sA) and (dR,dG,dB,dA). The
+/// scale factors described in the table, denoted (fR,fG,fB,fA), represent either source or
+/// destination factors. All scale factors have range \[0,1\].
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [blend_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+pub fn blend_func(sfactor: BlendFactor, dfactor: BlendFactor) {
+    let sfactor = GLenum::from(sfactor);
+    let dfactor = GLenum::from(dfactor);
+    unsafe { gl::BlendFunc(sfactor, dfactor) }
 }
 
 /// # Set front and back function and reference value for stencil testing
