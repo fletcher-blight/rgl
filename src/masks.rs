@@ -225,13 +225,13 @@ impl From<CompareFunc> for GLenum {
     fn from(value: CompareFunc) -> Self {
         match value {
             CompareFunc::Never => gl::NEVER,
-            CompareFunc::Less => gl::LESS,
+            CompareFunc::Always => gl::ALWAYS,
             CompareFunc::Equal => gl::EQUAL,
+            CompareFunc::NotEqual => gl::NOTEQUAL,
+            CompareFunc::Less => gl::LESS,
             CompareFunc::LessOrEqual => gl::LEQUAL,
             CompareFunc::Greater => gl::GREATER,
-            CompareFunc::NotEqual => gl::NOTEQUAL,
             CompareFunc::GreaterOrEqual => gl::GEQUAL,
-            CompareFunc::Always => gl::ALWAYS,
         }
     }
 }
@@ -595,8 +595,8 @@ pub fn stencil_mask(mask: u32) {
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
-/// stencil_mask_separate(StencilFace::Front, 0xFFFFFFFF);
-/// stencil_mask_separate(StencilFace::Back, 0x00000000);
+/// stencil_mask_separate(StencilFace::Front, 0xFF);
+/// stencil_mask_separate(StencilFace::Back, 0x00);
 /// ```
 ///
 /// # Description
@@ -920,9 +920,9 @@ pub fn stencil_func_separate(face: StencilFace, func: CompareFunc, reference: i3
 /// * [stencil_op_separate]
 pub fn stencil_op(stencil_fail_op: StencilOp, depth_fail_op: StencilOp, depth_pass_op: StencilOp) {
     let sfail = GLenum::from(stencil_fail_op);
-    let dpfail = GLenum::from(depth_fail_op);
-    let dppass = GLenum::from(depth_pass_op);
-    unsafe { gl::StencilOp(sfail, dpfail, dppass) }
+    let zfail = GLenum::from(depth_fail_op);
+    let zpass = GLenum::from(depth_pass_op);
+    unsafe { gl::StencilOp(sfail, zfail, zpass) }
 }
 
 /// # Set front and/or back stencil test actions
@@ -941,7 +941,8 @@ pub fn stencil_op(stencil_fail_op: StencilOp, depth_fail_op: StencilOp, depth_pa
 /// # Example
 /// ```no_run
 /// # use rgl::prelude::*;
-/// stencil_op(StencilOp::Keep, StencilOp::Keep, StencilOp::Replace);
+/// stencil_op_separate(StencilFace::Front, StencilOp::Zero, StencilOp::Zero, StencilOp::Zero);
+/// stencil_op_separate(StencilFace::Back, StencilOp::Keep, StencilOp::Keep, StencilOp::Replace);
 /// ```
 ///
 /// # Description
