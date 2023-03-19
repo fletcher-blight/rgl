@@ -409,6 +409,7 @@ pub enum TextureData<'data, DataType> {
     Reserve,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TextureWrapMode {
     /// Causes the integer part of the coordinate to be ignored; the GL uses only the fractional
     /// part, thereby creating a repeating pattern.
