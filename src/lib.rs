@@ -119,6 +119,7 @@
 pub mod buffer;
 pub mod get;
 pub mod masks;
+pub mod post;
 pub mod prelude;
 pub mod shader_creation;
 pub mod shader_query;
@@ -126,7 +127,6 @@ pub mod shader_state;
 pub mod texture;
 pub mod vertex_array;
 pub mod vertex_render;
-pub mod post;
 
 use gl::types::*;
 

@@ -529,7 +529,12 @@ pub fn stencil_op(stencil_fail_op: StencilOp, depth_fail_op: StencilOp, depth_pa
 /// * [stencil_mask]
 /// * [stencil_mask_separate]
 /// * [stencil_op]
-pub fn stencil_op_separate(face: StencilFace, stencil_fail_op: StencilOp, depth_fail_op: StencilOp, depth_pass_op: StencilOp) {
+pub fn stencil_op_separate(
+    face: StencilFace,
+    stencil_fail_op: StencilOp,
+    depth_fail_op: StencilOp,
+    depth_pass_op: StencilOp,
+) {
     let face = GLenum::from(face);
     let sfail = GLenum::from(stencil_fail_op);
     let dpfail = GLenum::from(depth_fail_op);
