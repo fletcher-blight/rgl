@@ -233,6 +233,7 @@ impl From<BlendFactor> for GLenum {
 /// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
 /// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 /// | [blend_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+/// | [blend_func_buffer] | N | N | N | N | N | N | Y | Y | Y | Y | Y | Y |
 ///
 /// # See Also
 /// * [blend_colour]
