@@ -117,6 +117,7 @@
 //! * merge comparison funcs? ([TextureCompareFunc], [DepthFunc], [StencilFunc])
 
 pub mod buffer;
+pub mod framebuffer;
 pub mod get;
 pub mod masks;
 pub mod post;

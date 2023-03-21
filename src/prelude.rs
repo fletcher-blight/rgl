@@ -1,4 +1,5 @@
 pub use crate::buffer::*;
+pub use crate::framebuffer::*;
 pub use crate::get::*;
 pub use crate::masks::*;
 pub use crate::post::*;
