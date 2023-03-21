@@ -78,3 +78,40 @@ pub fn bind_framebuffer(target: FramebufferBindingTarget, framebuffer: Framebuff
     let framebuffer = framebuffer.0;
     unsafe { gl::BindFramebuffer(target, framebuffer) }
 }
+
+/// # Delete framebuffer objects
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteFramebuffers.xhtml>
+///
+/// # Arguments
+/// * `framebuffers` - A slice containing framebuffer objects to be deleted.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// delete_framebuffers(&[Framebuffer(42)]);
+/// ```
+///
+/// # Description
+/// [delete_framebuffers] deletes all framebuffer objects whose names are stored in the slice
+/// `framebuffers`. The name zero is reserved by the GL and is silently ignored, should it occur in
+/// `framebuffers`, as are other unused names. Once a framebuffer object is deleted, its name is
+/// again unused and it has no attachments. If a framebuffer that is currently bound to one or more
+/// of the targets [FramebufferBindingTarget::Draw] or [FramebufferBindingTarget::Read] is deleted,
+/// it is as though [bind_framebuffer] had been executed with the corresponding target and
+/// framebuffer zero.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [delete_framebuffers] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [gen_framebuffers]
+/// * [bind_framebuffer]
+/// * [check_framebuffer_status]
+pub fn delete_framebuffers(framebuffers: &[Framebuffer]) {
+    let n = framebuffers.len() as GLsizei;
+    let framebuffers = framebuffers.as_ptr() as *const GLuint;
+    unsafe { gl::DeleteFramebuffers(n, framebuffers) }
+}
