@@ -76,6 +76,8 @@ pub enum BlendFactor {
     ConstantAlpha,
     OneMinusConstantAlpha,
     SourceAlphaSaturate,
+    Source1Colour,
+    OneMinusSource1Colour,
     Source1Alpha,
     OneMinusSource1Alpha,
 }
@@ -98,6 +100,8 @@ impl From<BlendFactor> for GLenum {
             BlendFactor::ConstantAlpha => gl::CONSTANT_ALPHA,
             BlendFactor::OneMinusConstantAlpha => gl::ONE_MINUS_CONSTANT_ALPHA,
             BlendFactor::SourceAlphaSaturate => gl::SRC_ALPHA_SATURATE,
+            BlendFactor::Source1Colour => gl::SRC1_COLOR,
+            BlendFactor::OneMinusSource1Colour => gl::ONE_MINUS_SRC1_COLOR,
             BlendFactor::Source1Alpha => gl::SRC1_ALPHA,
             BlendFactor::OneMinusSource1Alpha => gl::ONE_MINUS_SRC1_ALPHA,
         }
@@ -108,20 +112,32 @@ impl From<BlendFactor> for GLenum {
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBlendFunc.xhtml>
 ///
 /// # Arguments
-/// * `sfactor` - Specifies how the red, green, blue, and alpha source blending factors are
+/// * `source_factor` - Specifies how the red, green, blue, and alpha source blending factors are
 /// computed. The initial value is [BlendFactor::One].
-/// * `dfactor` - Specifies how the red, green, blue, and alpha destination blending factors are
+/// * `dest_factor` - Specifies how the red, green, blue, and alpha destination blending factors are
 /// computed. The initial value is [BlendFactor::One].
 ///
 /// # Example
+/// Transparency is best implemented using blend function ([BlendFactor::SourceAlpha],
+/// [BlendFactor::OneMinusSourceAlpha]) with primitives sorted from farthest to nearest. Note that
+/// this transparency calculation does not require the presence of alpha bitplanes in the frame
+/// buffer. This is also useful for rendering antialiased points and lines in arbitrary order.
 /// ```no_run
 /// # use rgl::prelude::*;
 /// blend_func(BlendFactor::SourceAlpha, BlendFactor::OneMinusSourceAlpha);
 /// ```
 ///
-/// # Description
-/// TODO: Complete this and make it nicer
+/// Polygon antialiasing is optimized using blend function ([BlendFactor::SourceAlphaSaturate],
+/// [BlendFactor::One]) with polygons sorted from nearest to farthest. (See [enable], [disable] with
+/// [Capability::PolygonSmooth] argument for information on polygon antialiasing.) Destination alpha
+/// bitplanes, which must be present for this blend function to operate correctly, store the
+/// accumulated coverage.
+/// ```no_run
+/// # use rgl::prelude::*;
+/// blend_func(BlendFactor::SourceAlphaSaturate, BlendFactor::One);
+/// ```
 ///
+/// # Description
 /// Pixels can be drawn using a function that blends the incoming (source) RGBA values with the RGBA
 /// values that are already in the frame buffer (the destination values). Blending is initially
 /// disabled. Use [enable] and [disable] with argument [Capability::Blend] to enable and disable
@@ -129,8 +145,8 @@ impl From<BlendFactor> for GLenum {
 ///
 /// [blend_func] defines the operation of blending for all draw buffers when it is enabled.
 /// [blend_func_buffer] defines the operation of blending for a single draw buffer specified by
-/// `buf` when enabled for that draw buffer. `sfactor` specifies which method is used to scale the
-/// source color components. `dfactor` specifies which method is used to scale the destination
+/// `buf` when enabled for that draw buffer. `source_factor` specifies which method is used to scale the
+/// source color components. `dest_factor` specifies which method is used to scale the destination
 /// colour components. The possible methods are described in the following table. Each method
 /// defines four scale factors, one each for red, green, blue, and alpha. In the table and in
 /// subsequent equations, first source, second source and destination color components are referred
@@ -139,13 +155,78 @@ impl From<BlendFactor> for GLenum {
 /// B<sub>d</sub>, A<sub>d</sub>), respectively. The colour specified by [blend_colour] is referred
 /// to as (R<sub>c</sub>, G<sub>c</sub>, B<sub>c</sub>, A<sub>c</sub>). They are understood to have
 /// integer values between 0 and (k<sub>R</sub>, k<sub>G</sub>, k<sub>B</sub>, k<sub>A</sub>), where
-/// k<sub>c</sub> = 2<sup>mc</sup> - 1
+///
+/// k<sub>c</sub> = 2<sup>m<sub>c</sub></sup> - 1
+///
 /// and (m<sub>R</sub>, m<sub>G</sub>, m<sub>B</sub>, m<sub>A</sub>) is the number of red, green,
 /// blue, and alpha bitplanes.
 ///
-/// Source and destination scale factors are referred to as (sR,sG,sB,sA) and (dR,dG,dB,dA). The
-/// scale factors described in the table, denoted (fR,fG,fB,fA), represent either source or
-/// destination factors. All scale factors have range \[0,1\].
+/// Source and destination scale factors are referred to as (s<sub>R</sub>, s<sub>G</sub>,
+/// s<sub>B</sub>, s<sub>A</sub>) and (d<sub>R</sub>, d<sub>G</sub>, d<sub>B</sub>, d<sub>A</sub>).
+/// The scale factors described in the table, denoted (f<sub>R</sub>, f<sub>G</sub>, f<sub>B</sub>,
+/// f<sub>A</sub>), represent either source or destination factors. All scale factors have range
+/// \[0,1\].
+///
+/// | [BlendFactor] | (f<sub>R</sub>, f<sub>G</sub>, f<sub>B</sub>, f<sub>A</sub>) |
+/// |---------------|--------------------------------------------------------------|
+/// | [BlendFactor::Zero] | (0, 0, 0, 0) |
+/// | [BlendFactor::One] | (1, 1, 1, 1) |
+/// | [BlendFactor::SourceColour] | (R<sub>s0</sub>, G<sub>s0</sub>, B<sub>s0</sub>, A<sub>s0</sub>) / (k<sub>R</sub>, k<sub>G</sub>, k<sub>B</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::OneMinusSourceColour] | (1, 1, 1, 1) - (R<sub>s0</sub>, G<sub>s0</sub>, B<sub>s0</sub>, A<sub>s0</sub>) / (k<sub>R</sub>, k<sub>G</sub>, k<sub>B</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::DestColour] | (R<sub>d</sub>, G<sub>d</sub>, B<sub>d</sub>, A<sub>d</sub>) / (k<sub>R</sub>, k<sub>G</sub>, k<sub>B</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::OneMinusDestColour] | (1, 1, 1, 1) - (R<sub>d</sub>, G<sub>d</sub>, B<sub>d</sub>, A<sub>d</sub>) / (k<sub>R</sub>, k<sub>G</sub>, k<sub>B</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::SourceAlpha] | (A<sub>s0</sub>, A<sub>s0</sub>, A<sub>s0</sub>, A<sub>s0</sub>) / (k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::OneMinusSource1Alpha] | (1, 1, 1, 1) - (A<sub>s0</sub>, A<sub>s0</sub>, A<sub>s0</sub>, A<sub>s0</sub>) / (k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::DestAlpha] | (A<sub>d</sub>, A<sub>d</sub>, A<sub>d</sub>, A<sub>d</sub>) / (k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::OneMinusDestAlpha] | (1, 1, 1, 1) - (A<sub>d</sub>, A<sub>d</sub>, A<sub>d</sub>, A<sub>d</sub>) / (k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::ConstantColour] | (R<sub>c</sub>, G<sub>c</sub>, B<sub>c</sub>, A<sub>c</sub>) |
+/// | [BlendFactor::OneMinusConstantColour] | (1, 1, 1, 1) - (R<sub>c</sub>, G<sub>c</sub>, B<sub>c</sub>, A<sub>c</sub>) |
+/// | [BlendFactor::ConstantAlpha] | (A<sub>c</sub>, A<sub>c</sub>, A<sub>c</sub>, A<sub>c</sub>) |
+/// | [BlendFactor::OneMinusConstantAlpha] | (1, 1, 1, 1) - (A<sub>c</sub>, A<sub>c</sub>, A<sub>c</sub>, A<sub>c</sub>) |
+/// | [BlendFactor::SourceAlphaSaturate] | (`i`, `i`, `i`, 1) |
+/// | [BlendFactor::Source1Colour] | (R<sub>s1</sub>, G<sub>s1</sub>, B<sub>s1</sub>, A<sub>s1</sub>) / (k<sub>R</sub>, k<sub>G</sub>, k<sub>B</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::OneMinusSource1Colour] | (1, 1, 1, 1) - (R<sub>s1</sub>, G<sub>s1</sub>, B<sub>s1</sub>, A<sub>s1</sub>) / (k<sub>R</sub>, k<sub>G</sub>, k<sub>B</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::Source1Alpha] | (A<sub>s1</sub>, A<sub>s1</sub>, A<sub>s1</sub>, A<sub>s1</sub>) / (k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>) |
+/// | [BlendFactor::OneMinusSource1Alpha] | (1, 1, 1, 1) - (A<sub>s1</sub>, A<sub>s1</sub>, A<sub>s1</sub>, A<sub>s1</sub>) / (k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>, k<sub>A</sub>) |
+///
+/// In the table,
+///
+/// `i = min(A`<sub>`s`</sub>`, k`<sub>`A`</sub>` - A`<sub>`d`</sub>`) / k`<sub>`A`</sub>
+///
+/// To determine the blended RGBA values of a pixel, the system uses the following equations:
+/// * `R`<sub>`d`</sub>` = min(k`<sub>`R`</sub>`, R`<sub>`s`</sub>`*s`<sub>R</sub>` + R`<sub>`d`</sub>`*d`<sub>`R`</sub>`)`
+/// * `G`<sub>`d`</sub>` = min(k`<sub>`G`</sub>`, G`<sub>`s`</sub>`*s`<sub>G</sub>` + G`<sub>`d`</sub>`*d`<sub>`G`</sub>`)`
+/// * `B`<sub>`d`</sub>` = min(k`<sub>`B`</sub>`, B`<sub>`s`</sub>`*s`<sub>B</sub>` + B`<sub>`d`</sub>`*d`<sub>`B`</sub>`)`
+/// * `A`<sub>`d`</sub>` = min(k`<sub>`A`</sub>`, A`<sub>`s`</sub>`*s`<sub>A</sub>` + A`<sub>`d`</sub>`*d`<sub>`A`</sub>`)`
+///
+/// Despite the apparent precision of the above equations, blending arithmetic is not exactly
+/// specified, because blending operates with imprecise integer color values. However, a blend
+/// factor that should be equal to `1` is guaranteed not to modify its multiplicand, and a blend
+/// factor equal to `0` reduces its multiplicand to `0`. For example, when `source_factor` is
+/// [BlendFactor::SourceAlpha], `dest_factor` is [BlendFactor::OneMinusSourceAlpha], and A<sub>s</sub>
+/// is equal to k<sub>A</sub<, the equations reduce to simple replacement:
+/// * `R`<sub>`d`</sub>` = `R`<sub>`s`</sub>`
+/// * `G`<sub>`d`</sub>` = `G`<sub>`s`</sub>`
+/// * `B`<sub>`d`</sub>` = `B`<sub>`s`</sub>`
+/// * `A`<sub>`d`</sub>` = `A`<sub>`s`</sub>`
+///
+/// Incoming (source) alpha would typically be used as a material opacity, ranging from 1.0
+/// (K<sub>A</sub>), representing complete opacity, to 0.0 (0), representing complete transparency.
+///
+/// When more than one color buffer is enabled for drawing, the GL performs blending separately for
+/// each enabled buffer, using the contents of that buffer for destination color. (See
+/// [draw_buffer])
+///
+/// When dual source blending is enabled (i.e., one of the blend factors requiring the second color
+/// input is used), the maximum number of enabled draw buffers is given by
+/// [get_max_dual_source_draw_buffers], which may be lower than [get_max_draw_buffers].
+///
+/// # Associated Gets
+/// * [get_blend_source_rgb]
+/// * [get_blend_source_alpha]
+/// * [get_blend_dest_rgb]
+/// * [get_blend_dest_alpha]
+/// * [is_enabled]([Capability::Blend])
 ///
 /// # Version Support
 ///
@@ -154,10 +235,29 @@ impl From<BlendFactor> for GLenum {
 /// | [blend_func] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
 ///
 /// # See Also
-pub fn blend_func(sfactor: BlendFactor, dfactor: BlendFactor) {
-    let sfactor = GLenum::from(sfactor);
-    let dfactor = GLenum::from(dfactor);
+/// * [blend_colour]
+/// * [blend_equation]
+/// * [blend_func_separate]
+/// * [clear]
+/// * [draw_buffer]
+/// * [enable]
+/// * [logic_op]
+/// * [stencil_func]
+pub fn blend_func(source_factor: BlendFactor, dest_factor: BlendFactor) {
+    let sfactor = GLenum::from(source_factor);
+    let dfactor = GLenum::from(dest_factor);
     unsafe { gl::BlendFunc(sfactor, dfactor) }
+}
+
+/// # Specify pixel arithmetic
+/// see [blend_func]
+///
+/// # Arguments
+/// * `blend_index` - specifies the index of the draw buffer for which to set the blend function.
+pub fn blend_func_buffer(buffer_index: u32, source_factor: BlendFactor, dest_factor: BlendFactor) {
+    let sfactor = GLenum::from(source_factor);
+    let dfactor = GLenum::from(dest_factor);
+    unsafe { gl::BlendFunci(buffer_index, sfactor, dfactor) }
 }
 
 /// # Set front and back function and reference value for stencil testing
