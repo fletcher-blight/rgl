@@ -13,6 +13,10 @@ use gl::types::*;
 #[repr(transparent)]
 pub struct Framebuffer(pub u32);
 
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
+#[repr(transparent)]
+pub struct Renderbuffer(pub u32);
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FramebufferBindingTarget {
     Read,
@@ -114,6 +118,44 @@ pub fn bind_framebuffer(target: FramebufferBindingTarget, framebuffer: Framebuff
     unsafe { gl::BindFramebuffer(target, framebuffer) }
 }
 
+/// # Bind a renderbuffer to a renderbuffer target
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindRenderbuffer.xhtml>
+///
+/// # Arguments
+/// * `renderbuffer` - Specifies the name of the renderbuffer object to bind.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// bind_renderbuffer(Renderbuffer(42));
+/// ```
+///
+/// # Description
+/// [bind_renderbuffer] binds the renderbuffer object with name `renderbuffer` to the renderbuffer.
+/// `renderbuffer` is the name of a renderbuffer object previously returned from a call to
+/// [gen_renderbuffers], or zero to break the existing binding of the renderbuffer object.
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if renderbuffer is not zero or the name of a renderbuffer
+/// previously returned from a call to [gen_renderbuffers].
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [bind_renderbuffer] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [delete_renderbuffers]
+/// * [gen_renderbuffers]
+/// * [is_renderbuffer]
+/// * [renderbuffer_storage]
+/// * [renderbuffer_storage_multisample]
+pub fn bind_renderbuffer(renderbuffer: Renderbuffer) {
+    let renderbuffer = renderbuffer.0;
+    unsafe { gl::BindRenderbuffer(gl::RENDERBUFFER, renderbuffer) }
+}
+
 /// # Check the completeness status of a framebuffer
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glCheckFramebufferStatus.xhtml>
 ///
@@ -204,6 +246,49 @@ pub fn delete_framebuffers(framebuffers: &[Framebuffer]) {
     unsafe { gl::DeleteFramebuffers(n, framebuffers) }
 }
 
+/// # Delete renderbuffer objects
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteRenderbuffers.xhtml>
+///
+/// # Arguments
+/// * `renderbuffers` - A slice containing renderbuffer objects to be deleted.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// delete_renderbuffers(&[Renderbuffer(42)]);
+/// ```
+///
+/// # Description
+/// [delete_renderbuffers] deletes all renderbuffer objects whose names are stored in the slice
+/// `renderbuffers`. The name zero is reserved by the GL and is silently ignored, should it occur in
+/// `renderbuffers`, as are other unused names. Once a renderbuffer object is deleted, its name is
+/// again unused and it has no contents. If a renderbuffer that is currently bound  is deleted, it
+/// is as though [bind_renderbuffer] had been executed with a name of zero.
+///
+/// If a renderbuffer object is attached to one or more attachment points in the currently bound
+/// framebuffer, then it as if [framebuffer_renderbuffer] had been called, with a renderbuffer of
+/// zero for each attachment point to which this image was attached in the currently bound
+/// framebuffer. In other words, this renderbuffer object is first detached from all attachment
+/// points in the currently bound framebuffer. Note that the renderbuffer image is specifically not
+/// detached from any non-bound framebuffers.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [delete_renderbuffers] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [gen_renderbuffers]
+/// * [framebuffer_renderbuffer]
+/// * [renderbuffer_storage]
+/// * [renderbuffer_stroage_multisample]
+pub fn delete_renderbuffers(renderbuffers: &[Renderbuffer]) {
+    let n = renderbuffers.len() as GLsizei;
+    let renderbuffers = renderbuffers.as_ptr() as *const GLuint;
+    unsafe { gl::DeleteRenderbuffers(n, renderbuffers) }
+}
+
 /// # Generate framebuffer object names
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGenFramebuffers.xhtml>
 ///
@@ -244,4 +329,49 @@ pub fn gen_framebuffers(framebuffers: &mut [Framebuffer]) {
     let n = framebuffers.len() as GLsizei;
     let framebuffers = framebuffers.as_mut_ptr() as *mut GLuint;
     unsafe { gl::GenFramebuffers(n, framebuffers) }
+}
+
+/// # Generate renderbuffer object names
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGenRenderbuffers.xhtml>
+///
+/// # Arguments
+/// * `renderbuffers` - Specifies a slice in which the generated renderbuffer object names are
+/// stored.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let mut renderbuffer = Renderbuffer::default();
+/// gen_renderbuffers(std::slice::from_mut(&mut renderbuffer));
+/// assert_ne!(renderbuffer, Renderbuffer::default());
+///
+/// let mut renderbuffers = [Renderbuffer::default(); 1024];
+/// gen_renderbuffers(&mut renderbuffers);
+/// assert_ne!(renderbuffers, [Renderbuffer::default(); 1024]);
+/// ```
+///
+/// # Description
+/// [gen_renderbuffers] generates renderbuffer object names in `renderbuffers`. There is no
+/// guarantee that the names form a contiguous set of integers; however, it is guaranteed that none
+/// of the returned names was in use immediately before the call to [gen_renderbuffers].
+///
+/// Renderbuffer object names returned by a call to [gen_renderbuffers] are not returned by
+/// subsequent calls, unless they are first deleted with [delete_renderbuffers].
+///
+/// The names returned in `renderbuffers` are marked as used, for the purposes of
+/// [gen_renderbuffers] only, but they acquire state and type only when they are first bound.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [gen_renderbuffers] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [framebuffer_renderbuffer]
+/// * [delete_renderbuffers]
+pub fn gen_renderbuffers(renderbuffers: &mut [Renderbuffer]) {
+    let n = renderbuffers.len() as GLsizei;
+    let renderbuffers = renderbuffers.as_mut_ptr() as *mut GLuint;
+    unsafe { gl::GenRenderbuffers(n, renderbuffers) }
 }
