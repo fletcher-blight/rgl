@@ -203,3 +203,45 @@ pub fn delete_framebuffers(framebuffers: &[Framebuffer]) {
     let framebuffers = framebuffers.as_ptr() as *const GLuint;
     unsafe { gl::DeleteFramebuffers(n, framebuffers) }
 }
+
+/// # Generate framebuffer object names
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGenFramebuffers.xhtml>
+///
+/// # Arguments
+/// * `framebuffers` - Specifies a slice in which the generated framebuffer object names are stored.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let mut framebuffer = Framebuffer::default();
+/// gen_framebuffers(std::slice::from_mut(&mut framebuffer));
+///
+/// let mut framebuffers = [Framebuffer::default(); 1024];
+/// gen_framebuffers(&mut framebuffers);
+/// ```
+///
+/// # Description
+/// [gen_framebuffers] generates framebuffer object names in `framebuffers`. There is no guarantee
+/// that the names form a contiguous set of integers; however, it is guaranteed that none of the
+/// returned names was in use immediately before the call to [gen_framebuffers].
+///
+/// Framebuffer object names returned by a call to [gen_framebuffers] are not returned by subsequent
+/// calls, unless they are first deleted with [delete_framebuffers].
+///
+/// The names returned in ids are marked as used, for the purposes of [gen_framebuffers] only, but
+/// they acquire state and type only when they are first bound.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [gen_framebuffers] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [bind_framebuffer]
+/// * [delete_framebuffer]
+pub fn gen_framebuffers(framebuffers: &mut [Framebuffer]) {
+    let n = framebuffers.len() as GLsizei;
+    let framebuffers = framebuffers.as_mut_ptr() as *mut GLuint;
+    unsafe { gl::GenFramebuffers(n, framebuffers) }
+}
