@@ -30,6 +30,41 @@ impl From<FramebufferBindingTarget> for GLenum {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum FramebufferStatus {
+    Complete,
+    Undefined,
+    IncompleteAttachment,
+    IncompleteMissingAttachment,
+    IncompleteDrawBuffer,
+    IncompleteReadBuffer,
+    Unsupported,
+    IncompleteMultisample,
+    IncompleteLayerTargets,
+}
+
+impl TryFrom<GLenum> for FramebufferStatus {
+    type Error = ();
+    fn try_from(value: GLenum) -> Result<Self, Self::Error> {
+        match value {
+            gl::FRAMEBUFFER_COMPLETE => Ok(FramebufferStatus::Complete),
+            gl::FRAMEBUFFER_UNDEFINED => Ok(FramebufferStatus::Undefined),
+            gl::FRAMEBUFFER_INCOMPLETE_ATTACHMENT => Ok(FramebufferStatus::IncompleteAttachment),
+            gl::FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT => {
+                Ok(FramebufferStatus::IncompleteMissingAttachment)
+            }
+            gl::FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER => Ok(FramebufferStatus::IncompleteDrawBuffer),
+            gl::FRAMEBUFFER_INCOMPLETE_READ_BUFFER => Ok(FramebufferStatus::IncompleteReadBuffer),
+            gl::FRAMEBUFFER_UNSUPPORTED => Ok(FramebufferStatus::Unsupported),
+            gl::FRAMEBUFFER_INCOMPLETE_MULTISAMPLE => Ok(FramebufferStatus::IncompleteMultisample),
+            gl::FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS => {
+                Ok(FramebufferStatus::IncompleteLayerTargets)
+            }
+            _ => Err(()),
+        }
+    }
+}
+
 /// # Bind a framebuffer to a framebuffer target
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindFramebuffer.xhtml>
 ///
@@ -77,6 +112,59 @@ pub fn bind_framebuffer(target: FramebufferBindingTarget, framebuffer: Framebuff
     let target = GLenum::from(target);
     let framebuffer = framebuffer.0;
     unsafe { gl::BindFramebuffer(target, framebuffer) }
+}
+
+/// # Check the completeness status of a framebuffer
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glCheckFramebufferStatus.xhtml>
+///
+/// # Arguments
+/// * `target` - Specify the target to which the framebuffer is bound.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// let status: FramebufferStatus = check_framebuffer_status(FramebufferBindingTarget::ReadDraw).expect("Error Occurred");
+/// assert_eq!(status, FramebufferStatus::Complete);
+/// ```
+///
+/// # Description
+/// [check_framebuffer_status] and [check_named_framebuffer_status] return return the completeness
+/// status of a framebuffer object when treated as a read or draw framebuffer, depending on the
+/// value of `target`. [FramebufferBindingTarget::ReadDraw] is equivalent to
+/// [FramebufferBindingTarget::Draw]. The return value is [FramebufferStatus::Complete] if the
+/// specified framebuffer is complete. Otherwise, the return value is determined as follows:
+///
+/// | [FramebufferStatus] | Cause |
+/// |---------------------|-------|
+/// | [FramebufferStatus::Undefined] | the specified framebuffer is the default read or draw framebuffer, but the default framebuffer does not exist |
+/// | [FramebufferStatus::IncompleteAttachment] | any of the framebuffer attachment points are framebuffer incomplete |
+/// | [FramebufferStatus::IncompleteMissingAttachment] | the framebuffer does not have at least one image attached to it |
+/// | [FramebufferStatus::IncompleteDrawBuffer] | the value of [get_framebuffer_attachment_object_type] is [FramebufferAttachmentObjectType::None] for any color attachment point(s) |
+/// | [FramebufferStatus::IncompleteReadBuffer] | [GL_READ_BUFFER] is not [GL_NONE] and the value of [get_framebuffer_attachment_object_type] is [FramebufferAttachmentObjectType::None] for the color attachment point named by [GL_READ_BUFFER] |
+/// | [FramebufferStatus::Unsupported] | the combination of internal formats of the attached images violates an implementation-dependent set of restrictions |
+/// | [FramebufferStatus::IncompleteMultisample] | the value of [GL_RENDERBUFFER_SAMPLES] is not the same for all attached renderbuffers; if the value of [GL_TEXTURE_SAMPLES] is the not same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of [GL_RENDERBUFFER_SAMPLES] does not match the value of [GL_TEXTURE_SAMPLES] |
+/// | [FramebufferStatus::IncompleteMultisample] | also, if the value of [GL_TEXTURE_FIXED_SAMPLE_LOCATIONS] is not the same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of [GL_TEXTURE_FIXED_SAMPLE_LOCATIONS] is not GL_TRUE for all attached textures |
+/// | [FramebufferStatus::IncompleteLayerTargets] | is returned if any framebuffer attachment is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures of the same target |
+///
+/// Additionally, if an error occurs, `None` is returned.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [check_framebuffer_status] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [gen_framebuffers]
+/// * [delete_framebuffers]
+/// * [bind_framebuffer]
+pub fn check_framebuffer_status(target: FramebufferBindingTarget) -> Option<FramebufferStatus> {
+    let target = GLenum::from(target);
+    let status = unsafe { gl::CheckFramebufferStatus(target) };
+    match FramebufferStatus::try_from(status) {
+        Ok(status) => Some(status),
+        Err(_) => None,
+    }
 }
 
 /// # Delete framebuffer objects
