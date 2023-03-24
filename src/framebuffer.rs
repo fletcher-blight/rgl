@@ -69,6 +69,33 @@ impl TryFrom<GLenum> for FramebufferStatus {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum FramebufferAttachment {
+    Colour(u32),
+    Depth,
+    Stencil,
+    DepthStencil,
+}
+
+impl From<FramebufferAttachment> for GLenum {
+    fn from(value: FramebufferAttachment) -> Self {
+        match value {
+            FramebufferAttachment::Colour(i) => gl::COLOR_ATTACHMENT0 + i,
+            FramebufferAttachment::Depth => gl::DEPTH_ATTACHMENT,
+            FramebufferAttachment::Stencil => gl::STENCIL_ATTACHMENT,
+            FramebufferAttachment::DepthStencil => gl::DEPTH_STENCIL_ATTACHMENT,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum FramebufferAttachmentObjectType {
+    None,
+    Framebuffer,
+    Texture,
+    Renderbuffer,
+}
+
 /// # Bind a framebuffer to a framebuffer target
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindFramebuffer.xhtml>
 ///
@@ -287,6 +314,84 @@ pub fn delete_renderbuffers(renderbuffers: &[Renderbuffer]) {
     let n = renderbuffers.len() as GLsizei;
     let renderbuffers = renderbuffers.as_ptr() as *const GLuint;
     unsafe { gl::DeleteRenderbuffers(n, renderbuffers) }
+}
+
+/// # Attach a renderbuffer as a logical buffer of a framebuffer object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glFramebufferRenderbuffer.xhtml>
+///
+/// # Arguments
+/// * `target` - Specifies the target to which the framebuffer is bound.
+/// * `attachment` - Specifies the attachment point of the framebuffer.
+/// * `renderbuffer` - Specifies the name of an existing renderbuffer object to attach.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// framebuffer_renderbuffer(
+///     FramebufferBindingTarget::Draw,
+///     FramebufferAttachment::Colour(0),
+///     Renderbuffer(42));
+/// ```
+///
+/// # Description
+/// [framebuffer_renderbuffer] and [named_framebuffer_renderbuffer] attaches a renderbuffer as one
+/// of the logical buffers of the specified framebuffer object. Renderbuffers cannot be attached to
+/// the default draw and read framebuffer, so they are not valid targets of these commands.
+///
+/// For [framebuffer_renderbuffer], the framebuffer object is that bound to `target`.
+/// [FramebufferBindingTarget::ReadDraw] is equivalent to [FramebufferBindingTarget::Draw].
+///
+/// For [named_framebuffer_renderbuffer], `framebuffer` is the name of the framebuffer object.
+///
+/// `renderbuffer` must be zero or the name of an existing renderbuffer object. If `renderbuffer` is
+/// not zero, then the specified renderbuffer will be used as the logical buffer identified by
+/// attachment of the specified framebuffer object. If renderbuffer is zero, then the value is
+/// ignored.
+///
+/// `attachment` specifies the logical attachment of the framebuffer.
+/// [FrameBufferAttachment::Colour]'s argument has to be in range from zero to the value of
+/// [get_max_colour_attachments] minus one. Setting `attachment` to the value
+/// [FramebufferAttachment::DepthStencil] is a special case causing both the depth and stencil
+/// attachments of the specified framebuffer object to be set to renderbuffer, which should have the
+/// base internal format [TextureInternalFormat::DepthStencil].
+///
+/// The value of [get_framebuffer_attachment_type] for the specified attachment point is set to
+/// [FramebufferAttachmentObjectType::Renderbuffer] and the value of
+/// [get_framebuffer_attachment_name] is set to `renderbuffer`. All other state values of specified
+/// attachment point are set to their default values. No change is made to the state of the
+/// renderbuffer object and any previous attachment to the `attachment` logical buffer of the
+/// specified framebuffer object is broken.
+///
+/// If `renderbuffer` is zero, these commands will detach the image, if any, identified by the
+/// specified attachment point of the specified framebuffer object. All state values of the
+/// attachment point are set to their default values.
+///
+/// # Errors
+/// * [Error::InvalidOperation] - if zero is bound to `target`
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [framebuffer_renderbuffer] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [gen_framebuffers]
+/// * [bind_framebuffer]
+/// * [gen_renderbuffers]
+/// * [framebuffer_texture]
+/// * [framebuffer_texture_1d]
+/// * [framebuffer_texture_2d]
+/// * [framebuffer_texture_3d]
+pub fn framebuffer_renderbuffer(
+    target: FramebufferBindingTarget,
+    attachment: FramebufferAttachment,
+    renderbuffer: Renderbuffer,
+) {
+    let target = GLenum::from(target);
+    let attachment = GLenum::from(attachment);
+    let renderbuffer = renderbuffer.0;
+    unsafe { gl::FramebufferRenderbuffer(target, attachment, gl::RENDERBUFFER, renderbuffer) }
 }
 
 /// # Generate framebuffer object names
