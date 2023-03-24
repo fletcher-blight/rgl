@@ -96,6 +96,21 @@ pub enum FramebufferAttachmentObjectType {
     Renderbuffer,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum RenderbufferInternalFormat {
+    Depth24Stencil8,
+    Depth32fStencil8,
+}
+
+impl From<RenderbufferInternalFormat> for GLenum {
+    fn from(value: RenderbufferInternalFormat) -> Self {
+        match value {
+            RenderbufferInternalFormat::Depth24Stencil8 => gl::DEPTH24_STENCIL8,
+            RenderbufferInternalFormat::Depth32fStencil8 => gl::DEPTH32F_STENCIL8,
+        }
+    }
+}
+
 /// # Bind a framebuffer to a framebuffer target
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindFramebuffer.xhtml>
 ///
@@ -479,4 +494,60 @@ pub fn gen_renderbuffers(renderbuffers: &mut [Renderbuffer]) {
     let n = renderbuffers.len() as GLsizei;
     let renderbuffers = renderbuffers.as_mut_ptr() as *mut GLuint;
     unsafe { gl::GenRenderbuffers(n, renderbuffers) }
+}
+
+/// # Establish data storage, format and dimensions of a renderbuffer object's image
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glRenderbufferStorage.xhtml>
+///
+/// # Arguments
+/// * `internal_format` - Specifies the internal format to use for the renderbuffer object's image.
+/// * `width` - Specifies the width of the renderbuffer, in pixels.
+/// * `height` - Specifies the height of the renderbuffer, in pixels.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// renderbuffer_storage(RenderbufferInternalFormat::Depth24Stencil8, 1920, 1080);
+/// ```
+///
+/// # Description
+/// [renderbuffer_storage] is equivalent to calling [renderbuffer_storage_multisample] with the
+/// `samples` set to zero, and [named_renderbuffer_storage] is equivalent to calling
+/// [named_renderbuffer_storage_multisample] with the samples set to zero.
+///
+/// For [named_renderbuffer_storage], `renderbuffer` must be a name of an existing renderbuffer
+/// object.
+///
+/// `internalformat` specifies the internal format to be used for the renderbuffer object's storage
+/// and must be a color-renderable, depth-renderable, or stencil-renderable format. `width` and
+/// `height` are the dimensions, in pixels, of the renderbuffer. Both `width` and `height` must be
+/// less than or equal to the value of [get_max_renderbuffer_size].
+///
+/// Upon success, [renderbuffer_storage] and [named_renderbuffer_storage] delete any existing data
+/// store for the renderbuffer image and the contents of the data store after calling
+/// [renderbuffer_storage] are undefined.
+///
+/// # Errors
+/// * [Error::InvalidValue] - if either `width` or `height` is greater than the value of
+/// [get_max_renderbuffer_size].
+/// * [Error::OutOfMemory] - if the GL is unable to create a data store of the requested size.
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [renderbuffer_storage] | N | N | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+/// * [gen_renderbuffers]
+/// * [bind_renderbuffer]
+/// * [named_renderbuffer_storage_multisample]
+/// * [renderbuffer_storage_multisample]
+/// * [framebuffer_renderbuffer]
+/// * [delete_renderbuffers]
+pub fn renderbuffer_storage(internal_format: RenderbufferInternalFormat, width: u32, height: u32) {
+    let internalformat = GLenum::from(internal_format);
+    let width = width as GLsizei;
+    let height = height as GLsizei;
+    unsafe { gl::RenderbufferStorage(gl::RENDERBUFFER, internalformat, width, height) }
 }
