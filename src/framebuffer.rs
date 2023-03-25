@@ -409,6 +409,68 @@ pub fn framebuffer_renderbuffer(
     unsafe { gl::FramebufferRenderbuffer(target, attachment, gl::RENDERBUFFER, renderbuffer) }
 }
 
+/// # Attach a level of a texture object as a logical buffer of a framebuffer object
+/// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glFramebufferTexture.xhtml>
+///
+/// # Arguments
+/// * `framebuffer_target` -  Specifies the target to which the framebuffer is bound for all
+/// commands except [named_framebuffer_texture].
+/// * `attachment` - Specifies the attachment point of the framebuffer.
+/// * `texture_target` - Specifies what type of texture is expected in the `texture` parameter, or
+/// for cube map textures, which face is to be attached.
+/// * `texture` - Specifies the name of an existing texture object to attach.
+/// * `level` - Specifies the mipmap level of the texture object to attach.
+///
+/// # Example
+/// ```no_run
+/// # use rgl::prelude::*;
+/// framebuffer_texture_2d(
+///     FramebufferBindingTarget::ReadDraw,
+///     FramebufferAttachment::DepthStencil,
+///     TextureBinding2DTarget::Image2D,
+///     Texture(42),
+///     0
+/// );
+/// ```
+///
+/// # Description
+/// These commands attach a selected mipmap level or image of a texture object as one of the logical
+/// buffers of the specified framebuffer object. Textures cannot be attached to the default draw and
+/// read framebuffer, so they are not valid targets of these commands.
+///
+/// TODO
+///
+/// # Errors
+///
+/// # Version Support
+///
+/// | Function / Feature Name | 2.0 | 2.1 | 3.0 | 3.1 | 3.2 | 3.3 | 4.0 | 4.1 | 4.2 | 4.3 | 4.4 | 4.5 |
+/// |-------------------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+/// | [framebuffer_texture_2d] | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+///
+/// # See Also
+pub mod framebuffer_texture {
+    use crate::prelude::*;
+
+    /// # Attach a level of a texture object as a logical buffer of a framebuffer object
+    /// see [framebuffer_texture@mod]
+    pub fn framebuffer_texture_2d(
+        framebuffer_target: FramebufferBindingTarget,
+        attachment: FramebufferAttachment,
+        texture_target: TextureBinding2DTarget,
+        texture: Texture,
+        level: u32,
+    ) {
+        let target = GLenum::from(framebuffer_target);
+        let attachment = GLenum::from(attachment);
+        let textarget = GLenum::from(texture_target);
+        let texture = texture.0;
+        let level = level as GLint;
+        unsafe { gl::FramebufferTexture2D(target, attachment, textarget, texture, level) }
+    }
+}
+pub use framebuffer_texture::*;
+
 /// # Generate framebuffer object names
 /// <https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGenFramebuffers.xhtml>
 ///
